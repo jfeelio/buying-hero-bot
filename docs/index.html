@@ -48,7 +48,8 @@
     .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 
     /* ── Fields ── */
-    .field { margin-bottom: 11px; }
+    .field { margin-bottom: 11px; position: relative; }
+    .field-calc { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
     .field:last-child { margin-bottom: 0; }
     .field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
     .field input, .field textarea {
@@ -195,10 +196,12 @@
         <div class="field">
           <label>Title Insurance (% of PP)</label>
           <input type="number" id="titleInsPct" value="0.55" step="0.01" oninput="calc()">
+          <span class="field-calc" id="titleInsAmt"></span>
         </div>
         <div class="field">
           <label>Gov Recording (% of PP)</label>
           <input type="number" id="govRecPct" value="0.65" step="0.01" oninput="calc()">
+          <span class="field-calc" id="govRecAmt"></span>
         </div>
         <div class="field">
           <label>Home Inspection ($)</label>
@@ -362,6 +365,8 @@
       + n('transCoord')
       + n('otherPurch');
     set('totalPurch', purchClose);
+    document.getElementById('titleInsAmt').textContent = '= ' + fmt(pp * (n('titleInsPct') / 100));
+    document.getElementById('govRecAmt').textContent   = '= ' + fmt(pp * (n('govRecPct')   / 100));
 
     // ── HML ──
     const hmlLoan = pp * (1 - downPct) + rehab;
