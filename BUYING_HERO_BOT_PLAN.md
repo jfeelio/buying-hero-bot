@@ -16,8 +16,8 @@
 |---|---|
 | Chat interface | WhatsApp via OpenClaw |
 | AI brain | Claude (Anthropic API) |
-| ARV / comps | RentCast API |
-| Hosting | DigitalOcean — Basic Droplet, $6/mo, Ubuntu 22.04, NY or Atlanta region |
+| ARV / comps | Kiavi (local) / RentCast (server fallback) |
+| Hosting | Local Windows machine (active) + DigitalOcean server (standby) |
 | Version control | GitHub + GitHub CLI (HTTPS protocol) |
 | Deal analysis | Replicated from "NEW VERSION Investment Calc" tab only |
 | Assignment profit target | $25,000 |
@@ -143,8 +143,8 @@ VERDICT: ✅ GO / ⚠️ MARGINAL / ❌ NO GO
 - [x] Create RentCast account
 - [x] Get RentCast API key
 - [x] Build comp-pulling logic (0.5–1 mile radius, same bed/bath, last 6 months)
-- [ ] Test comp results against known South Florida deals
-- [ ] Commit to GitHub
+- [x] Test comp results against known South Florida deals
+- [x] Commit to GitHub
 
 ### Phase 6 — Deal Analysis Engine
 - [ ] Replicate all formulas from "NEW VERSION Investment Calc" tab in code

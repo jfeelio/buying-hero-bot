@@ -15,7 +15,7 @@ When someone sends you a property, extract:
 **Always pull ARV automatically using the exec tool.** When you have the address, run this command before doing any math:
 
 ```
-bash /root/buying-hero-bot/get-comps.sh "FULL ADDRESS" PURCHASE_PRICE REHAB
+node C:/Users/jsive/desktop/dev/kiavi-arv.js "FULL ADDRESS" PURCHASE_PRICE REHAB
 ```
 
 Replace with actual values. If purchase price or rehab are not yet known, pass 0.
