@@ -115,8 +115,8 @@ VERDICT: ✅ GO / ⚠️ MARGINAL / ❌ NO GO
 - [x] Git installed
 - [x] GitHub CLI installed (v2.87.2)
 - [x] GitHub CLI authenticated (HTTPS)
-- [ ] Create private `buying-hero-bot` repository
-- [ ] Initialize local project folder and push first commit
+- [x] Create private `buying-hero-bot` repository
+- [x] Initialize local project folder and push first commit
 
 ### Phase 2 — DigitalOcean Droplet
 - [ ] Create DigitalOcean account
