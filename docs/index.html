@@ -119,11 +119,11 @@
     <div class="g3">
       <div class="field">
         <label>Purchase Price ($)</label>
-        <input type="number" id="pp" placeholder="0" oninput="calc()">
+        <input type="text" id="pp" placeholder="$0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
       <div class="field">
         <label>Rehab Estimate ($)</label>
-        <input type="number" id="rehab" placeholder="0" oninput="calc()">
+        <input type="text" id="rehab" placeholder="$0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
       <div class="field">
         <label>Hold Months</label>
@@ -133,11 +133,11 @@
     <div class="g2">
       <div class="field">
         <label>ARV — Your Selling Price Estimate ($)</label>
-        <input type="number" id="arv" placeholder="0" oninput="calc()">
+        <input type="text" id="arv" placeholder="$0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
       <div class="field">
         <label>Kiavi ARV — Bot Reference ($)</label>
-        <input type="number" id="kiaviArv" placeholder="Paste from bot">
+        <input type="text" id="kiaviArv" placeholder="Paste from bot">
       </div>
     </div>
     <div class="field">
@@ -155,7 +155,7 @@
       <div class="card-title">Assignment Target</div>
       <div class="field">
         <label>Target Assignment Profit ($)</label>
-        <input type="number" id="target" value="25000" oninput="calc()">
+        <input type="text" id="target" value="25000" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
     </div>
 
@@ -191,7 +191,7 @@
       <div class="g2">
         <div class="field">
           <label>Title Fees ($)</label>
-          <input type="number" id="titleFees" value="1400" oninput="calc()">
+          <input type="text" id="titleFees" value="1400" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
         </div>
         <div class="field">
           <label>Title Insurance (% of PP)</label>
@@ -205,23 +205,23 @@
         </div>
         <div class="field">
           <label>Home Inspection ($)</label>
-          <input type="number" id="homeInsp" value="275" oninput="calc()">
+          <input type="text" id="homeInsp" value="275" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
         </div>
         <div class="field">
           <label>Mobile Notary ($)</label>
-          <input type="number" id="notary" value="250" oninput="calc()">
+          <input type="text" id="notary" value="250" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
         </div>
         <div class="field">
           <label>Survey ($)</label>
-          <input type="number" id="survey" value="545" oninput="calc()">
+          <input type="text" id="survey" value="545" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
         </div>
         <div class="field">
           <label>Transaction Coord ($)</label>
-          <input type="number" id="transCoord" value="0" oninput="calc()">
+          <input type="text" id="transCoord" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
         </div>
         <div class="field">
           <label>Other Costs ($)</label>
-          <input type="number" id="otherPurch" value="0" oninput="calc()">
+          <input type="text" id="otherPurch" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
         </div>
       </div>
       <div class="field" style="margin-top:10px">
@@ -251,11 +251,11 @@
           </div>
           <div class="field">
             <label>Appraisal Cost ($)</label>
-            <input type="number" id="appraisal" value="0" oninput="calc()">
+            <input type="text" id="appraisal" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
           </div>
           <div class="field">
             <label>Other Fees ($)</label>
-            <input type="number" id="otherLend" value="0" oninput="calc()">
+            <input type="text" id="otherLend" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
           </div>
         </div>
         <div class="field" style="margin-top:4px">
@@ -270,11 +270,11 @@
         <div class="g2">
           <div class="field">
             <label>Utilities / month ($)</label>
-            <input type="number" id="utilities" value="100" oninput="calc()">
+            <input type="text" id="utilities" value="100" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
           </div>
           <div class="field">
             <label>Builders Insurance / month ($)</label>
-            <input type="number" id="bldgIns" value="500" oninput="calc()">
+            <input type="text" id="bldgIns" value="500" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
           </div>
           <div class="field">
             <label>Property Tax (auto)</label>
@@ -282,7 +282,7 @@
           </div>
           <div class="field">
             <label>HOA / month ($)</label>
-            <input type="number" id="hoa" value="0" oninput="calc()">
+            <input type="text" id="hoa" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
           </div>
         </div>
         <div class="field" style="margin-top:4px">
@@ -312,7 +312,7 @@
       </div>
       <div class="field">
         <label>Title Fee ($)</label>
-        <input type="number" id="saleTitleFee" value="400" oninput="calc()">
+        <input type="text" id="saleTitleFee" value="400" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
       <div class="field">
         <label>Title Insurance (% of ARV)</label>
@@ -331,16 +331,36 @@
 
 <script>
   const $ = id => document.getElementById(id);
-  const n = id => parseFloat($(id).value) || 0;
+  const n = id => parseFloat($(id).value.replace(/[$,]/g, '')) || 0;
 
   function fmt(v) {
     if (!isFinite(v)) return '—';
     const abs = Math.abs(Math.round(v));
-    const str = '$' + abs.toLocaleString();
+    const str = '$' + abs.toLocaleString('en-US');
     return v < 0 ? '−' + str : str;
   }
 
   function set(id, v) { $(id).value = fmt(v); }
+
+  // Dollar input formatting: strip on focus, format on blur
+  function dollarFocus(el) {
+    const raw = parseFloat(el.value.replace(/[$,]/g, ''));
+    el.value = (isNaN(raw) || raw === 0) ? '' : String(raw);
+  }
+
+  function dollarBlur(el) {
+    const raw = parseFloat(el.value.replace(/[$,]/g, ''));
+    el.value = (isNaN(raw) || el.value.trim() === '') ? '' : fmt(raw);
+    calc();
+  }
+
+  // Format all pre-filled dollar inputs on load
+  function initDollarInputs() {
+    document.querySelectorAll('.dollar-input').forEach(el => {
+      const raw = parseFloat(el.value.replace(/[$,]/g, ''));
+      if (!isNaN(raw) && el.value.trim() !== '') el.value = fmt(raw);
+    });
+  }
 
   function calc() {
     const pp       = n('pp');
@@ -433,6 +453,7 @@
     }
   }
 
+  initDollarInputs();
   calc();
 </script>
 </body>
