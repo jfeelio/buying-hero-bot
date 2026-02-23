@@ -1,0 +1,24 @@
+# Spreadsheets
+*.xlsx
+*.xls
+*.csv
+
+# Claude local memory
+.claude/
+
+# Environment variables — never commit
+.env
+*.env
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
