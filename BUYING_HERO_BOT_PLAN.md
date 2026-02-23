@@ -127,11 +127,11 @@ VERDICT: ✅ GO / ⚠️ MARGINAL / ❌ NO GO
 - [x] Clone `buying-hero-bot` repo onto server
 
 ### Phase 3 — OpenClaw Installation & WhatsApp Setup
-- [ ] Install OpenClaw via CLI installer on Droplet
-- [ ] Run `openclaw onboard` wizard
-- [ ] Connect Anthropic API key
-- [ ] Link WhatsApp via QR code scan
-- [ ] Lock down `allowFrom` to team numbers only
+- [x] Install OpenClaw via CLI installer on Droplet
+- [x] Run `openclaw onboard` wizard
+- [x] Connect Anthropic API key
+- [x] Link WhatsApp via QR code scan
+- [x] Lock down `allowFrom` to team numbers only
 
 ### Phase 4 — System Prompt (Buying Hero Brain)
 - [ ] Write system prompt with Buying Hero operating parameters
