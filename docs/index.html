@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buying Hero — Deal Analyzer</title>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --border: #dde1e9;
+      --text: #1a202c;
+      --muted: #6b7280;
+      --accent: #1d4ed8;
+      --display-bg: #f3f4f6;
+      --go-bg: #f0fdf4; --go-border: #4ade80; --go-text: #15803d;
+      --mar-bg: #fffbeb; --mar-border: #fbbf24; --mar-text: #92400e;
+      --no-bg: #fff1f2;  --no-border:  #f87171; --no-text:  #991b1b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+    /* ── Header ── */
+    header { background: #0f172a; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 10px; }
+    header .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+    header .sub  { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+
+    /* ── Layout ── */
+    .wrap { max-width: 1140px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    /* ── Results Banner ── */
+    .banner { border-radius: 14px; padding: 22px 28px; margin-bottom: 22px; border: 2px solid var(--border); background: var(--card); transition: background 0.2s, border-color 0.2s; }
+    .banner.go      { background: var(--go-bg);  border-color: var(--go-border); }
+    .banner.marginal{ background: var(--mar-bg); border-color: var(--mar-border); }
+    .banner.nogo    { background: var(--no-bg);  border-color: var(--no-border); }
+    .banner-grid { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0 28px; align-items: center; }
+    .banner-divider { background: var(--border); height: 60px; align-self: center; }
+    .b-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+    .b-value { font-size: 34px; font-weight: 800; color: var(--text); line-height: 1; }
+    .b-formula { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; background: #e5e7eb; color: #6b7280; }
+    .go      .badge { background: var(--go-text);  color: #fff; }
+    .marginal .badge { background: var(--mar-text); color: #fff; }
+    .nogo     .badge { background: var(--no-text);  color: #fff; }
+
+    /* ── Cards ── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
+    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 11px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .field input, .field textarea {
+      width: 100%; padding: 8px 11px; border: 1px solid var(--border);
+      border-radius: 7px; font-size: 14px; color: var(--text); outline: none;
+      transition: border-color 0.15s; background: #fff; font-family: inherit;
+    }
+    .field input:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,78,216,.08); }
+    .field input.display { background: var(--display-bg); color: var(--muted); cursor: default; font-weight: 500; }
+    .field input.total-field { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; font-weight: 700; cursor: default; }
+    .field textarea { resize: vertical; min-height: 72px; font-size: 12px; font-family: 'SF Mono', Monaco, monospace; color: var(--muted); background: var(--display-bg); }
+
+    /* ── Grids ── */
+    .g2  { display: grid; grid-template-columns: 1fr 1fr;     gap: 14px; }
+    .g3  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .g4  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+    .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .col3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 720px) {
+      .g2,.g3,.g4,.col2,.col3 { grid-template-columns: 1fr; }
+      .banner-grid { grid-template-columns: 1fr; }
+      .banner-divider { display: none; }
+      .b-value { font-size: 26px; }
+    }
+
+    /* ── Section divider ── */
+    .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 22px 0 10px; }
+
+    footer { text-align: center; padding: 20px; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Buying Hero</div>
+    <div class="sub">Real Estate Investment Calculator — Live deal analysis</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ── Results Banner ── -->
+  <div class="banner" id="banner">
+    <div class="banner-grid">
+      <div>
+        <div class="b-label">Assignment Contract MAO</div>
+        <div class="b-value" id="bMAO">—</div>
+        <div class="b-formula" id="bFormula">Enter ARV, rehab, and target profit to calculate</div>
+      </div>
+      <div class="banner-divider"></div>
+      <div>
+        <div class="b-label">Net Profit (Hard Money)</div>
+        <div class="b-value" id="bProfit">—</div>
+        <div><span class="badge" id="bBadge">Enter deal info</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Property + ARV ── -->
+  <div class="section-label">Property Information</div>
+  <div class="card">
+    <div class="field">
+      <label>Property Address</label>
+      <input type="text" id="address" placeholder="9590 NW 33rd Ave, Miami, FL 33147">
+    </div>
+    <div class="g3">
+      <div class="field">
+        <label>Purchase Price ($)</label>
+        <input type="number" id="pp" placeholder="0" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Rehab Estimate ($)</label>
+        <input type="number" id="rehab" placeholder="0" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Hold Months</label>
+        <input type="number" id="hold" value="5" min="1" oninput="calc()">
+      </div>
+    </div>
+    <div class="g2">
+      <div class="field">
+        <label>ARV — Your Selling Price Estimate ($)</label>
+        <input type="number" id="arv" placeholder="0" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Kiavi ARV — Bot Reference ($)</label>
+        <input type="number" id="kiaviArv" placeholder="Paste from bot">
+      </div>
+    </div>
+    <div class="field">
+      <label>Kiavi Comps — Bot Reference</label>
+      <textarea id="kiaviComps" placeholder="Paste comps from bot here...&#10;e.g. 1. $560,000 | $364/sqft | 4bd/3ba | 1,539 sqft | 11/24/2025 | 0.76 mi"></textarea>
+    </div>
+  </div>
+
+  <!-- ── Target + HML + Purchase Costs ── -->
+  <div class="section-label">Offer & Financing</div>
+  <div class="col3">
+
+    <!-- Target -->
+    <div class="card">
+      <div class="card-title">Assignment Target</div>
+      <div class="field">
+        <label>Target Assignment Profit ($)</label>
+        <input type="number" id="target" value="25000" oninput="calc()">
+      </div>
+    </div>
+
+    <!-- Hard Money -->
+    <div class="card">
+      <div class="card-title">Hard Money Terms</div>
+      <div class="field">
+        <label>Origination Points (%)</label>
+        <input type="number" id="origPts" value="1.75" step="0.01" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>APR (%)</label>
+        <input type="number" id="apr" value="11.24" step="0.01" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Down Payment Required (%)</label>
+        <input type="number" id="downPct" value="10" step="0.1" oninput="calc()">
+      </div>
+    </div>
+
+    <!-- Placeholder for layout balance -->
+    <div></div>
+
+  </div>
+
+  <!-- ── Costs Sections ── -->
+  <div class="section-label">Cost Breakdown</div>
+  <div class="col2">
+
+    <!-- Purchase Closing Costs -->
+    <div class="card">
+      <div class="card-title">Purchase Closing Costs</div>
+      <div class="g2">
+        <div class="field">
+          <label>Title Fees ($)</label>
+          <input type="number" id="titleFees" value="1400" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Title Insurance (% of PP)</label>
+          <input type="number" id="titleInsPct" value="0.55" step="0.01" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Gov Recording (% of PP)</label>
+          <input type="number" id="govRecPct" value="0.65" step="0.01" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Home Inspection ($)</label>
+          <input type="number" id="homeInsp" value="275" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Mobile Notary ($)</label>
+          <input type="number" id="notary" value="250" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Survey ($)</label>
+          <input type="number" id="survey" value="545" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Transaction Coord ($)</label>
+          <input type="number" id="transCoord" value="0" oninput="calc()">
+        </div>
+        <div class="field">
+          <label>Other Costs ($)</label>
+          <input type="number" id="otherPurch" value="0" oninput="calc()">
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>Total Purchase Closing Costs</label>
+        <input type="text" id="totalPurch" class="total-field" readonly>
+      </div>
+    </div>
+
+    <!-- Right column: HML + Holding -->
+    <div>
+
+      <!-- Hard Money Lending -->
+      <div class="card">
+        <div class="card-title">Hard Money Lending Costs</div>
+        <div class="field">
+          <label>HML Loan Amount</label>
+          <input type="text" id="hmlLoan" class="display" readonly>
+        </div>
+        <div class="g2">
+          <div class="field">
+            <label>Interest Cost</label>
+            <input type="text" id="hmlInt" class="display" readonly>
+          </div>
+          <div class="field">
+            <label>Origination Fee</label>
+            <input type="text" id="hmlOrig" class="display" readonly>
+          </div>
+          <div class="field">
+            <label>Appraisal Cost ($)</label>
+            <input type="number" id="appraisal" value="0" oninput="calc()">
+          </div>
+          <div class="field">
+            <label>Other Fees ($)</label>
+            <input type="number" id="otherLend" value="0" oninput="calc()">
+          </div>
+        </div>
+        <div class="field" style="margin-top:4px">
+          <label>Total Lending Costs</label>
+          <input type="text" id="totalLend" class="total-field" readonly>
+        </div>
+      </div>
+
+      <!-- Holding Costs -->
+      <div class="card">
+        <div class="card-title">Holding Costs</div>
+        <div class="g2">
+          <div class="field">
+            <label>Utilities / month ($)</label>
+            <input type="number" id="utilities" value="100" oninput="calc()">
+          </div>
+          <div class="field">
+            <label>Builders Insurance / month ($)</label>
+            <input type="number" id="bldgIns" value="500" oninput="calc()">
+          </div>
+          <div class="field">
+            <label>Property Tax (auto)</label>
+            <input type="text" id="propTax" class="display" readonly>
+          </div>
+          <div class="field">
+            <label>HOA / month ($)</label>
+            <input type="number" id="hoa" value="0" oninput="calc()">
+          </div>
+        </div>
+        <div class="field" style="margin-top:4px">
+          <label>Total Holding Costs</label>
+          <input type="text" id="totalHold" class="total-field" readonly>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Sale Closing Costs -->
+  <div class="card">
+    <div class="card-title">Sale Closing Costs</div>
+    <div class="g4">
+      <div class="field">
+        <label>Buyers Agent (%)</label>
+        <input type="number" id="buyersAgt" value="3" step="0.1" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Sellers Agent (%)</label>
+        <input type="number" id="sellersAgt" value="3" step="0.1" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Doc Stamps (0.70% of ARV)</label>
+        <input type="text" id="docStamps" class="display" readonly>
+      </div>
+      <div class="field">
+        <label>Title Fee ($)</label>
+        <input type="number" id="saleTitleFee" value="400" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Title Insurance (% of ARV)</label>
+        <input type="number" id="saleTitleIns" value="0.38" step="0.01" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Total Sale Closing Costs</label>
+        <input type="text" id="totalSale" class="total-field" readonly>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Buying Hero — For internal use only</footer>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const n = id => parseFloat($(id).value) || 0;
+
+  function fmt(v) {
+    if (!isFinite(v)) return '—';
+    const abs = Math.abs(Math.round(v));
+    const str = '$' + abs.toLocaleString();
+    return v < 0 ? '−' + str : str;
+  }
+
+  function set(id, v) { $(id).value = fmt(v); }
+
+  function calc() {
+    const pp       = n('pp');
+    const rehab    = n('rehab');
+    const arv      = n('arv');
+    const hold     = n('hold') || 5;
+    const target   = n('target');
+
+    // Hard Money
+    const origPts  = n('origPts')  / 100;
+    const apr      = n('apr')      / 100;
+    const downPct  = n('downPct')  / 100;
+
+    // ── Purchase Closing Costs ──
+    const purchClose =
+        n('titleFees')
+      + pp * (n('titleInsPct') / 100)
+      + pp * (n('govRecPct')   / 100)
+      + n('homeInsp')
+      + n('notary')
+      + n('survey')
+      + n('transCoord')
+      + n('otherPurch');
+    set('totalPurch', purchClose);
+
+    // ── HML ──
+    const hmlLoan = pp * (1 - downPct) + rehab;
+    const hmlInt  = hmlLoan * (apr / 12) * hold;
+    const hmlOrig = hmlLoan * origPts;
+    const totalLend = hmlInt + hmlOrig + n('appraisal') + n('otherLend');
+    set('hmlLoan', hmlLoan);
+    set('hmlInt',  hmlInt);
+    set('hmlOrig', hmlOrig);
+    set('totalLend', totalLend);
+
+    // ── Holding ──
+    const propTaxTotal = pp * 0.01 / 12 * hold;
+    const totalHold    = (n('utilities') + n('bldgIns') + n('hoa')) * hold + propTaxTotal;
+    set('propTax',   propTaxTotal);
+    set('totalHold', totalHold);
+
+    // ── Sale Closing ──
+    const saleClose = arv * (n('buyersAgt')/100 + n('sellersAgt')/100 + 0.007 + n('saleTitleIns')/100) + n('saleTitleFee');
+    set('docStamps', arv * 0.007);
+    set('totalSale', saleClose);
+
+    // ── Net Profit ──
+    const totalAcq  = pp + rehab + purchClose;
+    const totalAllIn = totalAcq + totalLend;
+    const netSale   = arv - saleClose;
+    const netProfit = netSale - totalAllIn - totalHold;
+
+    // ── MAO ──
+    const mao = arv * 0.78 - rehab - target;
+
+    // ── Banner ──
+    const banner  = $('banner');
+    const bMAO    = $('bMAO');
+    const bFormula= $('bFormula');
+    const bProfit = $('bProfit');
+    const bBadge  = $('bBadge');
+
+    banner.className = 'banner';
+
+    if (arv > 0) {
+      bMAO.textContent     = fmt(mao);
+      bFormula.textContent = `(78% × ${fmt(arv)}) − ${fmt(rehab)} repairs − ${fmt(target)} target`;
+    } else {
+      bMAO.textContent     = '—';
+      bFormula.textContent = 'Enter ARV, rehab, and target profit to calculate';
+    }
+
+    if (arv > 0 && pp > 0) {
+      bProfit.textContent = fmt(netProfit);
+      if (netProfit >= 25000) {
+        banner.classList.add('go');
+        bBadge.textContent = '✅  GO';
+      } else if (netProfit >= 12000) {
+        banner.classList.add('marginal');
+        bBadge.textContent = '⚠️  MARGINAL';
+      } else {
+        banner.classList.add('nogo');
+        bBadge.textContent = '❌  NO GO';
+      }
+    } else {
+      bProfit.textContent = '—';
+      bBadge.textContent  = 'Enter deal info';
+    }
+  }
+
+  calc();
+</script>
+</body>
+</html>
