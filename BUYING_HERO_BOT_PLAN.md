@@ -134,10 +134,10 @@ VERDICT: ✅ GO / ⚠️ MARGINAL / ❌ NO GO
 - [x] Lock down `allowFrom` to team numbers only
 
 ### Phase 4 — System Prompt (Buying Hero Brain)
-- [ ] Write system prompt with Buying Hero operating parameters
-- [ ] Include MAO formula, rejection thresholds, South Florida context
-- [ ] Define structured response format
-- [ ] Commit to GitHub
+- [x] Write system prompt with Buying Hero operating parameters
+- [x] Include MAO formula, rejection thresholds, South Florida context
+- [x] Define structured response format
+- [x] Commit to GitHub
 
 ### Phase 5 — RentCast API Integration
 - [ ] Create RentCast account
