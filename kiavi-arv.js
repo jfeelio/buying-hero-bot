@@ -15,6 +15,18 @@ if (!address) {
   process.exit(1);
 }
 
+async function fillCurrencyInput(page, selector, value) {
+  const input = await page.$(selector);
+  if (!input) return false;
+  await input.click({ clickCount: 3 });
+  await page.keyboard.press('Control+a');
+  await page.keyboard.press('Delete');
+  await page.keyboard.type(String(value), { delay: 30 });
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(300);
+  return true;
+}
+
 (async () => {
   const browser = await chromium.launch({
     headless: true,
@@ -31,62 +43,67 @@ if (!address) {
     });
     await page.waitForTimeout(3000);
 
-    // Fill address
+    // Step 1: Fill address
     const addressInput = await page.waitForSelector('#input-1', { timeout: 10000 });
     await addressInput.click();
     await page.keyboard.type(address, { delay: 50 });
     await page.waitForTimeout(2500);
 
-    // Select autocomplete suggestion if present, otherwise press Enter
     const suggestionList = page.locator('#suggesting-input-0 li');
     if (await suggestionList.count().then(n => n > 0).catch(() => false)) {
       await suggestionList.first().click();
     } else {
       await page.keyboard.press('Enter');
     }
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(4000);
 
-    // Fill purchase price if field appeared
-    if (purchasePrice > 0) {
-      const ppInput = await page.$('input[id*="purchase" i], input[name*="purchase" i]');
-      if (ppInput) { await ppInput.click({ clickCount: 3 }); await ppInput.fill(String(purchasePrice)); }
-    }
+    // Step 2: Fill Offer Price and Rehab Amount
+    if (purchasePrice > 0) await fillCurrencyInput(page, '#input-5', purchasePrice);
+    if (rehabBudget   > 0) await fillCurrencyInput(page, '#input-8', rehabBudget);
 
-    // Fill rehab if field appeared
-    if (rehabBudget > 0) {
-      const rehabInput = await page.$('input[id*="rehab" i], input[name*="rehab" i]');
-      if (rehabInput) { await rehabInput.click({ clickCount: 3 }); await rehabInput.fill(String(rehabBudget)); }
-    }
+    // Step 3: Click "Get Estimate" / "Refresh My Estimate"
+    const estimateBtn = page.locator('button:has-text("Get Estimate"), button:has-text("Refresh My Estimate")').first();
+    if (await estimateBtn.count() > 0) await estimateBtn.click();
+    await page.waitForTimeout(7000);
 
-    // Get full page text
+    // Step 4: Click "Show Comparables" div to expand comps
+    await page.evaluate(() => {
+      const el = Array.from(document.querySelectorAll('*')).find(
+        e => e.childElementCount === 0 && e.innerText && e.innerText.trim().startsWith('Show Comparables')
+      );
+      if (el) el.click();
+    });
+    await page.waitForTimeout(2000);
+
+    // Step 5: Parse page text
     const text = await page.evaluate(() => document.body.innerText);
 
-    // Parse ARV
-    const arvMatch = text.match(/Estimated After Repair Value\s*\n\s*\$?([\d,]+)/i);
+    // Parse ARV — match the main result heading (includes "(ARV)")
+    const arvMatch = text.match(/Estimated After Repair Value \(ARV\)\s*\n\s*\$?([\d,]+)/i);
     const arv = arvMatch ? '$' + arvMatch[1] : null;
 
-    // Parse Cash to Close
-    const ctcMatch = text.match(/Cash to Close\s*\n\s*\$?([\d,]+\.?\d*)/i);
-    const ctc = ctcMatch ? '$' + ctcMatch[1] : null;
+    // Parse comps — new format after expanding
+    // Pattern: ADDRESS\nDistance from Deal:\nX.XX mi\nSale Price:\n$X\nSale Date:\nX\nBeds:\nX\nBaths:\nX\nSq Footage:\nX\nPrice/Sq Foot:\n$X
+    const compPattern = /([A-Z0-9 ]+(?:ST|AVE|DR|RD|LN|CT|PL|WAY|BLVD|CIR|TER|TRL)[^\n]*)\nDistance from Deal:\n([\d.]+ mi)\nSale Price:\n\$?([\d,]+)\nSale Date:\n([\d/]+)\nBeds:\n(\d+)\nBaths:\n([\d.]+)\nSq Footage:\n([\d,]+)\nPrice\/Sq Foot:\n\$?([\d,]+)/g;
 
-    // Parse comparables — pattern: Distance\nX.XX miles\nSale Price\n$XXX\nBedrooms\nX\nBathrooms\nX\nDate Sold\nMM/DD/YYYY\nSQFT\nX,XXX
-    const compPattern = /Distance\s*\n\s*([\d.]+ miles)\s*\nSale Price\s*\n\s*\$?([\d,]+)\s*\nBedrooms\s*\n\s*(\d+)\s*\nBathrooms\s*\n\s*([\d.]+)\s*\nDate Sold\s*\n\s*([\d/]+)\s*\nSQFT\s*\n\s*([\d,]+)/gi;
-
+    const seen = new Set();
     const comps = [];
-    let match;
-    while ((match = compPattern.exec(text)) !== null && comps.length < 3) {
-      const price = parseInt(match[2].replace(/,/g, ''));
-      const sqft  = parseInt(match[6].replace(/,/g, ''));
-      const ppsf  = sqft > 0 ? Math.round(price / sqft) : null;
+    let m;
+    while ((m = compPattern.exec(text)) !== null) {
+      const key = m[1] + m[4]; // address + date to deduplicate carousel
+      if (seen.has(key)) continue;
+      seen.add(key);
       comps.push({
-        distance: match[1],
-        price:    '$' + match[2],
-        ppsf:     ppsf ? '$' + ppsf + '/sqft' : 'N/A',
-        beds:     match[3],
-        baths:    match[4],
-        dateSold: match[5],
-        sqft:     match[6]
+        address:  m[1].trim(),
+        distance: m[2],
+        price:    '$' + m[3],
+        dateSold: m[4],
+        beds:     m[5],
+        baths:    m[6],
+        sqft:     m[7],
+        ppsf:     '$' + m[8] + '/sqft'
       });
+      if (comps.length >= 5) break;
     }
 
     // Output
@@ -96,7 +113,6 @@ if (!address) {
     }
 
     console.log(`ARV (Kiavi):    ${arv}`);
-    if (ctc) console.log(`Cash to Close:  ${ctc}`);
     console.log('Comps (Kiavi):');
     if (comps.length === 0) {
       console.log('  No comparables returned');
