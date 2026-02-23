@@ -2,81 +2,118 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Buying Hero — Deal Analyzer</title>
   <style>
     :root {
-      --bg: #f0f2f5;
-      --card: #ffffff;
-      --border: #dde1e9;
-      --text: #1a202c;
-      --muted: #6b7280;
+      --bg: #f1f5f9;
+      --card: #fff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
       --accent: #1d4ed8;
-      --display-bg: #f3f4f6;
-      --go-bg: #f0fdf4; --go-border: #4ade80; --go-text: #15803d;
-      --mar-bg: #fffbeb; --mar-border: #fbbf24; --mar-text: #92400e;
-      --no-bg: #fff1f2;  --no-border:  #f87171; --no-text:  #991b1b;
+      --accent-bg: #eff6ff;
+      --accent-border: #bfdbfe;
+      --head-bg: #fafbfd;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.4; }
 
     /* ── Header ── */
-    header { background: #0f172a; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 10px; }
-    header .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
-    header .sub  { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+    header { background: #0f172a; color: #fff; padding: 10px 22px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+    .brand-sub { font-size: 11px; color: #94a3b8; }
 
-    /* ── Layout ── */
-    .wrap { max-width: 1140px; margin: 0 auto; padding: 20px 16px 40px; }
+    /* ── Wrap ── */
+    .wrap { max-width: 1060px; margin: 0 auto; padding: 16px 14px 48px; }
 
-    /* ── Results Banner ── */
-    .banner { border-radius: 14px; padding: 22px 28px; margin-bottom: 22px; border: 2px solid var(--border); background: var(--card); transition: background 0.2s, border-color 0.2s; }
-    .banner.go      { background: var(--go-bg);  border-color: var(--go-border); }
-    .banner.marginal{ background: var(--mar-bg); border-color: var(--mar-border); }
-    .banner.nogo    { background: var(--no-bg);  border-color: var(--no-border); }
-    .banner-grid { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0 28px; align-items: center; }
-    .banner-divider { background: var(--border); height: 60px; align-self: center; }
-    .b-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
-    .b-value { font-size: 34px; font-weight: 800; color: var(--text); line-height: 1; }
-    .b-formula { font-size: 12px; color: var(--muted); margin-top: 6px; }
-    .badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; background: #e5e7eb; color: #6b7280; }
-    .go      .badge { background: var(--go-text);  color: #fff; }
-    .marginal .badge { background: var(--mar-text); color: #fff; }
-    .nogo     .badge { background: var(--no-text);  color: #fff; }
+    /* ── Banner ── */
+    .banner { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 0 24px; background: var(--card); border: 1.5px solid var(--border); border-radius: 11px; padding: 16px 22px; margin-bottom: 14px; transition: background .15s, border-color .15s; }
+    .banner.go      { background: #f0fdf4; border-color: #4ade80; }
+    .banner.marginal{ background: #fffbeb; border-color: #fbbf24; }
+    .banner.nogo    { background: #fff1f2; border-color: #f87171; }
+    .banner-div     { background: var(--border); }
+    .b-lbl  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .9px; color: var(--muted); margin-bottom: 3px; }
+    .b-val  { font-size: 30px; font-weight: 800; line-height: 1; }
+    .b-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .badge  { display: inline-block; margin-top: 6px; padding: 3px 11px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #e2e8f0; color: var(--muted); }
+    .go      .badge { background: #15803d; color: #fff; }
+    .marginal .badge { background: #92400e; color: #fff; }
+    .nogo    .badge { background: #991b1b; color: #fff; }
 
-    /* ── Cards ── */
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; }
-    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    /* ── Card shell ── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; margin-bottom: 12px; }
+    .card-hd { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--head-bg); }
+    .card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); }
+    .kiavi-link { font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none; opacity: .8; }
+    .kiavi-link:hover { opacity: 1; text-decoration: underline; }
 
-    /* ── Fields ── */
-    .field { margin-bottom: 11px; position: relative; }
-    .field-calc { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
-    .field:last-child { margin-bottom: 0; }
-    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
-    .field input, .field textarea {
-      width: 100%; padding: 8px 11px; border: 1px solid var(--border);
-      border-radius: 7px; font-size: 14px; color: var(--text); outline: none;
-      transition: border-color 0.15s; background: #fff; font-family: inherit;
-    }
-    .field input:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29,78,216,.08); }
-    .field input.display { background: var(--display-bg); color: var(--muted); cursor: default; font-weight: 500; }
-    .field input.total-field { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; font-weight: 700; cursor: default; }
-    .field textarea { resize: vertical; min-height: 72px; font-size: 12px; font-family: 'SF Mono', Monaco, monospace; color: var(--muted); background: var(--display-bg); }
+    /* ── Deal inputs (4-cell bar) ── */
+    .deal-grid { display: grid; grid-template-columns: 1fr 1fr 72px 1fr; }
+    .deal-cell { padding: 11px 14px; border-right: 1px solid var(--border); }
+    .deal-cell:last-child { border-right: none; }
+    .dc-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-bottom: 4px; }
+    .deal-cell input { border: none; outline: none; font-size: 15px; font-weight: 700; color: var(--text); background: transparent; width: 100%; font-family: inherit; }
+    .deal-cell input:focus { color: var(--accent); }
+    .deal-cell input::placeholder { color: #cbd5e1; font-weight: 400; font-size: 14px; }
 
-    /* ── Grids ── */
-    .g2  { display: grid; grid-template-columns: 1fr 1fr;     gap: 14px; }
-    .g3  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-    .g4  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
-    .col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
-    .col3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; }
+    /* ── Parameters bar ── */
+    .params-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; }
+    .param-cell { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-right: 1px solid var(--border); }
+    .param-cell:last-child { border-right: none; }
+    .pc-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); white-space: nowrap; flex: 1; }
+    .param-cell input { border: none; outline: none; font-size: 13px; font-weight: 700; color: var(--text); background: transparent; width: 60px; text-align: right; font-family: inherit; }
+    .param-cell input:focus { color: var(--accent); }
+    .param-sym { font-size: 11px; color: var(--muted); }
+
+    /* ── 3-col costs layout ── */
+    .costs-layout { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: start; }
+    .costs-layout .card { margin-bottom: 0; }
+
+    /* ── Table rows ── */
+    .trow { display: flex; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border); min-height: 33px; }
+    .trow:last-of-type { border-bottom: none; }
+    .tr-lbl { flex: 1; font-size: 11px; color: var(--muted); font-weight: 500; }
+
+    /* editable $ cell */
+    .ci { border: none; background: transparent; text-align: right; font-size: 13px; font-weight: 500; color: var(--text); width: 100px; outline: none; font-family: inherit; }
+    .ci:focus { color: var(--accent); background: var(--accent-bg); border-radius: 4px; padding: 0 4px; width: 108px; }
+    .ci.ro { color: var(--muted); cursor: default; }
+    .ci.ro:focus { background: transparent; color: var(--muted); border-radius: 0; padding: 0; width: 100px; }
+
+    /* % input + computed value */
+    .pct-wrap { display: flex; align-items: center; gap: 4px; }
+    .pct-in { border: none; background: transparent; text-align: right; font-size: 13px; font-weight: 500; color: var(--text); width: 38px; outline: none; font-family: inherit; }
+    .pct-in:focus { color: var(--accent); }
+    .pct-sym { font-size: 11px; color: var(--muted); }
+    .pct-amt { font-size: 11px; color: var(--muted); min-width: 62px; text-align: right; }
+
+    /* total row */
+    .trow.total { background: var(--accent-bg); border-top: 1px solid var(--accent-border); border-bottom: none; }
+    .trow.total .tr-lbl { color: var(--accent); font-weight: 700; }
+    .trow.total .ci { color: var(--accent); font-weight: 700; font-size: 14px; }
+
+    /* ── Sale closing bar ── */
+    .sale-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; }
+    .sc { padding: 10px 14px; border-right: 1px solid var(--border); }
+    .sc:last-child { border-right: none; background: var(--accent-bg); }
+    .sc-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-bottom: 4px; }
+    .sc:last-child .sc-lbl { color: var(--accent); }
+    .sc input { border: none; outline: none; font-size: 14px; font-weight: 600; color: var(--text); background: transparent; width: 100%; font-family: inherit; }
+    .sc input:focus { color: var(--accent); }
+    .sc input.ro { color: var(--muted); cursor: default; }
+    .sc:last-child input { color: var(--accent); font-weight: 700; }
+    .sc-hint { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Responsive ── */
     @media (max-width: 720px) {
-      .g2,.g3,.g4,.col2,.col3 { grid-template-columns: 1fr; }
-      .banner-grid { grid-template-columns: 1fr; }
-      .banner-divider { display: none; }
-      .b-value { font-size: 26px; }
+      .deal-grid, .params-grid, .sale-grid { grid-template-columns: 1fr 1fr; }
+      .costs-layout { grid-template-columns: 1fr; }
+      .deal-cell, .param-cell, .sc { border-right: none; border-bottom: 1px solid var(--border); }
+      .banner { grid-template-columns: 1fr; }
+      .banner-div { display: none; }
+      .b-val { font-size: 24px; }
     }
-
-    /* ── Section divider ── */
-    .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 22px 0 10px; }
 
     footer { text-align: center; padding: 20px; font-size: 11px; color: var(--muted); }
   </style>
@@ -84,243 +121,217 @@
 <body>
 
 <header>
-  <div>
-    <div class="logo">Buying Hero</div>
-    <div class="sub">Real Estate Investment Calculator — Live deal analysis</div>
-  </div>
+  <div class="brand">Buying Hero</div>
+  <div class="brand-sub">Deal Analyzer</div>
 </header>
 
 <div class="wrap">
 
-  <!-- ── Results Banner ── -->
+  <!-- Banner -->
   <div class="banner" id="banner">
-    <div class="banner-grid">
-      <div>
-        <div class="b-label">Assignment Contract MAO</div>
-        <div class="b-value" id="bMAO">—</div>
-        <div class="b-formula" id="bFormula">Enter ARV, rehab, and target profit to calculate</div>
-      </div>
-      <div class="banner-divider"></div>
-      <div>
-        <div class="b-label">Net Profit (Hard Money)</div>
-        <div class="b-value" id="bProfit">—</div>
-        <div><span class="badge" id="bBadge">Enter deal info</span></div>
-      </div>
+    <div>
+      <div class="b-lbl">Assignment Contract MAO</div>
+      <div class="b-val" id="bMAO">—</div>
+      <div class="b-sub" id="bFormula">Enter ARV, rehab, and target profit to calculate</div>
+    </div>
+    <div class="banner-div"></div>
+    <div>
+      <div class="b-lbl">Net Profit — Hard Money</div>
+      <div class="b-val" id="bProfit">—</div>
+      <span class="badge" id="bBadge">Enter deal info</span>
     </div>
   </div>
 
-  <!-- ── Property + ARV ── -->
-  <div class="section-label">Property Information</div>
+  <!-- Deal Inputs -->
   <div class="card">
-    <div class="field">
-      <label>Property Address</label>
-      <input type="text" id="address" placeholder="9590 NW 33rd Ave, Miami, FL 33147">
+    <div class="card-hd">
+      <span class="card-title">Deal Inputs</span>
+      <a href="https://www.kiavi.com/arv-estimator" target="_blank" class="kiavi-link">Kiavi ARV Estimator ↗</a>
     </div>
-    <div class="g3">
-      <div class="field">
-        <label>Purchase Price ($)</label>
+    <div class="deal-grid">
+      <div class="deal-cell">
+        <div class="dc-lbl">Purchase Price</div>
         <input type="text" id="pp" placeholder="$0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
-      <div class="field">
-        <label>Rehab Estimate ($)</label>
+      <div class="deal-cell">
+        <div class="dc-lbl">Rehab Estimate</div>
         <input type="text" id="rehab" placeholder="$0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
-      <div class="field">
-        <label>Hold Months</label>
-        <input type="number" id="hold" value="5" min="1" oninput="calc()">
+      <div class="deal-cell">
+        <div class="dc-lbl">Hold Mo.</div>
+        <input type="number" id="hold" value="5" min="1" oninput="calc()" style="font-size:15px;font-weight:700;">
       </div>
-    </div>
-    <div class="g2">
-      <div class="field">
-        <label>ARV — Your Selling Price Estimate ($)</label>
+      <div class="deal-cell">
+        <div class="dc-lbl">ARV — After Repair Value</div>
         <input type="text" id="arv" placeholder="$0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
-      <div class="field">
-        <label>Kiavi ARV — Bot Reference ($)</label>
-        <input type="text" id="kiaviArv" placeholder="Paste from bot">
-      </div>
-    </div>
-    <div class="field">
-      <label>Kiavi Comps — Bot Reference</label>
-      <textarea id="kiaviComps" placeholder="Paste comps from bot here...&#10;e.g. 1. $560,000 | $364/sqft | 4bd/3ba | 1,539 sqft | 11/24/2025 | 0.76 mi"></textarea>
     </div>
   </div>
 
-  <!-- ── Target + HML + Purchase Costs ── -->
-  <div class="section-label">Offer & Financing</div>
-  <div class="col3">
-
-    <!-- Target -->
-    <div class="card">
-      <div class="card-title">Assignment Target</div>
-      <div class="field">
-        <label>Target Assignment Profit ($)</label>
+  <!-- Parameters -->
+  <div class="card">
+    <div class="card-hd"><span class="card-title">Parameters</span></div>
+    <div class="params-grid">
+      <div class="param-cell">
+        <span class="pc-lbl">Assignment Target</span>
         <input type="text" id="target" value="25000" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
-    </div>
-
-    <!-- Hard Money -->
-    <div class="card">
-      <div class="card-title">Hard Money Terms</div>
-      <div class="field">
-        <label>Origination Points (%)</label>
+      <div class="param-cell">
+        <span class="pc-lbl">Orig Points</span>
         <input type="number" id="origPts" value="1.75" step="0.01" oninput="calc()">
+        <span class="param-sym">%</span>
       </div>
-      <div class="field">
-        <label>APR (%)</label>
+      <div class="param-cell">
+        <span class="pc-lbl">APR</span>
         <input type="number" id="apr" value="11.24" step="0.01" oninput="calc()">
+        <span class="param-sym">%</span>
       </div>
-      <div class="field">
-        <label>Down Payment Required (%)</label>
+      <div class="param-cell">
+        <span class="pc-lbl">Down Payment</span>
         <input type="number" id="downPct" value="10" step="0.1" oninput="calc()">
+        <span class="param-sym">%</span>
       </div>
     </div>
-
-    <!-- Placeholder for layout balance -->
-    <div></div>
-
   </div>
 
-  <!-- ── Costs Sections ── -->
-  <div class="section-label">Cost Breakdown</div>
-  <div class="col2">
+  <!-- Cost Breakdown — 3 columns -->
+  <div class="costs-layout">
 
-    <!-- Purchase Closing Costs -->
+    <!-- Purchase Closing -->
     <div class="card">
-      <div class="card-title">Purchase Closing Costs</div>
-      <div class="g2">
-        <div class="field">
-          <label>Title Fees ($)</label>
-          <input type="text" id="titleFees" value="1400" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-        </div>
-        <div class="field">
-          <label>Title Insurance (% of PP)</label>
-          <input type="number" id="titleInsPct" value="0.55" step="0.01" oninput="calc()">
-          <span class="field-calc" id="titleInsAmt"></span>
-        </div>
-        <div class="field">
-          <label>Gov Recording (% of PP)</label>
-          <input type="number" id="govRecPct" value="0.65" step="0.01" oninput="calc()">
-          <span class="field-calc" id="govRecAmt"></span>
-        </div>
-        <div class="field">
-          <label>Home Inspection ($)</label>
-          <input type="text" id="homeInsp" value="275" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-        </div>
-        <div class="field">
-          <label>Mobile Notary ($)</label>
-          <input type="text" id="notary" value="250" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-        </div>
-        <div class="field">
-          <label>Survey ($)</label>
-          <input type="text" id="survey" value="545" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-        </div>
-        <div class="field">
-          <label>Transaction Coord ($)</label>
-          <input type="text" id="transCoord" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-        </div>
-        <div class="field">
-          <label>Other Costs ($)</label>
-          <input type="text" id="otherPurch" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      <div class="card-hd"><span class="card-title">Purchase Closing Costs</span></div>
+      <div class="trow">
+        <span class="tr-lbl">Title Fees</span>
+        <input type="text" id="titleFees" value="1400" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Title Insurance</span>
+        <div class="pct-wrap">
+          <input type="number" id="titleInsPct" value="0.55" step="0.01" class="pct-in" oninput="calc()">
+          <span class="pct-sym">%</span>
+          <span class="pct-amt" id="titleInsAmt"></span>
         </div>
       </div>
-      <div class="field" style="margin-top:10px">
-        <label>Total Purchase Closing Costs</label>
-        <input type="text" id="totalPurch" class="total-field" readonly>
+      <div class="trow">
+        <span class="tr-lbl">Gov Recording</span>
+        <div class="pct-wrap">
+          <input type="number" id="govRecPct" value="0.65" step="0.01" class="pct-in" oninput="calc()">
+          <span class="pct-sym">%</span>
+          <span class="pct-amt" id="govRecAmt"></span>
+        </div>
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Home Inspection</span>
+        <input type="text" id="homeInsp" value="275" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Mobile Notary</span>
+        <input type="text" id="notary" value="250" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Survey</span>
+        <input type="text" id="survey" value="545" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Transaction Coord</span>
+        <input type="text" id="transCoord" value="0" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Other</span>
+        <input type="text" id="otherPurch" value="0" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow total">
+        <span class="tr-lbl">Total</span>
+        <input type="text" id="totalPurch" class="ci ro" readonly>
       </div>
     </div>
 
-    <!-- Right column: HML + Holding -->
-    <div>
-
-      <!-- Hard Money Lending -->
-      <div class="card">
-        <div class="card-title">Hard Money Lending Costs</div>
-        <div class="field">
-          <label>HML Loan Amount</label>
-          <input type="text" id="hmlLoan" class="display" readonly>
-        </div>
-        <div class="g2">
-          <div class="field">
-            <label>Interest Cost</label>
-            <input type="text" id="hmlInt" class="display" readonly>
-          </div>
-          <div class="field">
-            <label>Origination Fee</label>
-            <input type="text" id="hmlOrig" class="display" readonly>
-          </div>
-          <div class="field">
-            <label>Appraisal Cost ($)</label>
-            <input type="text" id="appraisal" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-          </div>
-          <div class="field">
-            <label>Other Fees ($)</label>
-            <input type="text" id="otherLend" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-          </div>
-        </div>
-        <div class="field" style="margin-top:4px">
-          <label>Total Lending Costs</label>
-          <input type="text" id="totalLend" class="total-field" readonly>
-        </div>
+    <!-- HML Costs -->
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Hard Money Lending</span></div>
+      <div class="trow">
+        <span class="tr-lbl">Loan Amount</span>
+        <input type="text" id="hmlLoan" class="ci ro" readonly>
       </div>
-
-      <!-- Holding Costs -->
-      <div class="card">
-        <div class="card-title">Holding Costs</div>
-        <div class="g2">
-          <div class="field">
-            <label>Utilities / month ($)</label>
-            <input type="text" id="utilities" value="100" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-          </div>
-          <div class="field">
-            <label>Builders Insurance / month ($)</label>
-            <input type="text" id="bldgIns" value="500" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-          </div>
-          <div class="field">
-            <label>Property Tax (auto)</label>
-            <input type="text" id="propTax" class="display" readonly>
-          </div>
-          <div class="field">
-            <label>HOA / month ($)</label>
-            <input type="text" id="hoa" value="0" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
-          </div>
-        </div>
-        <div class="field" style="margin-top:4px">
-          <label>Total Holding Costs</label>
-          <input type="text" id="totalHold" class="total-field" readonly>
-        </div>
+      <div class="trow">
+        <span class="tr-lbl">Interest Cost</span>
+        <input type="text" id="hmlInt" class="ci ro" readonly>
       </div>
-
+      <div class="trow">
+        <span class="tr-lbl">Origination Fee</span>
+        <input type="text" id="hmlOrig" class="ci ro" readonly>
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Appraisal</span>
+        <input type="text" id="appraisal" value="0" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Other Fees</span>
+        <input type="text" id="otherLend" value="0" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow total">
+        <span class="tr-lbl">Total</span>
+        <input type="text" id="totalLend" class="ci ro" readonly>
+      </div>
     </div>
+
+    <!-- Holding Costs -->
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Holding Costs</span></div>
+      <div class="trow">
+        <span class="tr-lbl">Utilities / month</span>
+        <input type="text" id="utilities" value="100" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Builder's Insurance / mo</span>
+        <input type="text" id="bldgIns" value="500" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">HOA / month</span>
+        <input type="text" id="hoa" value="0" class="ci dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
+      </div>
+      <div class="trow">
+        <span class="tr-lbl">Property Tax (auto)</span>
+        <input type="text" id="propTax" class="ci ro" readonly>
+      </div>
+      <div class="trow total">
+        <span class="tr-lbl">Total</span>
+        <input type="text" id="totalHold" class="ci ro" readonly>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Sale Closing Costs -->
+  <!-- Sale Closing -->
   <div class="card">
-    <div class="card-title">Sale Closing Costs</div>
-    <div class="g4">
-      <div class="field">
-        <label>Buyers Agent (%)</label>
+    <div class="card-hd"><span class="card-title">Sale Closing Costs</span></div>
+    <div class="sale-grid">
+      <div class="sc">
+        <div class="sc-lbl">Buyers Agent</div>
         <input type="number" id="buyersAgt" value="3" step="0.1" oninput="calc()">
+        <div class="sc-hint">% of ARV</div>
       </div>
-      <div class="field">
-        <label>Sellers Agent (%)</label>
+      <div class="sc">
+        <div class="sc-lbl">Sellers Agent</div>
         <input type="number" id="sellersAgt" value="3" step="0.1" oninput="calc()">
+        <div class="sc-hint">% of ARV</div>
       </div>
-      <div class="field">
-        <label>Doc Stamps (0.70% of ARV)</label>
-        <input type="text" id="docStamps" class="display" readonly>
+      <div class="sc">
+        <div class="sc-lbl">Doc Stamps (0.70%)</div>
+        <input type="text" id="docStamps" class="ro" readonly>
       </div>
-      <div class="field">
-        <label>Title Fee ($)</label>
+      <div class="sc">
+        <div class="sc-lbl">Title Fee</div>
         <input type="text" id="saleTitleFee" value="400" class="dollar-input" onfocus="dollarFocus(this)" onblur="dollarBlur(this)" oninput="calc()">
       </div>
-      <div class="field">
-        <label>Title Insurance (% of ARV)</label>
+      <div class="sc">
+        <div class="sc-lbl">Title Insurance</div>
         <input type="number" id="saleTitleIns" value="0.38" step="0.01" oninput="calc()">
+        <div class="sc-hint">% of ARV</div>
       </div>
-      <div class="field">
-        <label>Total Sale Closing Costs</label>
-        <input type="text" id="totalSale" class="total-field" readonly>
+      <div class="sc">
+        <div class="sc-lbl">Total Sale Closing</div>
+        <input type="text" id="totalSale" readonly>
       </div>
     </div>
   </div>
@@ -342,7 +353,6 @@
 
   function set(id, v) { $(id).value = fmt(v); }
 
-  // Dollar input formatting: strip on focus, format on blur
   function dollarFocus(el) {
     const raw = parseFloat(el.value.replace(/[$,]/g, ''));
     el.value = (isNaN(raw) || raw === 0) ? '' : String(raw);
@@ -354,7 +364,6 @@
     calc();
   }
 
-  // Format all pre-filled dollar inputs on load
   function initDollarInputs() {
     document.querySelectorAll('.dollar-input').forEach(el => {
       const raw = parseFloat(el.value.replace(/[$,]/g, ''));
@@ -363,18 +372,17 @@
   }
 
   function calc() {
-    const pp       = n('pp');
-    const rehab    = n('rehab');
-    const arv      = n('arv');
-    const hold     = n('hold') || 5;
-    const target   = n('target');
+    const pp     = n('pp');
+    const rehab  = n('rehab');
+    const arv    = n('arv');
+    const hold   = n('hold') || 5;
+    const target = n('target');
 
-    // Hard Money
-    const origPts  = n('origPts')  / 100;
-    const apr      = n('apr')      / 100;
-    const downPct  = n('downPct')  / 100;
+    const origPts = n('origPts') / 100;
+    const apr     = n('apr')     / 100;
+    const downPct = n('downPct') / 100;
 
-    // ── Purchase Closing Costs ──
+    // ── Purchase Closing ──
     const purchClose =
         n('titleFees')
       + pp * (n('titleInsPct') / 100)
@@ -385,17 +393,17 @@
       + n('transCoord')
       + n('otherPurch');
     set('totalPurch', purchClose);
-    document.getElementById('titleInsAmt').textContent = '= ' + fmt(pp * (n('titleInsPct') / 100));
-    document.getElementById('govRecAmt').textContent   = '= ' + fmt(pp * (n('govRecPct')   / 100));
+    $('titleInsAmt').textContent = fmt(pp * (n('titleInsPct') / 100));
+    $('govRecAmt').textContent   = fmt(pp * (n('govRecPct')   / 100));
 
     // ── HML ──
-    const hmlLoan = pp * (1 - downPct) + rehab;
-    const hmlInt  = hmlLoan * (apr / 12) * hold;
-    const hmlOrig = hmlLoan * origPts;
+    const hmlLoan   = pp * (1 - downPct) + rehab;
+    const hmlInt    = hmlLoan * (apr / 12) * hold;
+    const hmlOrig   = hmlLoan * origPts;
     const totalLend = hmlInt + hmlOrig + n('appraisal') + n('otherLend');
-    set('hmlLoan', hmlLoan);
-    set('hmlInt',  hmlInt);
-    set('hmlOrig', hmlOrig);
+    set('hmlLoan',   hmlLoan);
+    set('hmlInt',    hmlInt);
+    set('hmlOrig',   hmlOrig);
     set('totalLend', totalLend);
 
     // ── Holding ──
@@ -410,46 +418,31 @@
     set('totalSale', saleClose);
 
     // ── Net Profit ──
-    const totalAcq  = pp + rehab + purchClose;
-    const totalAllIn = totalAcq + totalLend;
-    const netSale   = arv - saleClose;
-    const netProfit = netSale - totalAllIn - totalHold;
+    const netProfit = (arv - saleClose) - (pp + rehab + purchClose + totalLend) - totalHold;
 
     // ── MAO ──
     const mao = arv * 0.78 - rehab - target;
 
     // ── Banner ──
-    const banner  = $('banner');
-    const bMAO    = $('bMAO');
-    const bFormula= $('bFormula');
-    const bProfit = $('bProfit');
-    const bBadge  = $('bBadge');
-
+    const banner = $('banner');
     banner.className = 'banner';
 
     if (arv > 0) {
-      bMAO.textContent     = fmt(mao);
-      bFormula.textContent = `(78% × ${fmt(arv)}) − ${fmt(rehab)} repairs − ${fmt(target)} target`;
+      $('bMAO').textContent     = fmt(mao);
+      $('bFormula').textContent = `(78% × ${fmt(arv)}) − ${fmt(rehab)} repairs − ${fmt(target)} target`;
     } else {
-      bMAO.textContent     = '—';
-      bFormula.textContent = 'Enter ARV, rehab, and target profit to calculate';
+      $('bMAO').textContent     = '—';
+      $('bFormula').textContent = 'Enter ARV, rehab, and target profit to calculate';
     }
 
     if (arv > 0 && pp > 0) {
-      bProfit.textContent = fmt(netProfit);
-      if (netProfit >= 25000) {
-        banner.classList.add('go');
-        bBadge.textContent = '✅  GO';
-      } else if (netProfit >= 12000) {
-        banner.classList.add('marginal');
-        bBadge.textContent = '⚠️  MARGINAL';
-      } else {
-        banner.classList.add('nogo');
-        bBadge.textContent = '❌  NO GO';
-      }
+      $('bProfit').textContent = fmt(netProfit);
+      if      (netProfit >= 25000) { banner.classList.add('go');       $('bBadge').textContent = '✅  GO'; }
+      else if (netProfit >= 12000) { banner.classList.add('marginal'); $('bBadge').textContent = '⚠️  MARGINAL'; }
+      else                         { banner.classList.add('nogo');     $('bBadge').textContent = '❌  NO GO'; }
     } else {
-      bProfit.textContent = '—';
-      bBadge.textContent  = 'Enter deal info';
+      $('bProfit').textContent = '—';
+      $('bBadge').textContent  = 'Enter deal info';
     }
   }
 
