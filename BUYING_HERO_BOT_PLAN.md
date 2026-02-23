@@ -140,9 +140,9 @@ VERDICT: ✅ GO / ⚠️ MARGINAL / ❌ NO GO
 - [x] Commit to GitHub
 
 ### Phase 5 — RentCast API Integration
-- [ ] Create RentCast account
-- [ ] Get RentCast API key
-- [ ] Build comp-pulling logic (0.5–1 mile radius, same bed/bath, last 6 months)
+- [x] Create RentCast account
+- [x] Get RentCast API key
+- [x] Build comp-pulling logic (0.5–1 mile radius, same bed/bath, last 6 months)
 - [ ] Test comp results against known South Florida deals
 - [ ] Commit to GitHub
 
