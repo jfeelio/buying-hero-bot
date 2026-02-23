@@ -13,7 +13,7 @@ WhatsApp is linked to one setup at a time.
 **Docs:** server/README.md
 
 ### Activate Server Setup
-1. SSH in: `ssh root@138.197.20.145`
+1. SSH in: `ssh root@YOUR_DROPLET_IP`
 2. Re-link WhatsApp if needed: `openclaw channels login --channel whatsapp`
 3. Verify: `openclaw gateway health`
 
