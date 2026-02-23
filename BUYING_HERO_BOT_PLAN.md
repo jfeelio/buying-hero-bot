@@ -119,12 +119,12 @@ VERDICT: ✅ GO / ⚠️ MARGINAL / ❌ NO GO
 - [x] Initialize local project folder and push first commit
 
 ### Phase 2 — DigitalOcean Droplet
-- [ ] Create DigitalOcean account
-- [ ] Spin up Basic Droplet — Ubuntu 22.04, $6/mo, NY or Atlanta region, name: `buying-hero-bot`
-- [ ] Note Droplet IP address
-- [ ] SSH into Droplet
-- [ ] Install system dependencies (Node.js, Python, Git)
-- [ ] Clone `buying-hero-bot` repo onto server
+- [x] Create DigitalOcean account
+- [x] Spin up Basic Droplet — Ubuntu 22.04, $6/mo, NY or Atlanta region, name: `buying-hero-bot`
+- [x] Note Droplet IP address
+- [x] SSH into Droplet
+- [x] Install system dependencies (Node.js, Python, Git)
+- [x] Clone `buying-hero-bot` repo onto server
 
 ### Phase 3 — OpenClaw Installation & WhatsApp Setup
 - [ ] Install OpenClaw via CLI installer on Droplet
