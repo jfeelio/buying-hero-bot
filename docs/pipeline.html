@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buying Hero — Pipeline Status</title>
+  <style>
+    :root {
+      --bg:        #0c1222;
+      --surface:   #131d30;
+      --surface2:  #1a2540;
+      --border:    #2a3a58;
+      --text:      #e2e8f0;
+      --muted:     #7a90b0;
+      --green:     #22c55e;
+      --green-dim: #166534;
+      --red:       #ef4444;
+      --red-dim:   #7f1d1d;
+      --amber:     #f59e0b;
+      --amber-dim: #78350f;
+      --blue:      #3b82f6;
+      --blue-dim:  #1e3a5f;
+      --accent:    #60a5fa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .logo h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .logo span {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .refresh-info {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .btn-settings {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-settings:hover { background: var(--border); }
+
+    /* ── Main ── */
+    main {
+      padding: 28px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── Pipeline Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--accent); }
+
+    .card-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pipeline-name {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+    }
+    .pipeline-icon {
+      font-size: 20px;
+    }
+
+    .card-body {
+      padding: 18px 20px;
+    }
+
+    /* Status badge */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-badge.success {
+      background: var(--green-dim);
+      color: var(--green);
+    }
+    .status-badge.failure {
+      background: var(--red-dim);
+      color: var(--red);
+    }
+    .status-badge.unknown {
+      background: var(--surface2);
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Stat rows */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-row:last-of-type { border-bottom: none; }
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .stat-value {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .stat-value.big {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-value.zero {
+      color: var(--muted);
+    }
+
+    .records-section {
+      text-align: center;
+      padding: 14px 0 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .records-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+
+    /* Action buttons */
+    .card-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn {
+      flex: 1;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--border); }
+
+    /* Running state */
+    .btn-primary.running {
+      background: var(--amber);
+      color: #000;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+    .running-pulse { animation: pulse 1.2s infinite; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      width: 100%;
+      max-width: 440px;
+      margin: 20px;
+    }
+    .modal h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .modal p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    .modal label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .modal input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: monospace;
+      margin-bottom: 18px;
+      outline: none;
+    }
+    .modal input:focus { border-color: var(--accent); }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      max-width: 320px;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+      z-index: 200;
+    }
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    #toast.success { border-color: var(--green); color: var(--green); }
+    #toast.error   { border-color: var(--red);   color: var(--red); }
+
+    /* Staleness warning */
+    .stale-warning {
+      background: var(--amber-dim);
+      border: 1px solid var(--amber);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--amber);
+      margin-top: 10px;
+      display: none;
+    }
+    .stale-warning.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏠</div>
+    <div>
+      <h1>Buying Hero</h1>
+      <span>Pipeline Status Dashboard</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="refresh-info" id="refresh-info">Refreshing…</span>
+    <button class="btn-settings" onclick="openSettings()">⚙ Settings</button>
+  </div>
+</header>
+
+<!-- Main -->
+<main>
+  <div class="pipeline-grid" id="pipeline-grid">
+    <!-- Cards rendered by JS -->
+  </div>
+</main>
+
+<!-- Footer -->
+<footer>
+  Status data from
+  <a href="https://github.com/jfeelio/buying-hero-bot/actions" target="_blank">GitHub Actions</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/jfeelio/buying-hero-bot" target="_blank">Repository</a>
+  &nbsp;·&nbsp;
+  <span id="last-fetched">—</span>
+</footer>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <h2>⚙ Settings</h2>
+    <p>
+      Enter a GitHub Personal Access Token with <strong>workflow</strong> scope to
+      enable manual triggers from this dashboard.
+      <br><br>
+      Create one at <strong>GitHub → Settings → Developer Settings → Personal access tokens</strong>.
+    </p>
+    <label>GitHub PAT</label>
+    <input type="password" id="pat-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePat()">Save Token</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────────────────
+  const REPO   = 'jfeelio/buying-hero-bot';
+  const BRANCH = 'master';
+  const STATUS_URL = './data/pipeline_status.json';
+  const REFRESH_INTERVAL = 60 * 1000; // 60 seconds
+
+  const PIPELINES = [
+    {
+      key:      'foreclosures',
+      label:    'Foreclosures',
+      icon:     '🏚',
+      workflow: 'run_foreclosures.yml',
+      desc:     'Miami-Dade foreclosure auctions via RealForeclose.com',
+    },
+    {
+      key:      'probate',
+      label:    'Probate',
+      icon:     '⚖',
+      workflow: 'run_probate.yml',
+      desc:     'Formal Administration filings from Miami-Dade OCS',
+    },
+    {
+      key:      'tax_deed',
+      label:    'Tax Auctions',
+      icon:     '🏛',
+      workflow: 'run_tax_deed.yml',
+      desc:     'Tax deed auction listings via RealForeclose.com',
+    },
+  ];
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let statusData     = {};
+  let runningPipeline = null;
+  let refreshTimer   = null;
+  let countdown      = REFRESH_INTERVAL / 1000;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function getPat() {
+    return localStorage.getItem('gh_pat') || '';
+  }
+
+  function timeAgo(isoStr) {
+    if (!isoStr) return 'never';
+    const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+    if (diff < 60)        return `${diff}s ago`;
+    if (diff < 3600)      return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400)     return `${Math.floor(diff/3600)}h ago`;
+    return `${Math.floor(diff/86400)}d ago`;
+  }
+
+  function formatDate(isoStr) {
+    if (!isoStr) return '—';
+    return new Date(isoStr).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true,
+      timeZone: 'America/New_York'
+    }) + ' ET';
+  }
+
+  function isStale(isoStr) {
+    if (!isoStr) return true;
+    const hours = (Date.now() - new Date(isoStr)) / 3600000;
+    return hours > 48;
+  }
+
+  function showToast(msg, type = 'info') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className   = `show ${type}`;
+    setTimeout(() => { el.className = ''; }, 4000);
+  }
+
+  // ── Fetch status ─────────────────────────────────────────────────────────
+  async function fetchStatus() {
+    try {
+      const res  = await fetch(STATUS_URL + '?t=' + Date.now());
+      statusData = await res.json();
+      document.getElementById('last-fetched').textContent =
+        'Last fetched: ' + new Date().toLocaleTimeString('en-US', { hour12: true });
+      renderCards();
+    } catch (e) {
+      document.getElementById('last-fetched').textContent = 'Failed to load status.json';
+      console.error('Status fetch error:', e);
+    }
+  }
+
+  // ── Render cards ─────────────────────────────────────────────────────────
+  function renderCards() {
+    const grid = document.getElementById('pipeline-grid');
+    grid.innerHTML = PIPELINES.map(p => {
+      const d       = statusData[p.key] || {};
+      const status  = d.status || 'unknown';
+      const rows    = d.records_added ?? '—';
+      const runUrl  = d.run_url  || `https://github.com/${REPO}/actions`;
+      const stale   = isStale(d.last_run);
+
+      const badgeClass = status === 'success' ? 'success' : status === 'failure' ? 'failure' : 'unknown';
+      const badgeText  = status === 'success' ? '✓ Success' : status === 'failure' ? '✗ Failed' : '? Unknown';
+
+      const isRunning = runningPipeline === p.key;
+      const rowClass  = (rows === 0 || rows === '—') ? 'zero' : '';
+
+      return `
+        <div class="card" id="card-${p.key}">
+          <div class="card-header">
+            <div class="pipeline-name">${p.label}</div>
+            <div class="pipeline-icon">${p.icon}</div>
+          </div>
+          <div class="card-body">
+            <div class="status-row">
+              <span class="status-badge ${badgeClass}">
+                <span class="status-dot"></span>
+                ${badgeText}
+              </span>
+            </div>
+
+            <div class="records-section">
+              <div class="records-label">Records Added (last run)</div>
+              <div class="stat-value big ${rowClass}">${rows === '—' ? '—' : rows}</div>
+            </div>
+
+            <div class="stat-row">
+              <span class="stat-label">Last run</span>
+              <span class="stat-value">${timeAgo(d.last_run)}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Date &amp; time</span>
+              <span class="stat-value">${formatDate(d.last_run)}</span>
+            </div>
+
+            <div class="stale-warning ${stale ? 'visible' : ''}">
+              ⚠ Last run was more than 48 hours ago
+            </div>
+
+            <div class="card-actions">
+              <button
+                class="btn btn-primary ${isRunning ? 'running' : ''}"
+                id="btn-run-${p.key}"
+                onclick="triggerRun('${p.key}', '${p.workflow}')"
+                ${isRunning ? 'disabled' : ''}
+              >
+                ${isRunning
+                  ? '<span class="running-pulse">⏳</span> Running…'
+                  : '▶ Run Now'}
+              </button>
+              <a
+                class="btn btn-ghost"
+                href="${runUrl}"
+                target="_blank"
+              >
+                📋 Logs
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Trigger run ──────────────────────────────────────────────────────────
+  async function triggerRun(pipelineKey, workflow) {
+    const pat = getPat();
+    if (!pat) {
+      openSettings();
+      showToast('Please save your GitHub PAT first, then try again.', 'error');
+      return;
+    }
+
+    runningPipeline = pipelineKey;
+    renderCards();
+
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${REPO}/actions/workflows/${workflow}/dispatches`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `token ${pat}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ref: BRANCH }),
+        }
+      );
+
+      if (res.status === 204) {
+        showToast(`✓ ${pipelineKey} pipeline triggered. Check back in ~10–20 minutes.`, 'success');
+        // Poll for update after 90s
+        setTimeout(() => {
+          fetchStatus();
+          runningPipeline = null;
+          renderCards();
+        }, 90000);
+      } else if (res.status === 401) {
+        showToast('PAT invalid or expired. Update it in Settings.', 'error');
+        runningPipeline = null;
+        renderCards();
+      } else if (res.status === 403) {
+        showToast('PAT missing "workflow" scope. Generate a new one with that permission.', 'error');
+        runningPipeline = null;
+        renderCards();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        showToast(`Error ${res.status}: ${body.message || 'Unknown error'}`, 'error');
+        runningPipeline = null;
+        renderCards();
+      }
+    } catch (err) {
+      showToast('Network error. Check your connection.', 'error');
+      runningPipeline = null;
+      renderCards();
+    }
+  }
+
+  // ── Settings modal ────────────────────────────────────────────────────────
+  function openSettings() {
+    document.getElementById('pat-input').value = getPat();
+    document.getElementById('settings-modal').classList.add('open');
+  }
+  function closeSettings() {
+    document.getElementById('settings-modal').classList.remove('open');
+  }
+  function savePat() {
+    const val = document.getElementById('pat-input').value.trim();
+    if (val) {
+      localStorage.setItem('gh_pat', val);
+      showToast('Token saved.', 'success');
+    } else {
+      localStorage.removeItem('gh_pat');
+      showToast('Token cleared.', 'info');
+    }
+    closeSettings();
+  }
+
+  // Close modal on overlay click
+  document.getElementById('settings-modal')
+    .addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeSettings();
+    });
+
+  // ── Auto-refresh ──────────────────────────────────────────────────────────
+  function startRefreshTimer() {
+    countdown = REFRESH_INTERVAL / 1000;
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(() => {
+      countdown--;
+      document.getElementById('refresh-info').textContent =
+        `Refreshes in ${countdown}s`;
+      if (countdown <= 0) {
+        fetchStatus();
+        countdown = REFRESH_INTERVAL / 1000;
+      }
+    }, 1000);
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────────
+  fetchStatus();
+  startRefreshTimer();
+</script>
+</body>
+</html>

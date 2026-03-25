@@ -1,0 +1,104 @@
+name: Tax Auctions Pipeline
+
+on:
+  schedule:
+    - cron: '0 14 * * 1-5'   # 10 AM ET Mon–Fri (offset to avoid overlap)
+  workflow_dispatch:
+
+concurrency:
+  group: tax-deed-agent
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('foreclosure-agent/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: pip install -r foreclosure-agent/requirements.txt
+
+      - name: Install Playwright browser
+        run: python -m playwright install chromium --with-deps
+
+      - name: Write credentials & .env
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > foreclosure-agent/credentials.json
+          cat > foreclosure-agent/.env << 'ENVEOF'
+          GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDS_PATH=credentials.json
+          TAX_DEED_SHEET_TAB_NAME=${{ secrets.TAX_DEED_SHEET_TAB_NAME }}
+          TAX_DEED_WEEKS_AHEAD=${{ secrets.TAX_DEED_WEEKS_AHEAD }}
+          ENVEOF
+
+      - name: Run tax deed pipeline
+        id: pipeline
+        run: |
+          set +e
+          python main_tax_deed.py 2>&1 | tee /tmp/output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
+          ROWS=$(grep -oP 'Pipeline complete\. \K\d+(?= row)' /tmp/output.txt | tail -1)
+          ROWS=${ROWS:-0}
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          echo "rows_added=$ROWS"     >> "$GITHUB_OUTPUT"
+        working-directory: foreclosure-agent
+
+      - name: Update pipeline_status.json
+        if: always()
+        run: |
+          python - << 'EOF'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          p = Path('docs/data/pipeline_status.json')
+          p.parent.mkdir(parents=True, exist_ok=True)
+          data = json.loads(p.read_text()) if p.exists() else {}
+
+          run_id = os.environ['RUN_ID']
+          data['tax_deed'] = {
+              'last_run':      datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+              'status':        'success' if os.environ['EXIT_CODE'] == '0' else 'failure',
+              'records_added': int(os.environ.get('ROWS', 0) or 0),
+              'run_id':        run_id,
+              'run_url':       f'https://github.com/jfeelio/buying-hero-bot/actions/runs/{run_id}',
+          }
+          p.write_text(json.dumps(data, indent=2))
+          print(f"Status written: {data['tax_deed']['status']}, {data['tax_deed']['records_added']} rows")
+          EOF
+        env:
+          EXIT_CODE: ${{ steps.pipeline.outputs.exit_code }}
+          ROWS:      ${{ steps.pipeline.outputs.rows_added }}
+          RUN_ID:    ${{ github.run_id }}
+
+      - name: Commit & push results
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin master
+          git add docs/data/pipeline_status.json
+          git add -f foreclosure-agent/seen_tax_deed_cases.json 2>/dev/null || true
+          git diff --staged --quiet && echo "Nothing new to commit." && exit 0
+          git commit -m "chore: tax-deed $(date -u +%Y-%m-%d) — ${{ steps.pipeline.outputs.rows_added }} row(s) added"
+          git push

@@ -1,0 +1,8 @@
+.env
+credentials.json
+# seen_cases.json tracked in git for CI dedup persistence
+logs/
+__pycache__/
+*.pyc
+.venv/
+venv/

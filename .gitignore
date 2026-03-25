@@ -10,6 +10,10 @@
 .env
 *.env
 
+# Claude Code editor temp files
+*.tmp.*
+debug_screenshot.png
+
 # OS junk
 .DS_Store
 Thumbs.db
