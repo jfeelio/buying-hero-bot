@@ -56,7 +56,7 @@ jobs:
         id: pipeline
         run: |
           set +e
-          python main_probate.py 2>&1 | tee /tmp/output.txt
+          xvfb-run --auto-servernum python main_probate.py 2>&1 | tee /tmp/output.txt
           EXIT_CODE=${PIPESTATUS[0]}
           ROWS=$(grep -oP 'Probate pipeline complete\. \K\d+(?= row)' /tmp/output.txt | tail -1)
           ROWS=${ROWS:-0}
@@ -97,9 +97,9 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin master
           git add docs/data/pipeline_status.json
           git add -f foreclosure-agent/seen_probate_cases.json 2>/dev/null || true
           git diff --staged --quiet && echo "Nothing new to commit." && exit 0
+          git pull --rebase --autostash origin master
           git commit -m "chore: probate $(date -u +%Y-%m-%d) — ${{ steps.pipeline.outputs.rows_added }} row(s) added"
           git push
