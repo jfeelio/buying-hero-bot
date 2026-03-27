@@ -26,7 +26,7 @@ import config
 from scrapers.mdpa import get_property_by_owner_name
 from scrapers.probate import get_new_probate_cases
 from scrapers.zillow import launch_browser
-from sheets import append_rows, ensure_header_row
+from sheets import append_rows, ensure_header_row, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -92,6 +92,7 @@ def build_row(case: dict, mdpa: dict) -> list:
         mdpa.get("property_state", "FL"),
         mdpa.get("property_zip", ""),
         "",                                    # Value (blank)
+        case.get("case_number", ""),           # Case Number (dedup key)
     ]
 
 
@@ -119,10 +120,10 @@ def run():
         logger.error(f"Sheet header setup failed: {e}")
         sys.exit(1)
 
-    # Step 2: Load seen cases
+    # Step 2: Load seen cases (local JSON + sheet as fallback)
     logger.info("Step 2: Loading seen probate cases")
-    seen = load_seen()
-    logger.info(f"  Seen: {len(seen)} case(s)")
+    seen = load_seen() | get_existing_case_numbers(tab_name=tab, sheet_id=sheet_id)
+    logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
     with sync_playwright() as pw:
         browser, context, page = launch_browser(pw)

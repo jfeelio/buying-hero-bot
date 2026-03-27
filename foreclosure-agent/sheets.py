@@ -74,14 +74,20 @@ def ensure_header_row(tab_name: str = "", sheet_id: str = "", columns: list = No
             logger.info("Header row already present.")
 
 
-def get_existing_case_numbers() -> set:
-    # Case Number is column N (index 13 in SHEET_COLUMNS)
+def get_existing_case_numbers(tab_name: str = "", sheet_id: str = "", col: str = "N") -> set:
+    """Read case numbers already in the sheet to guard against duplicate writes.
+
+    col defaults to 'N' (14th column = index 13, standard SHEET_COLUMNS).
+    Pass col='R' for the Tax Deed tab which has 17 columns before Case Number.
+    """
+    sid = sheet_id or GOOGLE_SHEET_ID
     svc = _get_service()
     try:
+        range_str = _range(f"{col}2:{col}", tab_name)
         result = (
             svc.spreadsheets()
             .values()
-            .get(spreadsheetId=GOOGLE_SHEET_ID, range="N2:N")
+            .get(spreadsheetId=sid, range=range_str)
             .execute()
         )
         values = result.get("values", [])

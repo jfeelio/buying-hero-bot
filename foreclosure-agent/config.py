@@ -33,6 +33,7 @@ TAX_DEED_COLUMNS = [
     "Opening Bid",
     "Assessed Value",
     "Auction Date",
+    "Case Number",
 ]
 
 SHEET_COLUMNS = [
@@ -49,4 +50,5 @@ SHEET_COLUMNS = [
     "State",
     "Zip",
     "Value",
+    "Case Number",
 ]

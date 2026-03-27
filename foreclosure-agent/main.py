@@ -26,7 +26,7 @@ from dedup import filter_new_cases, load_seen_cases, save_seen_cases
 from scrapers.mdpa import get_owner_info
 from scrapers.realforeclose import get_all_auctions
 from scrapers.zillow import launch_browser
-from sheets import append_rows, ensure_header_row
+from sheets import append_rows, ensure_header_row, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -72,6 +72,7 @@ def build_row(listing: dict, owner: dict) -> list:
         listing.get("property_state", "FL"),       # State
         listing.get("property_zip", ""),           # Zip
         "",                                        # Value (reserved)
+        listing.get("case_number", ""),            # Case Number (dedup key)
     ]
 
 
@@ -92,10 +93,10 @@ def run():
         logger.error(f"Sheet header setup failed: {e}")
         sys.exit(1)
 
-    # Step 2: Load dedup state
+    # Step 2: Load dedup state (local JSON + sheet as fallback)
     logger.info("Step 2: Loading dedup state")
-    seen = load_seen_cases()
-    logger.info(f"  Seen: {len(seen)} case(s)")
+    seen = load_seen_cases() | get_existing_case_numbers()
+    logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
     with sync_playwright() as pw:
         browser, context, page = launch_browser(pw)

@@ -26,7 +26,7 @@ import config
 from scrapers.mdpa import get_owner_info_by_folio
 from scrapers.realforeclose import get_all_auctions
 from scrapers.zillow import launch_browser
-from sheets import append_rows
+from sheets import append_rows, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -94,6 +94,7 @@ def build_row(listing: dict, owner: dict) -> list:
         listing.get("property_state", "FL"),        # State
         listing.get("property_zip", ""),            # Zip
         listing.get("assessed_value", ""),          # Value (assessed value for tax deeds)
+        listing.get("case_number", ""),              # Case Number (dedup key)
     ]
 
 
@@ -106,10 +107,11 @@ def run():
     logger.info("Tax Deed Agent starting")
     logger.info("=" * 60)
 
-    # Step 1: Load dedup state
+    # Step 1: Load dedup state (local JSON + sheet as fallback)
     logger.info("Step 2: Loading dedup state")
-    seen = _load_seen()
-    logger.info(f"  Seen: {len(seen)} case(s)")
+    tab = config.TAX_DEED_SHEET_TAB_NAME
+    seen = _load_seen() | get_existing_case_numbers(tab_name=tab, col="R")
+    logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
     with sync_playwright() as pw:
         browser, context, page = launch_browser(pw)
