@@ -1,8 +1,8 @@
 name: Probate Pipeline
 
 on:
-  schedule:
-    - cron: '30 13 * * 1-5'  # 9:30 AM ET Mon–Fri (offset to avoid overlap)
+  # schedule:
+  #   - cron: '30 13 * * 1-5'  # 9:30 AM ET Mon–Fri (offset to avoid overlap)
   workflow_dispatch:
 
 concurrency:
