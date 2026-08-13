@@ -9,11 +9,20 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
 def _range(cell: str, tab_name: str = "") -> str:
-    """Prefix a cell/range with a tab name (explicit > config > none)."""
+    """Prefix a cell/range with a tab name (explicit > config).
+
+    Refuses to build an unqualified range. An unqualified range makes the
+    Sheets API target the spreadsheet's default first sheet (the Instructions
+    tab), which previously caused scraped rows to leak there. Failing loudly is
+    far safer than silently writing to the wrong tab.
+    """
     tab = tab_name or SHEET_TAB_NAME
-    if tab:
-        return f"'{tab}'!{cell}"
-    return cell
+    if not tab:
+        raise ValueError(
+            "No sheet tab resolved for range %r — refusing to write to the "
+            "default first sheet. Set SHEET_TAB_NAME or pass tab_name=." % cell
+        )
+    return f"'{tab}'!{cell}"
 
 
 def _get_service():
@@ -94,6 +103,29 @@ def get_existing_case_numbers(tab_name: str = "", sheet_id: str = "", col: str =
         return {row[0].strip() for row in values if row and row[0].strip()}
     except Exception as e:
         logger.warning(f"Could not read sheet case numbers: {e}")
+        return set()
+
+
+def get_existing_addresses(tab_name: str = "", sheet_id: str = "") -> set:
+    """Read property addresses already in the sheet to prevent duplicate properties.
+
+    Column I = property address (9th column, index 8).
+    Returns a set of uppercased, stripped addresses.
+    """
+    sid = sheet_id or GOOGLE_SHEET_ID
+    svc = _get_service()
+    try:
+        range_str = _range("I2:I", tab_name)
+        result = (
+            svc.spreadsheets()
+            .values()
+            .get(spreadsheetId=sid, range=range_str)
+            .execute()
+        )
+        values = result.get("values", [])
+        return {row[0].strip().upper() for row in values if row and row[0].strip()}
+    except Exception as e:
+        logger.warning(f"Could not read sheet addresses: {e}")
         return set()
 
 

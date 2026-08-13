@@ -1,0 +1,44 @@
+name: Pokemon Tracker
+
+on:
+  schedule:
+    - cron: '0 12 * * *'   # 7 AM ET daily (after TCGCSV nightly refresh)
+  workflow_dispatch:
+
+concurrency:
+  group: pokemon-tracker
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-pokemon-${{ hashFiles('pokemon-tracker/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-pokemon-
+
+      - name: Install dependencies
+        run: pip install -r pokemon-tracker/requirements.txt
+
+      - name: Write credentials
+        run: echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > pokemon-tracker/credentials.json
+
+      - name: Run tracker
+        run: python main.py
+        working-directory: pokemon-tracker
+        env:
+          GOOGLE_CREDS_PATH: credentials.json

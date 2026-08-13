@@ -26,7 +26,7 @@ import config
 from scrapers.mdpa import get_owner_info_by_folio
 from scrapers.realforeclose import get_all_auctions
 from scrapers.zillow import launch_browser
-from sheets import append_rows, get_existing_case_numbers
+from sheets import append_rows, ensure_header_row, get_existing_addresses, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -107,10 +107,17 @@ def run():
     logger.info("Tax Deed Agent starting")
     logger.info("=" * 60)
 
-    # Step 1: Load dedup state (local JSON + sheet as fallback)
+    # Step 1: Ensure shared sheet header row
+    logger.info("Step 1: Ensuring Google Sheet header row")
+    try:
+        ensure_header_row()
+    except Exception as e:
+        logger.error(f"Sheet header setup failed: {e}")
+        sys.exit(1)
+
+    # Step 2: Load dedup state (local JSON + shared tab case numbers)
     logger.info("Step 2: Loading dedup state")
-    tab = config.TAX_DEED_SHEET_TAB_NAME
-    seen = _load_seen() | get_existing_case_numbers(tab_name=tab, col="R")
+    seen = _load_seen() | get_existing_case_numbers(col="N")
     logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
     with sync_playwright() as pw:
@@ -135,11 +142,25 @@ def run():
             # Step 5: Filter already-seen cases
             new_listings = [l for l in tax_deed_listings if l["case_number"] not in seen]
             logger.info(
-                f"  {len(new_listings)} new after dedup ({len(seen)} previously seen)"
+                f"  {len(new_listings)} new after case dedup ({len(seen)} previously seen)"
             )
 
             if not new_listings:
                 logger.info("No new tax deed listings found. Pipeline complete.")
+                return
+
+            # Step 5b: Filter already-seen addresses (cross-pipeline dedup)
+            logger.info("Step 5b: Filtering already-seen property addresses")
+            seen_addresses = get_existing_addresses()
+            before = len(new_listings)
+            new_listings = [
+                l for l in new_listings
+                if l.get("property_address", "").strip().upper() not in seen_addresses
+            ]
+            logger.info(f"  {len(new_listings)} remaining after address dedup ({before - len(new_listings)} skipped)")
+
+            if not new_listings:
+                logger.info("No new listings after address dedup. Pipeline complete.")
                 return
 
             # Step 6: Filter to auctions at least 14 days out (direct mail lead time)

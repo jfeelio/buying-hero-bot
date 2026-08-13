@@ -26,3 +26,14 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Service-account keys & OAuth tokens — never commit (added 2026-08-13)
+credentials.json
+token.json
+*credentials.json
+*-token.json
+service-account*.json
+*.p12
+*.pem
+acquisition-trainer/
+yt-intel-dashboard/

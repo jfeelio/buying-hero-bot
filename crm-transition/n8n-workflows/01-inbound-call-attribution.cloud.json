@@ -1,0 +1,160 @@
+{
+  "id": "attribution0001",
+  "name": "GHL – Inbound Call Attribution",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ghl-inbound-call",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "11111111-1111-1111-1111-111111111111",
+      "name": "GHL Inbound Call",
+      "webhookId": "11111111-1111-1111-1111-111111111111"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- Number -> Lead Source name map ----\nconst NUMBER_TO_SOURCE = {\n  \"+17869827813\": \"Website Main Line\"\n};\n\n// ---- Buying Hero Pipeline config ----\nconst LOCATION_ID = \"ib5jEnyqqq06FIEqlVGs\";\nconst PIPELINE_ID = \"CKQLIpRRFJImMfdZcnCK\";\nconst NEW_LEAD_STAGE_ID = \"037db392-7903-41ca-abce-c8e8ad17ce72\";\n\nconst root = $input.first().json;\nconst body = root.body || root;\nconst cd = body.customData || body.custom_data || {};\n// GHL nests webhook custom fields under customData; check there first, then body.\nconst pick = (...keys) => {\n  for (const src of [cd, body]) {\n    if (!src) continue;\n    for (const k of keys) {\n      const v = src[k];\n      if (v !== undefined && v !== null && v !== \"\") return v;\n    }\n  }\n  return \"\";\n};\n\nconst dialedNumber = pick(\"to\", \"dialed_number\", \"number\");\nconst callerNumber = pick(\"from\", \"phone\", \"caller\");\nconst contactId    = pick(\"contact_id\", \"contactId\", \"id\");\nconst firstName    = pick(\"first_name\", \"firstName\");\nconst lastName     = pick(\"last_name\", \"lastName\");\n\nconst leadSource = NUMBER_TO_SOURCE[dialedNumber] || dialedNumber || \"Unknown Line\";\nconst callerName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : (callerNumber || \"New Caller\");\n\nconst opportunityPayload = {\n  locationId: LOCATION_ID,\n  pipelineId: PIPELINE_ID,\n  pipelineStageId: NEW_LEAD_STAGE_ID,\n  name: `Seller Lead – ${callerName}`,\n  contactId: contactId,\n  status: \"open\",\n  monetaryValue: 0,\n  source: leadSource\n};\n\nreturn [{ json: { ok: true, matchedLeadSource: leadSource, dialedNumber, callerNumber, contactId, opportunityPayload } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "id": "22222222-2222-2222-2222-222222222222",
+      "name": "Build Opportunity"
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/opportunities/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "location_id", "value": "ib5jEnyqqq06FIEqlVGs" },
+            { "name": "contact_id", "value": "={{ $json.contactId }}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Version", "value": "2021-07-28" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "id": "44444444-4444-4444-4444-444444444444",
+      "name": "Check Existing Opps",
+      "credentials": {
+        "httpHeaderAuth": { "id": "ZLBSI9HFJzRmmIWi", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Count OPEN opportunities already on this contact.\nconst search = $input.first().json;\nconst opps = search.opportunities || search.data || [];\nconst openCount = opps.filter(o => String(o.status || '').toLowerCase() === 'open').length;\n\nconst build = $('Build Opportunity').item.json;\n\nreturn [{ json: {\n  openCount,\n  totalOpps: opps.length,\n  contactId: build.contactId,\n  matchedLeadSource: build.matchedLeadSource,\n  opportunityPayload: build.opportunityPayload\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 0],
+      "id": "55555555-5555-5555-5555-555555555555",
+      "name": "Evaluate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond-openopp",
+              "leftValue": "={{ $json.openCount }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [880, 0],
+      "id": "66666666-6666-6666-6666-666666666666",
+      "name": "Has Open Opp?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "skipped", "value": true, "type": "boolean" },
+            { "id": "s2", "name": "reason", "value": "Existing open opportunity — duplicate not created", "type": "string" },
+            { "id": "s3", "name": "contactId", "value": "={{ $json.contactId }}", "type": "string" },
+            { "id": "s4", "name": "existingOpenOpps", "value": "={{ $json.openCount }}", "type": "number" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, -140],
+      "id": "77777777-7777-7777-7777-777777777777",
+      "name": "Skip - Duplicate"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/opportunities/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Version", "value": "2021-07-28" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.opportunityPayload) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 140],
+      "id": "33333333-3333-3333-3333-333333333333",
+      "name": "Create Opportunity in GHL",
+      "credentials": {
+        "httpHeaderAuth": { "id": "ZLBSI9HFJzRmmIWi", "name": "Header Auth account" }
+      }
+    }
+  ],
+  "connections": {
+    "GHL Inbound Call": {
+      "main": [[{ "node": "Build Opportunity", "type": "main", "index": 0 }]]
+    },
+    "Build Opportunity": {
+      "main": [[{ "node": "Check Existing Opps", "type": "main", "index": 0 }]]
+    },
+    "Check Existing Opps": {
+      "main": [[{ "node": "Evaluate", "type": "main", "index": 0 }]]
+    },
+    "Evaluate": {
+      "main": [[{ "node": "Has Open Opp?", "type": "main", "index": 0 }]]
+    },
+    "Has Open Opp?": {
+      "main": [
+        [{ "node": "Skip - Duplicate", "type": "main", "index": 0 }],
+        [{ "node": "Create Opportunity in GHL", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

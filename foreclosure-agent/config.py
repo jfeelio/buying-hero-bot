@@ -5,7 +5,12 @@ load_dotenv()
 
 GOOGLE_SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 GOOGLE_CREDS_PATH = os.environ.get("GOOGLE_CREDS_PATH", "credentials.json")
-SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME", "")
+# The mail servicer's API reads directly from this exact tab. It must NEVER
+# change and data must NEVER land anywhere else. `... or <default>` guards
+# against the env var being missing AND being present-but-empty (which is what
+# happens when the GitHub Actions SHEET_TAB_NAME secret is unset — an empty
+# value previously caused writes to fall through to the default first sheet).
+SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME") or "272. Pre-foreclosure, Buying Hero, (3 steps)"
 PROBATE_GOOGLE_SHEET_ID = os.environ.get("PROBATE_GOOGLE_SHEET_ID", os.environ.get("GOOGLE_SHEET_ID", ""))
 PROBATE_SHEET_TAB_NAME = os.environ.get("PROBATE_SHEET_TAB_NAME", "Probate")
 PROBATE_DAYS_BACK = int(os.environ.get("PROBATE_DAYS_BACK", "14"))

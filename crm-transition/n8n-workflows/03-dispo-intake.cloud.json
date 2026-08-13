@@ -1,0 +1,666 @@
+{
+  "id": "dispointake001",
+  "name": "03 - Dispo Deal Intake (W1)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "deal-intake",
+        "formTitle": "Buying Hero — Deal Intake",
+        "formDescription": "Fill this out once. It builds the WhatsApp post, the SMS version, the teaser, and the matched buyer list.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Address",
+              "requiredField": true,
+              "placeholder": "2165 NW 58th St. Miami, FL 33142"
+            },
+            {
+              "fieldLabel": "County",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Miami-Dade"
+                  },
+                  {
+                    "option": "Broward"
+                  },
+                  {
+                    "option": "Palm Beach"
+                  },
+                  {
+                    "option": "St. Lucie"
+                  },
+                  {
+                    "option": "Martin"
+                  },
+                  {
+                    "option": "Indian River"
+                  },
+                  {
+                    "option": "Monroe"
+                  },
+                  {
+                    "option": "Collier"
+                  },
+                  {
+                    "option": "Lee"
+                  },
+                  {
+                    "option": "Orange"
+                  },
+                  {
+                    "option": "Osceola"
+                  },
+                  {
+                    "option": "Hillsborough"
+                  },
+                  {
+                    "option": "Pinellas"
+                  },
+                  {
+                    "option": "Polk"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Neighborhood",
+              "placeholder": "Leave blank unless it's a named sub-market"
+            },
+            {
+              "fieldLabel": "Headline",
+              "requiredField": true,
+              "placeholder": "New Roof plus Impact Windows and Doors and updated electrical panel"
+            },
+            {
+              "fieldLabel": "Property Type",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "SFR"
+                  },
+                  {
+                    "option": "2-4 Unit"
+                  },
+                  {
+                    "option": "5+ Unit"
+                  },
+                  {
+                    "option": "Condo"
+                  },
+                  {
+                    "option": "Land"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Beds",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Baths",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Living Area Sqft",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Lot Size Sqft",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Year Built",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Roof Age",
+              "placeholder": "3 years old — leave blank if unknown"
+            },
+            {
+              "fieldLabel": "AC Age",
+              "placeholder": "5 years old — leave blank if unknown"
+            },
+            {
+              "fieldLabel": "Key Upgrades",
+              "fieldType": "textarea",
+              "placeholder": "PVC plumbing throughout, impact windows and doors, updated electrical panel"
+            },
+            {
+              "fieldLabel": "HOA",
+              "placeholder": "NO HOA — or the monthly amount"
+            },
+            {
+              "fieldLabel": "Liens or Violations",
+              "placeholder": "No liens or violations"
+            },
+            {
+              "fieldLabel": "Occupancy",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "VACANT AT CLOSE"
+                  },
+                  {
+                    "option": "Vacant Now"
+                  },
+                  {
+                    "option": "Tenant Occupied"
+                  },
+                  {
+                    "option": "Owner Occupied"
+                  },
+                  {
+                    "option": "Occupancy Unknown"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Extra Highlights",
+              "fieldType": "textarea",
+              "placeholder": "One per line, e.g. Needs interior rehab to achieve highest ARV level"
+            },
+            {
+              "fieldLabel": "Comps",
+              "fieldType": "textarea",
+              "requiredField": true,
+              "placeholder": "One per line: 1846 NW 49 ST, Miami, FL 33142 - Sold for $480,000 on 7/10/26"
+            },
+            {
+              "fieldLabel": "Asking Price",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "ARV",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Repair Estimate",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "Escrow",
+              "fieldType": "number",
+              "placeholder": "Leave blank for the standard $10,000"
+            },
+            {
+              "fieldLabel": "Photos Videos URL",
+              "requiredField": true,
+              "placeholder": "Google Drive folder link"
+            },
+            {
+              "fieldLabel": "Close Date",
+              "fieldType": "date"
+            },
+            {
+              "fieldLabel": "Access Notes",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Additional Details",
+              "fieldType": "textarea",
+              "placeholder": "Optional. Anything the teaser writer should know that isn't captured above."
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "form-trigger",
+      "name": "Deal Intake Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -320,
+        300
+      ],
+      "webhookId": "deal-intake"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map form labels -> GHL option KEYS (GHL strips hyphens/spaces from keys).\nconst f = $input.first().json;\nconst key = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst TYPE_KEY = { 'SFR':'sfr', '2-4 Unit':'2to4unit', '5+ Unit':'5plusunit', 'Condo':'condo', 'Land':'land' };\nconst OCC_KEY = { 'VACANT AT CLOSE':'vacantatclose', 'Vacant Now':'vacantnow', 'Tenant Occupied':'tenantoccupied', 'Owner Occupied':'owneroccupied', 'Occupancy Unknown':'unknown' };\nconst num = (v) => (v === '' || v == null) ? undefined : Number(v);\nconst txt = (v) => (v == null ? '' : String(v).trim());\n\nconst address = txt(f['Address']);\n\n// City and Zip are no longer separate inputs - derive them from the address so\n// prop_city / prop_zip stay populated. Both are DISPLAY-ONLY (the teaser prompt\n// and the GHL record); the match engine keys on County, which is still its own\n// dropdown. A parse miss is cosmetic, never a mis-match.\nconst zipMatch = address.match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\nconst derivedZip = zipMatch ? zipMatch[1] : '';\nlet derivedCity = '';\n{\n  // strip the trailing \", FL 33142\" / \" FL 33142\"\n  let head = address.replace(/[,\\s]*\\bFL\\b[,\\s]*\\d{5}(?:-\\d{4})?\\s*$/i, '').trim();\n  head = head.replace(/[,\\s]+$/, '');\n  if (head.indexOf(',') !== -1) {\n    derivedCity = head.slice(head.lastIndexOf(',') + 1).trim();      // \"123 St, Miami\"\n  } else if (head.indexOf('.') !== -1) {\n    derivedCity = head.slice(head.lastIndexOf('.') + 1).trim();      // \"2165 NW 58th St. Miami\"\n  }\n  if (!derivedCity) {\n    const w = head.split(/\\s+/);\n    derivedCity = w.length ? w[w.length - 1] : '';\n  }\n}\n\n// Standard escrow unless the dispo manager overrides it.\nconst escrow = (f['Escrow'] === '' || f['Escrow'] == null) ? 10000 : Number(f['Escrow']);\n\nconst props = {\n  prop_address: address,\n  prop_city: derivedCity,\n  prop_zip: derivedZip,\n  prop_county: key(f['County']),\n  prop_type: TYPE_KEY[f['Property Type']],\n  prop_headline: txt(f['Headline']),\n  prop_occupancy: OCC_KEY[f['Occupancy']],\n  prop_comps: txt(f['Comps']),\n  prop_description: txt(f['Additional Details']),\n  prop_dispo_status: 'intake',\n};\nconst put = (k, v) => { if (v !== undefined && v !== '') props[k] = v; };\nput('prop_neighborhood', f['Neighborhood'] ? key(f['Neighborhood']) : undefined);\nput('prop_beds', num(f['Beds']));\nput('prop_baths', num(f['Baths']));\nput('prop_sqft', num(f['Living Area Sqft']));\nput('prop_lot_sqft', num(f['Lot Size Sqft']));\nput('prop_year_built', num(f['Year Built']));\nput('prop_roof_age', txt(f['Roof Age']));\nput('prop_ac_age', txt(f['AC Age']));\nput('prop_key_upgrades', txt(f['Key Upgrades']));\nput('prop_hoa', txt(f['HOA']));\nput('prop_liens_violations', txt(f['Liens or Violations']));\nput('prop_highlights', txt(f['Extra Highlights']));\nput('prop_asking_price', num(f['Asking Price']));\nput('prop_arv', num(f['ARV']));\nput('prop_repair_est', num(f['Repair Estimate']));\nput('prop_emd_terms', '$' + escrow.toLocaleString('en-US'));\nput('prop_photos_url', txt(f['Photos Videos URL']));\nput('prop_close_date', txt(f['Close Date']));\nput('prop_access_notes', txt(f['Access Notes']));\n\n// MAO deliberately NOT computed — settled during acquisition.\n\nreturn [{ json: { props, address, searchQuery: address, escrow, derivedCity, derivedZip, raw: f } }];"
+      },
+      "id": "normalize",
+      "name": "Normalize + Map Keys",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/objects/custom_objects.property/records/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ page: 1, pageLimit: 20, query: $json.searchQuery }) }}",
+        "options": {}
+      },
+      "id": "find-property",
+      "name": "Find Property by Address",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// prop_address is UNIQUE in GHL. A blind create fails once the acquisition\n// side has already filed the house, so decide create vs update here.\nconst search = $input.first().json;\nconst intake = $('Normalize + Map Keys').first().json;\nconst norm = (s) => (s || '').toLowerCase().replace(/\\s+/g, ' ').trim();\nconst target = norm(intake.address);\nconst hit = (search.records || []).find(r => norm(r.properties?.prop_address) === target);\nreturn [{ json: { ...intake, exists: !!hit, recordId: hit ? hit.id : null } }];"
+      },
+      "id": "upsert-decide",
+      "name": "Create or Update?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "exists",
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-exists",
+      "name": "Property Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/objects/custom_objects.property/records/{{ $json.recordId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', properties: $json.props }) }}",
+        "options": {}
+      },
+      "id": "update-property",
+      "name": "Update Property",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/objects/custom_objects.property/records",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', properties: $json.props }) }}",
+        "options": {}
+      },
+      "id": "create-property",
+      "name": "Create Property",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/contacts/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ pageLimit: 100 }) }}",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "searchAfter",
+                    "value": "={{ ($response.body.contacts || []).slice(-1)[0] ? ($response.body.contacts || []).slice(-1)[0].searchAfter : null }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ ($response.body.contacts || []).length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100
+            }
+          }
+        }
+      },
+      "id": "fetch-buyers",
+      "name": "Fetch Buyer Pool (paginated)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// EXCLUSION ENGINE — default is INCLUDE.\n//\n// Extracted buy_* data is a GUESS (parsed from old prose notes, never\n// confirmed with the buyer). It is NEVER used to filter a blast. Using it to\n// filter means a buyer whose 2024 note said \"Broward only\" silently stops\n// hearing about Dade deals and nobody ever finds out.\n//\n// A buyer drops out of a blast ONLY when a human set an excl_* rule after\n// actually talking to them.\n//\n// The buy_* data still earns its keep: where it CONTRADICTS the deal but no\n// excl_* rule exists, it produces a review suggestion — an interview queue.\n// ============================================================\nconst pages = $input.all();\nconst pool = pages.flatMap(p => p.json.contacts || []);\n\nconst deal = $('Create or Update?').first().json;\nconst p = deal.props, f = deal.raw;\n\nconst cf = (c, k) => {\n  const hit = (c.customFields || []).find(x => x.id === k || x.key === k);\n  if (!hit) return null;\n  return hit.value !== undefined ? hit.value : (hit.fieldValue !== undefined ? hit.fieldValue : null);\n};\nconst arr = (v) => v == null ? [] : (Array.isArray(v) ? v : String(v).split(';').map(s => s.trim()).filter(Boolean));\nconst norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst n = (v) => (v == null || v === '') ? null : Number(v);\n\nconst dealCounty = norm(f['County']);\nconst dealHood   = norm(f['Neighborhood'] || '');\nconst dealType   = norm(f['Property Type']);\nconst asking = n(p.prop_asking_price);\nconst sqft   = n(p.prop_sqft);\n\nconst included = [], excluded = [], suppressed = [], suggestions = [];\n\nfor (const c of pool) {\n  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.contactName || '(no name)';\n  const tier = cf(c, 'buy_tier') || '(none)';\n  const row = { id: c.id, name, phone: c.phone || null, tier };\n\n  // ---- HARD SUPPRESSIONS: not preferences. Compliance and physics. ----\n  const rt = arr(cf(c, 'record_type')).map(norm);\n  if (rt.length && !rt.includes('buyer')) continue;          // seller-only record\n\n  const status = norm(cf(c, 'buy_status'));\n  if (status === 'dnc' || status === 'blacklist') {\n    suppressed.push({ ...row, why: 'buy_status=' + status });\n    continue;\n  }\n  if (!c.phone) { suppressed.push({ ...row, why: 'no phone on file' }); continue; }\n\n  // ---- EXCLUSION RULES: the only thing that removes a buyer ----\n  const why = [];\n\n  if (norm(cf(c, 'excl_all_blasts')) === 'yes') why.push('held from all blasts');\n\n  const belowPrice = n(cf(c, 'excl_below_price'));\n  if (belowPrice && asking && asking < belowPrice)\n    why.push('asking ' + asking + ' below their floor ' + belowPrice);\n\n  const abovePrice = n(cf(c, 'excl_above_price'));\n  if (abovePrice && asking && asking > abovePrice)\n    why.push('asking ' + asking + ' above their ceiling ' + abovePrice);\n\n  const belowSqft = n(cf(c, 'excl_below_sqft'));\n  if (belowSqft && sqft && sqft < belowSqft)\n    why.push('sqft ' + sqft + ' below their floor ' + belowSqft);\n\n  const exTypes = arr(cf(c, 'excl_prop_types')).map(norm);\n  if (exTypes.length && dealType && exTypes.includes(dealType))\n    why.push('excludes ' + f['Property Type']);\n\n  const onlyCounties = arr(cf(c, 'excl_outside_counties')).map(norm);\n  if (onlyCounties.length && dealCounty && !onlyCounties.includes(dealCounty))\n    why.push('outside their counties');\n\n  const onlyHoods = arr(cf(c, 'excl_outside_neighborhoods')).map(norm);\n  if (onlyHoods.length && dealHood && !onlyHoods.includes(dealHood))\n    why.push('outside their sub-markets');\n\n  if (why.length) {\n    excluded.push({ ...row, why: why.join('; '),\n                    note: cf(c, 'excl_notes') || '', verified: cf(c, 'excl_verified_date') || '' });\n    continue;\n  }\n\n  // ---- INCLUDED. Now: does unverified buy_* data hint at a missing rule? ----\n  const hints = [];\n  const bCounties = arr(cf(c, 'buy_counties')).map(norm);\n  if (!onlyCounties.length && bCounties.length && dealCounty && !bCounties.includes(dealCounty))\n    hints.push('notes say ' + arr(cf(c, 'buy_counties')).join('/') + ' only');\n\n  const bHoods = arr(cf(c, 'buy_neighborhoods'));\n  if (!onlyHoods.length && bHoods.length && dealHood && !bHoods.map(norm).includes(dealHood))\n    hints.push('notes say ' + bHoods.join('/') + ' only');\n\n  const bMin = n(cf(c, 'buy_price_min'));\n  if (!belowPrice && bMin && asking && asking < bMin) hints.push('notes say min ' + bMin);\n\n  const bMax = n(cf(c, 'buy_price_max'));\n  if (!abovePrice && bMax && asking && asking > bMax) hints.push('notes say max ' + bMax);\n\n  const bSqft = n(cf(c, 'buy_sqft_min'));\n  if (!belowSqft && bSqft && sqft && sqft < bSqft) hints.push('notes say min ' + bSqft + ' sqft');\n\n  const bTypes = arr(cf(c, 'buy_prop_types'));\n  if (!exTypes.length && bTypes.length && dealType && !bTypes.map(norm).includes(dealType))\n    hints.push('notes say ' + bTypes.join('/') + ' only');\n\n  included.push(row);\n  if (hints.length) suggestions.push({ ...row, hint: hints.join('; '),\n                                       action: 'CONFIRM WITH BUYER, then set an excl_ rule if true' });\n}\n\nconst rank = { VIP: 0, A: 1, B: 2, C: 3 };\nincluded.sort((a, b) => (rank[a.tier] ?? 9) - (rank[b.tier] ?? 9));\n\nreturn [{ json: {\n  recordId: deal.recordId,\n  created: !deal.exists,\n  props: p,\n  raw: f,\n  pagesFetched: pages.length,\n  poolSize: pool.length,\n  includedCount: included.length,\n  excludedCount: excluded.length,\n  suppressedCount: suppressed.length,\n  included,\n  excluded,\n  suppressed,\n  suggestions,\n} }];"
+      },
+      "id": "match",
+      "name": "Exclusion Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the WhatsApp post DETERMINISTICALLY. No LLM touches these numbers:\n// prices, comps and sqft render straight from the form, so they cannot be\n// paraphrased, rounded, or invented.\nconst d = $input.first().json;\nconst p = d.props, f = d.raw;\n\nconst money = (n) => '$' + Number(n).toLocaleString('en-US');\nconst nf = (n) => Number(n).toLocaleString('en-US');\n// Strip any bullet the user typed themselves - the template adds its own.\nconst lines = (s) => (s || '').split('\\n').map(x => x.trim().replace(/^[-\\u2022*\\u00B7\\u2013\\u2014]+\\s*/, '')).filter(Boolean);\nconst T = (v) => (v == null ? '' : String(v).trim());\n\nconst fullAddress = T(f['Address']).replace(/[,\\s]+$/, '');\n\n// ---- Details bullets, in the house order ----\nconst details = [];\ndetails.push('Beds/Bath: ' + T(f['Beds']) + '/' + T(f['Baths']));\ndetails.push('Living Area: ' + nf(f['Living Area Sqft']) + ' sq ft');\nif (f['Lot Size Sqft']) details.push('Lot Size: ' + nf(f['Lot Size Sqft']) + ' sq ft');\ndetails.push(T(f['Roof Age']) ? 'Roof is ' + T(f['Roof Age']) : 'Roof age unknown');\nif (T(f['Key Upgrades'])) details.push('Key Upgrades - ' + T(f['Key Upgrades']));\ndetails.push(T(f['AC Age']) ? 'AC is ' + T(f['AC Age']) : 'AC age unknown');\nfor (const h of lines(f['Extra Highlights'])) details.push(h);\nif (T(f['HOA'])) details.push(T(f['HOA']));\nif (T(f['Liens or Violations'])) details.push(T(f['Liens or Violations']));\n\nconst occupancy = T(f['Occupancy']);\nconst comps = lines(f['Comps']);\n\n// ---- WhatsApp (single asterisks render as bold) ----\nconst wa = [];\nwa.push('\\uD83C\\uDFE0 *' + fullAddress + '*');\nwa.push('');\nwa.push('\\u2B50' + T(f['Headline']));\nwa.push('');\nwa.push('\\uD83D\\uDFE0 *Details*');\nfor (const b of details) wa.push(' \\u00B7 ' + b);\nif (occupancy) wa.push(' \\u00B7 *' + occupancy + '*');\nwa.push('');\nwa.push('\\uD83D\\uDFE0 *Comps*');\nfor (const c of comps) wa.push(' \\u00B7 ' + c);\nwa.push('');\nwa.push('\\uD83D\\uDCB0 *Price:* Only ' + money(f['Asking Price']));\nwa.push('');\nwa.push('\\uD83D\\uDCC8 *ARV:* ~' + money(f['ARV']));\nwa.push('');\nwa.push('\\uD83D\\uDCF8 *Photos/Videos:*');\nwa.push(T(f['Photos Videos URL']));\nwa.push('\\uD83D\\uDCB5 *Escrow:* ' + money(d.escrow));\nconst whatsapp_post = wa.join('\\n');\n\n// ---- SMS: identical content, asterisks stripped.\n// SMS has no bold — leaving them in shows literal * to the buyer.\nconst sms_post = whatsapp_post.replace(/\\*/g, '');\n\nreturn [{ json: Object.assign({}, d, { fullAddress, whatsapp_post, sms_post }) }];"
+      },
+      "id": "build-post",
+      "name": "Build WhatsApp + SMS Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-opus-5', max_tokens: 8000, system: 'You write short outreach texts for Buying Hero, a South Florida wholesaler, to its cash-buyer list. Non-negotiable rules: (1) The teaser NEVER contains the street address - withholding it is what forces the reply. City is fine. (2) Never invent exclusivity, urgency, competing offers, deadlines, or any claim you were not given. (3) Never state a number you were not given. (4) Sound like a person texting a contact they know. Short sentences, no emoji, no ALL CAPS, no marketing voice.', messages: [{ role: 'user', content: 'Deal facts:\\nCity: ' + $json.derivedCity + '\\nBeds/Baths: ' + $json.raw['Beds'] + '/' + $json.raw['Baths'] + '\\nType: ' + $json.raw['Property Type'] + '\\nARV: ' + $json.raw['ARV'] + '\\nAsking: ' + $json.raw['Asking Price'] + '\\nHeadline feature: ' + $json.raw['Headline'] + '\\n\\nAdditional details from the dispo manager:\\n' + ($json.raw['Additional Details'] || '(none provided - work from the facts above)') + '\\n\\nWrite the teaser set.' }], output_config: { format: { type: 'json_schema', schema: { type: 'object', properties: { teaser_sms: { type: 'string', description: 'Under 320 characters. Beds/baths, city, ARV, price, one standout feature, soft CTA. NO street address. Use {{first_name}} for the buyer and Andrew as sender.' }, hook_used: { type: 'string', description: 'The opener line only, so it can be written to buy_last_hook and never reused on the same buyer.' }, email_subject: { type: 'string', description: 'Subject line for the email version.' }, voice_brief: { type: 'string', description: 'Plain fact sheet the voice AI answers from. Facts only, no script, no persuasion.' } }, required: ['teaser_sms','hook_used','email_subject','voice_brief'], additionalProperties: false } } } }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "claude",
+      "name": "Claude — Teaser + Voice Brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1660,
+        300
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "AVF4DwvkeWM44QB5",
+          "name": "Anthropic — Buying Hero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\nconst d = $('Build WhatsApp + SMS Post').first().json;\n\nlet ai = {}, aiError = null;\ntry {\n  const t = (res.content || []).find(b => b.type === 'text');\n  ai = JSON.parse(t.text);\n} catch (e) { aiError = String(e); }\n\nreturn [{ json: {\n  status: 'DRAFTS READY - NOTHING SENT',\n  property_record_id: d.recordId,\n  property_action: d.created ? 'CREATED' : 'UPDATED existing record',\n  address: d.fullAddress,\n  buyers_included: d.includedCount,\n  buyers_excluded: d.excludedCount,\n  buyers_suppressed: d.suppressedCount,\n  buyers_scanned: d.poolSize,\n  pages_fetched: d.pagesFetched,\n  whatsapp_post: d.whatsapp_post,\n  sms_post: d.sms_post,\n  teaser_sms: ai.teaser_sms || null,\n  hook_used: ai.hook_used || null,\n  email_subject: ai.email_subject || null,\n  voice_brief: ai.voice_brief || null,\n  ai_error: aiError,\n  included: d.included,\n  excluded: d.excluded,\n  suppressed: d.suppressed,\n  review_suggestions: d.suggestions\n} }];"
+      },
+      "id": "format",
+      "name": "Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Deal Intake Form": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Map Keys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize + Map Keys": {
+      "main": [
+        [
+          {
+            "node": "Find Property by Address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Property by Address": {
+      "main": [
+        [
+          {
+            "node": "Create or Update?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or Update?": {
+      "main": [
+        [
+          {
+            "node": "Property Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Property Exists?": {
+      "main": [
+        [
+          {
+            "node": "Update Property",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Property",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Property": {
+      "main": [
+        [
+          {
+            "node": "Fetch Buyer Pool (paginated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Property": {
+      "main": [
+        [
+          {
+            "node": "Fetch Buyer Pool (paginated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Buyer Pool (paginated)": {
+      "main": [
+        [
+          {
+            "node": "Exclusion Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build WhatsApp + SMS Post": {
+      "main": [
+        [
+          {
+            "node": "Claude — Teaser + Voice Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude — Teaser + Voice Brief": {
+      "main": [
+        [
+          {
+            "node": "Format Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exclusion Engine": {
+      "main": [
+        [
+          {
+            "node": "Build WhatsApp + SMS Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

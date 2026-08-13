@@ -26,7 +26,7 @@ from dedup import filter_new_cases, load_seen_cases, save_seen_cases
 from scrapers.mdpa import get_owner_info
 from scrapers.realforeclose import get_all_auctions
 from scrapers.zillow import launch_browser
-from sheets import append_rows, ensure_header_row, get_existing_case_numbers
+from sheets import append_rows, ensure_header_row, get_existing_addresses, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -117,6 +117,16 @@ def run():
             # Step 4: Filter already-seen cases
             logger.info("Step 4: Filtering already-seen cases")
             new_listings = filter_new_cases(all_listings, seen)
+
+            # Step 4a: Filter already-seen addresses (cross-pipeline dedup)
+            logger.info("Step 4a: Filtering already-seen property addresses")
+            seen_addresses = get_existing_addresses()
+            before = len(new_listings)
+            new_listings = [
+                l for l in new_listings
+                if l.get("property_address", "").strip().upper() not in seen_addresses
+            ]
+            logger.info(f"  {len(new_listings)} remaining after address dedup ({before - len(new_listings)} skipped)")
 
             if not new_listings:
                 logger.info("No new listings found. Pipeline complete.")

@@ -47,7 +47,7 @@ jobs:
           cat > foreclosure-agent/.env << 'ENVEOF'
           GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_CREDS_PATH=credentials.json
-          TAX_DEED_SHEET_TAB_NAME=${{ secrets.TAX_DEED_SHEET_TAB_NAME }}
+          SHEET_TAB_NAME=${{ secrets.SHEET_TAB_NAME }}
           TAX_DEED_WEEKS_AHEAD=${{ secrets.TAX_DEED_WEEKS_AHEAD }}
           ENVEOF
 

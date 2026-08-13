@@ -1,0 +1,172 @@
+{
+  "id": "tagstatus0001",
+  "name": "GHL – Tag to Opportunity Status",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ghl-tag-status",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "a1111111-1111-1111-1111-111111111111",
+      "name": "GHL Tag Added",
+      "webhookId": "a1111111-1111-1111-1111-111111111111"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---- Tag -> action config ----\n// status: open|won|lost|abandoned ; setDnd: flip contact Do-Not-Disturb ; lostReasonId: GHL lost reason id\nconst REMOVE_FROM_LIST_REASON_ID = \"6a51436e2a625776be986477\";\nconst TAG_CONFIG = {\n  \"Dead Lead\":        { status: \"lost\",      setDnd: false, lostReasonId: \"\" },\n  \"Cold Lead\":        { status: \"abandoned\", setDnd: false, lostReasonId: \"\" },\n  \"Remove from List\": { status: \"lost\",      setDnd: true,  lostReasonId: REMOVE_FROM_LIST_REASON_ID }\n};\n\nconst LOCATION_ID = \"ib5jEnyqqq06FIEqlVGs\";\n\nconst root = $input.first().json;\nconst body = root.body || root;\nconst cd = body.customData || body.custom_data || {};\nconst pick = (...keys) => {\n  for (const src of [cd, body]) {\n    if (!src) continue;\n    for (const k of keys) {\n      const v = src[k];\n      if (v !== undefined && v !== null && v !== \"\") return v;\n    }\n  }\n  return \"\";\n};\n\nconst tag = pick(\"tag\", \"tag_name\", \"tagName\");\nconst contactId = pick(\"contact_id\", \"contactId\", \"id\");\nconst cfg = TAG_CONFIG[tag] || null;\n\nreturn [{ json: {\n  tag,\n  contactId,\n  locationId: LOCATION_ID,\n  targetStatus: cfg ? cfg.status : \"\",\n  setDnd: cfg ? cfg.setDnd : false,\n  lostReasonId: cfg ? cfg.lostReasonId : \"\"\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "id": "a2222222-2222-2222-2222-222222222222",
+      "name": "Map Tag"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond-dnd",
+              "leftValue": "={{ $json.setDnd }}",
+              "rightValue": "",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 0],
+      "id": "a6666666-6666-6666-6666-666666666666",
+      "name": "Set DND?"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contactId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Version", "value": "2021-07-28" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ dnd: true }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, -160],
+      "id": "a7777777-7777-7777-7777-777777777777",
+      "name": "Set DND On",
+      "credentials": {
+        "httpHeaderAuth": { "id": "kFFOX7t1QQvTPNlu", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/opportunities/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "location_id", "value": "={{ $('Map Tag').item.json.locationId }}" },
+            { "name": "contact_id", "value": "={{ $('Map Tag').item.json.contactId }}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Version", "value": "2021-07-28" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0],
+      "id": "a3333333-3333-3333-3333-333333333333",
+      "name": "Find Opps",
+      "credentials": {
+        "httpHeaderAuth": { "id": "kFFOX7t1QQvTPNlu", "name": "Header Auth account" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Update every OPEN opportunity on this contact.\nconst search = $input.first().json;\nconst opps = search.opportunities || search.data || [];\nconst map = $('Map Tag').item.json;\n\nif (!map.targetStatus) return [];\n\nconst openOpps = opps.filter(o => String(o.status || '').toLowerCase() === 'open');\n\nreturn openOpps.map(o => ({\n  json: {\n    opportunityId: o.id,\n    targetStatus: map.targetStatus,\n    lostReasonId: map.lostReasonId || '',\n    tag: map.tag,\n    contactId: map.contactId\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 0],
+      "id": "a4444444-4444-4444-4444-444444444444",
+      "name": "Select Open Opps"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/opportunities/{{ $json.opportunityId }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Version", "value": "2021-07-28" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.lostReasonId ? { status: $json.targetStatus, lostReasonId: $json.lostReasonId } : { status: $json.targetStatus }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 0],
+      "id": "a5555555-5555-5555-5555-555555555555",
+      "name": "Update Status",
+      "credentials": {
+        "httpHeaderAuth": { "id": "kFFOX7t1QQvTPNlu", "name": "Header Auth account" }
+      }
+    }
+  ],
+  "connections": {
+    "GHL Tag Added": {
+      "main": [[{ "node": "Map Tag", "type": "main", "index": 0 }]]
+    },
+    "Map Tag": {
+      "main": [[{ "node": "Set DND?", "type": "main", "index": 0 }]]
+    },
+    "Set DND?": {
+      "main": [
+        [{ "node": "Set DND On", "type": "main", "index": 0 }],
+        [{ "node": "Find Opps", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set DND On": {
+      "main": [[{ "node": "Find Opps", "type": "main", "index": 0 }]]
+    },
+    "Find Opps": {
+      "main": [[{ "node": "Select Open Opps", "type": "main", "index": 0 }]]
+    },
+    "Select Open Opps": {
+      "main": [[{ "node": "Update Status", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

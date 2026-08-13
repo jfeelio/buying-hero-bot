@@ -1,0 +1,2160 @@
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'
+Traceback (most recent call last):
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 609, in <module>
+    main()
+    ~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 591, in main
+    automation = EnhancedLisPendensAutomation()
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 34, in __init__
+    self.setup_logging()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\Dropbox\J Feels\Dev\lis-pendens-agent\enhanced_master_script.py", line 52, in setup_logging
+    file_handler = logging.FileHandler('lis_pendens_automation.log', encoding='utf-8')
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1219, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ~~~~~~~~~~^^
+  File "C:\Users\jsive\AppData\Local\Programs\Python\Python313\Lib\logging\__init__.py", line 1248, in _open
+    return open_func(self.baseFilename, self.mode,
+                     encoding=self.encoding, errors=self.errors)
+PermissionError: [Errno 13] Permission denied: 'D:\\Dropbox\\J Feels\\Dev\\lis-pendens-agent\\lis_pendens_automation.log'

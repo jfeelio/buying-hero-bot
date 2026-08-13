@@ -115,6 +115,30 @@
       .b-val { font-size: 24px; }
     }
 
+    /* ── Saved Estimates ── */
+    .save-bar { display: flex; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .save-bar input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 14px; font-family: inherit; outline: none; color: var(--text); }
+    .save-bar input:focus { border-color: var(--accent); }
+    .btn-save { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .btn-save:hover { background: #1e3a8a; }
+    .btn-save:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .saved-empty { padding: 18px 14px; text-align: center; color: var(--muted); font-size: 13px; }
+    .saved-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 12px; }
+    .saved-row:last-child { border-bottom: none; }
+    .saved-meta { flex: 1; min-width: 0; }
+    .saved-name { font-size: 14px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .saved-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .saved-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .saved-actions button { border: 1px solid var(--border); background: var(--card); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .btn-load { color: var(--accent); border-color: var(--accent-border); background: var(--accent-bg); }
+    .btn-load:hover { background: var(--accent); color: #fff; }
+    .btn-del { color: #991b1b; }
+    .btn-del:hover { background: #fef2f2; border-color: #fca5a5; }
+    @media (max-width: 720px) {
+      .save-bar { flex-direction: column; }
+      .saved-row { flex-direction: column; align-items: flex-start; }
+    }
+
     footer { text-align: center; padding: 20px; font-size: 11px; color: var(--muted); }
   </style>
 </head>
@@ -336,6 +360,16 @@
     </div>
   </div>
 
+  <!-- Save to Google Sheet -->
+  <div class="card">
+    <div class="card-hd"><span class="card-title">💾 Save Deal to Google Sheet</span></div>
+    <div class="save-bar">
+      <input type="text" id="saveName" placeholder="Property address (e.g., 123 Main St, Miami FL)" onkeydown="if(event.key==='Enter')saveEstimate()">
+      <button class="btn-save" onclick="saveEstimate()">Create Deal Tab</button>
+    </div>
+    <div id="savedList"></div>
+  </div>
+
 </div>
 
 <footer>Buying Hero — For internal use only</footer>
@@ -446,8 +480,71 @@
     }
   }
 
+  // ── Save Deal to Google Sheet via Apps Script ──
+  const WEB_APP_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+  const SHEET_VIEW_URL = 'https://docs.google.com/spreadsheets/d/16of8fZhqeYlF_UzBWX3GoYiIOZJKT6F57JhzvKV5s0g/edit';
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function isBackendConfigured() {
+    return WEB_APP_URL && !WEB_APP_URL.startsWith('PASTE_');
+  }
+
+  function renderSavedHelp() {
+    const list = $('savedList');
+    if (!isBackendConfigured()) {
+      list.innerHTML = '<div class="saved-empty">Backend not configured yet — paste your Apps Script Web App URL into <code>WEB_APP_URL</code> in <code>docs/index.html</code>.</div>';
+      return;
+    }
+    list.innerHTML = '<div class="saved-empty">Enter the property address above and click <strong>Create Deal Tab</strong>. A new tab will be created in the Buying Hero sheet with all current inputs pre-filled. <a href="' + SHEET_VIEW_URL + '" target="_blank" rel="noopener">Open the sheet →</a></div>';
+  }
+
+  async function saveEstimate() {
+    const nameEl = $('saveName');
+    const address = nameEl.value.trim();
+    if (!address) { nameEl.focus(); return; }
+    if (!isBackendConfigured()) { alert('Backend not configured. Paste your Apps Script Web App URL into WEB_APP_URL at the top of the script.'); return; }
+
+    const btn = document.querySelector('.btn-save');
+    const orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    const payload = {
+      action: 'createDeal',
+      address,
+      values: {
+        pp: parseFloat(String($('pp').value).replace(/[$,]/g, '')) || 0,
+        rehab: parseFloat(String($('rehab').value).replace(/[$,]/g, '')) || 0,
+        hold: parseFloat($('hold').value) || 5,
+        arv: parseFloat(String($('arv').value).replace(/[$,]/g, '')) || 0,
+        target: parseFloat(String($('target').value).replace(/[$,]/g, '')) || 25000,
+      }
+    };
+
+    try {
+      const res = await fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'create failed');
+      nameEl.value = '';
+      $('savedList').innerHTML =
+        '<div class="saved-empty">✅ Created deal tab: <strong>' + escapeHtml(data.tabName) +
+        '</strong> · <a href="' + data.url + '" target="_blank" rel="noopener">Open tab →</a></div>';
+      // Optionally open the tab in a new window
+      window.open(data.url, '_blank', 'noopener');
+    } catch (err) {
+      alert('Create failed: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  }
+
   initDollarInputs();
   calc();
+  renderSavedHelp();
 </script>
 </body>
 </html>
