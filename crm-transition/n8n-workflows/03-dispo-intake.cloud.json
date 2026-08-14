@@ -70,7 +70,275 @@
             },
             {
               "fieldLabel": "Neighborhood",
-              "placeholder": "Leave blank unless it's a named sub-market"
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "(none / not a named sub-market)"
+                  },
+                  {
+                    "option": "Allapattah"
+                  },
+                  {
+                    "option": "Aventura"
+                  },
+                  {
+                    "option": "Bal Harbour"
+                  },
+                  {
+                    "option": "Bay Harbor Islands"
+                  },
+                  {
+                    "option": "Brickell"
+                  },
+                  {
+                    "option": "Coconut Grove"
+                  },
+                  {
+                    "option": "Coral Gables"
+                  },
+                  {
+                    "option": "Coral Way"
+                  },
+                  {
+                    "option": "Cutler Bay"
+                  },
+                  {
+                    "option": "Doral"
+                  },
+                  {
+                    "option": "Downtown Miami"
+                  },
+                  {
+                    "option": "Edgewater"
+                  },
+                  {
+                    "option": "El Portal"
+                  },
+                  {
+                    "option": "Florida City"
+                  },
+                  {
+                    "option": "Golden Glades"
+                  },
+                  {
+                    "option": "Hialeah"
+                  },
+                  {
+                    "option": "Hialeah Gardens"
+                  },
+                  {
+                    "option": "Homestead"
+                  },
+                  {
+                    "option": "Kendall"
+                  },
+                  {
+                    "option": "Key Biscayne"
+                  },
+                  {
+                    "option": "Liberty City"
+                  },
+                  {
+                    "option": "Little Haiti"
+                  },
+                  {
+                    "option": "Little Havana"
+                  },
+                  {
+                    "option": "Miami Beach"
+                  },
+                  {
+                    "option": "Miami Gardens"
+                  },
+                  {
+                    "option": "Miami Lakes"
+                  },
+                  {
+                    "option": "Miami Shores"
+                  },
+                  {
+                    "option": "Miami Springs"
+                  },
+                  {
+                    "option": "Model City"
+                  },
+                  {
+                    "option": "North Bay Village"
+                  },
+                  {
+                    "option": "North Miami"
+                  },
+                  {
+                    "option": "North Miami Beach"
+                  },
+                  {
+                    "option": "Opa-locka"
+                  },
+                  {
+                    "option": "Overtown"
+                  },
+                  {
+                    "option": "Palmetto Bay"
+                  },
+                  {
+                    "option": "Perrine"
+                  },
+                  {
+                    "option": "Pinecrest"
+                  },
+                  {
+                    "option": "Richmond Heights"
+                  },
+                  {
+                    "option": "South Miami"
+                  },
+                  {
+                    "option": "Sunny Isles Beach"
+                  },
+                  {
+                    "option": "Surfside"
+                  },
+                  {
+                    "option": "Sweetwater"
+                  },
+                  {
+                    "option": "The Roads"
+                  },
+                  {
+                    "option": "Upper Eastside"
+                  },
+                  {
+                    "option": "Virginia Gardens"
+                  },
+                  {
+                    "option": "West Miami"
+                  },
+                  {
+                    "option": "Westchester"
+                  },
+                  {
+                    "option": "Wynwood"
+                  },
+                  {
+                    "option": "Coconut Creek"
+                  },
+                  {
+                    "option": "Cooper City"
+                  },
+                  {
+                    "option": "Coral Springs"
+                  },
+                  {
+                    "option": "Dania Beach"
+                  },
+                  {
+                    "option": "Davie"
+                  },
+                  {
+                    "option": "Deerfield Beach"
+                  },
+                  {
+                    "option": "Fort Lauderdale"
+                  },
+                  {
+                    "option": "Hallandale Beach"
+                  },
+                  {
+                    "option": "Hollywood"
+                  },
+                  {
+                    "option": "Lauderdale Lakes"
+                  },
+                  {
+                    "option": "Lauderhill"
+                  },
+                  {
+                    "option": "Lighthouse Point"
+                  },
+                  {
+                    "option": "Margate"
+                  },
+                  {
+                    "option": "Miramar"
+                  },
+                  {
+                    "option": "North Lauderdale"
+                  },
+                  {
+                    "option": "Oakland Park"
+                  },
+                  {
+                    "option": "Parkland"
+                  },
+                  {
+                    "option": "Pembroke Pines"
+                  },
+                  {
+                    "option": "Plantation"
+                  },
+                  {
+                    "option": "Pompano Beach"
+                  },
+                  {
+                    "option": "Sunrise"
+                  },
+                  {
+                    "option": "Tamarac"
+                  },
+                  {
+                    "option": "Weston"
+                  },
+                  {
+                    "option": "Wilton Manors"
+                  },
+                  {
+                    "option": "Belle Glade"
+                  },
+                  {
+                    "option": "Boca Raton"
+                  },
+                  {
+                    "option": "Boynton Beach"
+                  },
+                  {
+                    "option": "Delray Beach"
+                  },
+                  {
+                    "option": "Greenacres"
+                  },
+                  {
+                    "option": "Jupiter"
+                  },
+                  {
+                    "option": "Lake Worth Beach"
+                  },
+                  {
+                    "option": "Lantana"
+                  },
+                  {
+                    "option": "Loxahatchee"
+                  },
+                  {
+                    "option": "Palm Beach Gardens"
+                  },
+                  {
+                    "option": "Riviera Beach"
+                  },
+                  {
+                    "option": "Royal Palm Beach"
+                  },
+                  {
+                    "option": "Wellington"
+                  },
+                  {
+                    "option": "West Palm Beach"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              }
             },
             {
               "fieldLabel": "Headline",
@@ -235,7 +503,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Map form labels -> GHL option KEYS (GHL strips hyphens/spaces from keys).\nconst f = $input.first().json;\nconst key = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst TYPE_KEY = { 'SFR':'sfr', '2-4 Unit':'2to4unit', '5+ Unit':'5plusunit', 'Condo':'condo', 'Land':'land' };\nconst OCC_KEY = { 'VACANT AT CLOSE':'vacantatclose', 'Vacant Now':'vacantnow', 'Tenant Occupied':'tenantoccupied', 'Owner Occupied':'owneroccupied', 'Occupancy Unknown':'unknown' };\nconst num = (v) => (v === '' || v == null) ? undefined : Number(v);\nconst txt = (v) => (v == null ? '' : String(v).trim());\n\nconst address = txt(f['Address']);\n\n// City and Zip are no longer separate inputs - derive them from the address so\n// prop_city / prop_zip stay populated. Both are DISPLAY-ONLY (the teaser prompt\n// and the GHL record); the match engine keys on County, which is still its own\n// dropdown. A parse miss is cosmetic, never a mis-match.\nconst zipMatch = address.match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\nconst derivedZip = zipMatch ? zipMatch[1] : '';\nlet derivedCity = '';\n{\n  // strip the trailing \", FL 33142\" / \" FL 33142\"\n  let head = address.replace(/[,\\s]*\\bFL\\b[,\\s]*\\d{5}(?:-\\d{4})?\\s*$/i, '').trim();\n  head = head.replace(/[,\\s]+$/, '');\n  if (head.indexOf(',') !== -1) {\n    derivedCity = head.slice(head.lastIndexOf(',') + 1).trim();      // \"123 St, Miami\"\n  } else if (head.indexOf('.') !== -1) {\n    derivedCity = head.slice(head.lastIndexOf('.') + 1).trim();      // \"2165 NW 58th St. Miami\"\n  }\n  if (!derivedCity) {\n    const w = head.split(/\\s+/);\n    derivedCity = w.length ? w[w.length - 1] : '';\n  }\n}\n\n// Standard escrow unless the dispo manager overrides it.\nconst escrow = (f['Escrow'] === '' || f['Escrow'] == null) ? 10000 : Number(f['Escrow']);\n\nconst props = {\n  prop_address: address,\n  prop_city: derivedCity,\n  prop_zip: derivedZip,\n  prop_county: key(f['County']),\n  prop_type: TYPE_KEY[f['Property Type']],\n  prop_headline: txt(f['Headline']),\n  prop_occupancy: OCC_KEY[f['Occupancy']],\n  prop_comps: txt(f['Comps']),\n  prop_description: txt(f['Additional Details']),\n  prop_dispo_status: 'intake',\n};\nconst put = (k, v) => { if (v !== undefined && v !== '') props[k] = v; };\nput('prop_neighborhood', f['Neighborhood'] ? key(f['Neighborhood']) : undefined);\nput('prop_beds', num(f['Beds']));\nput('prop_baths', num(f['Baths']));\nput('prop_sqft', num(f['Living Area Sqft']));\nput('prop_lot_sqft', num(f['Lot Size Sqft']));\nput('prop_year_built', num(f['Year Built']));\nput('prop_roof_age', txt(f['Roof Age']));\nput('prop_ac_age', txt(f['AC Age']));\nput('prop_key_upgrades', txt(f['Key Upgrades']));\nput('prop_hoa', txt(f['HOA']));\nput('prop_liens_violations', txt(f['Liens or Violations']));\nput('prop_highlights', txt(f['Extra Highlights']));\nput('prop_asking_price', num(f['Asking Price']));\nput('prop_arv', num(f['ARV']));\nput('prop_repair_est', num(f['Repair Estimate']));\nput('prop_emd_terms', '$' + escrow.toLocaleString('en-US'));\nput('prop_photos_url', txt(f['Photos Videos URL']));\nput('prop_close_date', txt(f['Close Date']));\nput('prop_access_notes', txt(f['Access Notes']));\n\n// MAO deliberately NOT computed — settled during acquisition.\n\nreturn [{ json: { props, address, searchQuery: address, escrow, derivedCity, derivedZip, raw: f } }];"
+        "jsCode": "// Map form labels -> GHL option KEYS (GHL strips hyphens/spaces from keys).\nconst f = $input.first().json;\nconst key = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst TYPE_KEY = { 'SFR':'sfr', '2-4 Unit':'2to4unit', '5+ Unit':'5plusunit', 'Condo':'condo', 'Land':'land' };\nconst OCC_KEY = { 'VACANT AT CLOSE':'vacantatclose', 'Vacant Now':'vacantnow', 'Tenant Occupied':'tenantoccupied', 'Owner Occupied':'owneroccupied', 'Occupancy Unknown':'unknown' };\nconst num = (v) => (v === '' || v == null) ? undefined : Number(v);\nconst txt = (v) => (v == null ? '' : String(v).trim());\n\nconst address = txt(f['Address']);\n\n// City and Zip are no longer separate inputs - derive them from the address so\n// prop_city / prop_zip stay populated. Both are DISPLAY-ONLY (the teaser prompt\n// and the GHL record); the match engine keys on County, which is still its own\n// dropdown. A parse miss is cosmetic, never a mis-match.\nconst zipMatch = address.match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\nconst derivedZip = zipMatch ? zipMatch[1] : '';\nlet derivedCity = '';\n{\n  // strip the trailing \", FL 33142\" / \" FL 33142\"\n  let head = address.replace(/[,\\s]*\\bFL\\b[,\\s]*\\d{5}(?:-\\d{4})?\\s*$/i, '').trim();\n  head = head.replace(/[,\\s]+$/, '');\n  if (head.indexOf(',') !== -1) {\n    derivedCity = head.slice(head.lastIndexOf(',') + 1).trim();      // \"123 St, Miami\"\n  } else if (head.indexOf('.') !== -1) {\n    derivedCity = head.slice(head.lastIndexOf('.') + 1).trim();      // \"2165 NW 58th St. Miami\"\n  }\n  if (!derivedCity) {\n    const w = head.split(/\\s+/);\n    derivedCity = w.length ? w[w.length - 1] : '';\n  }\n}\n\n// Standard escrow unless the dispo manager overrides it.\nconst escrow = (!f['Escrow'] || Number(f['Escrow']) <= 0) ? 10000 : Number(f['Escrow']);\n\nconst props = {\n  prop_address: address,\n  prop_city: derivedCity,\n  prop_zip: derivedZip,\n  prop_county: key(f['County']),\n  prop_type: TYPE_KEY[f['Property Type']],\n  prop_headline: txt(f['Headline']),\n  prop_occupancy: OCC_KEY[f['Occupancy']],\n  prop_comps: txt(f['Comps']),\n  prop_description: txt(f['Additional Details']),\n  prop_dispo_status: 'intake',\n};\nconst put = (k, v) => { if (v !== undefined && v !== '') props[k] = v; };\n// prop_neighborhood is a fixed GHL picklist - an unrecognised value 400s the\n// whole request, so validate and drop rather than fail the run.\nconst HOOD_KEYS = [\"allapattah\", \"aventura\", \"balharbour\", \"bayharborislands\", \"belleglade\", \"bocaraton\", \"boyntonbeach\", \"brickell\", \"coconutcreek\", \"coconutgrove\", \"coopercity\", \"coralgables\", \"coralsprings\", \"coralway\", \"cutlerbay\", \"daniabeach\", \"davie\", \"deerfieldbeach\", \"delraybeach\", \"doral\", \"downtownmiami\", \"edgewater\", \"elportal\", \"floridacity\", \"fortlauderdale\", \"goldenglades\", \"greenacres\", \"hallandalebeach\", \"hialeah\", \"hialeahgardens\", \"hollywood\", \"homestead\", \"jupiter\", \"kendall\", \"keybiscayne\", \"lakeworthbeach\", \"lantana\", \"lauderdalelakes\", \"lauderhill\", \"libertycity\", \"lighthousepoint\", \"littlehaiti\", \"littlehavana\", \"loxahatchee\", \"margate\", \"miamibeach\", \"miamigardens\", \"miamilakes\", \"miamishores\", \"miamisprings\", \"miramar\", \"modelcity\", \"northbayvillage\", \"northlauderdale\", \"northmiami\", \"northmiamibeach\", \"oaklandpark\", \"opalocka\", \"other\", \"overtown\", \"palmbeachgardens\", \"palmettobay\", \"parkland\", \"pembrokepines\", \"perrine\", \"pinecrest\", \"plantation\", \"pompanobeach\", \"richmondheights\", \"rivierabeach\", \"royalpalmbeach\", \"southmiami\", \"sunnyislesbeach\", \"sunrise\", \"surfside\", \"sweetwater\", \"tamarac\", \"theroads\", \"uppereastside\", \"virginiagardens\", \"wellington\", \"westchester\", \"westmiami\", \"weston\", \"westpalmbeach\", \"wiltonmanors\", \"wynwood\"];\nconst hoodKey = f['Neighborhood'] ? key(f['Neighborhood']) : '';\nput('prop_neighborhood', HOOD_KEYS.indexOf(hoodKey) !== -1 ? hoodKey : undefined);\nput('prop_beds', num(f['Beds']));\nput('prop_baths', num(f['Baths']));\nput('prop_sqft', num(f['Living Area Sqft']));\nput('prop_lot_sqft', num(f['Lot Size Sqft']));\nput('prop_year_built', num(f['Year Built']));\nput('prop_roof_age', txt(f['Roof Age']));\nput('prop_ac_age', txt(f['AC Age']));\nput('prop_key_upgrades', txt(f['Key Upgrades']));\nput('prop_hoa', txt(f['HOA']));\nput('prop_liens_violations', txt(f['Liens or Violations']));\nput('prop_highlights', txt(f['Extra Highlights']));\nput('prop_asking_price', num(f['Asking Price']));\nput('prop_arv', num(f['ARV']));\nput('prop_repair_est', num(f['Repair Estimate']));\nput('prop_emd_terms', '$' + escrow.toLocaleString('en-US'));\nput('prop_photos_url', txt(f['Photos Videos URL']));\nput('prop_close_date', txt(f['Close Date']));\nput('prop_access_notes', txt(f['Access Notes']));\n\n// MAO deliberately NOT computed — settled during acquisition.\n\nreturn [{ json: { props, address, searchQuery: address, escrow, derivedCity, derivedZip, raw: f } }];"
       },
       "id": "normalize",
       "name": "Normalize + Map Keys",
@@ -263,7 +531,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ page: 1, pageLimit: 20, query: $json.searchQuery }) }}",
+        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', page: 1, pageLimit: 20, query: $json.searchQuery }) }}",
         "options": {}
       },
       "id": "find-property",
@@ -331,7 +599,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://services.leadconnectorhq.com/objects/custom_objects.property/records/{{ $json.recordId }}",
+        "url": "=https://services.leadconnectorhq.com/objects/custom_objects.property/records/{{ $json.recordId }}?locationId=ib5jEnyqqq06FIEqlVGs",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -345,7 +613,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', properties: $json.props }) }}",
+        "jsonBody": "={{ JSON.stringify({ properties: $json.props }) }}",
         "options": {}
       },
       "id": "update-property",
@@ -415,7 +683,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ pageLimit: 100 }) }}",
+        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', pageLimit: 100 }) }}",
         "options": {
           "pagination": {
             "pagination": {
@@ -425,12 +693,12 @@
                   {
                     "type": "body",
                     "name": "searchAfter",
-                    "value": "={{ ($response.body.contacts || []).slice(-1)[0] ? ($response.body.contacts || []).slice(-1)[0].searchAfter : null }}"
+                    "value": "={{ $response.body.contacts[$response.body.contacts.length - 1].searchAfter }}"
                   }
                 ]
               },
               "paginationCompleteWhen": "other",
-              "completeExpression": "={{ ($response.body.contacts || []).length < 100 }}",
+              "completeExpression": "={{ $response.body.contacts.length < 100 }}",
               "limitPagesFetched": true,
               "maxRequests": 100
             }
@@ -467,7 +735,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Build the WhatsApp post DETERMINISTICALLY. No LLM touches these numbers:\n// prices, comps and sqft render straight from the form, so they cannot be\n// paraphrased, rounded, or invented.\nconst d = $input.first().json;\nconst p = d.props, f = d.raw;\n\nconst money = (n) => '$' + Number(n).toLocaleString('en-US');\nconst nf = (n) => Number(n).toLocaleString('en-US');\n// Strip any bullet the user typed themselves - the template adds its own.\nconst lines = (s) => (s || '').split('\\n').map(x => x.trim().replace(/^[-\\u2022*\\u00B7\\u2013\\u2014]+\\s*/, '')).filter(Boolean);\nconst T = (v) => (v == null ? '' : String(v).trim());\n\nconst fullAddress = T(f['Address']).replace(/[,\\s]+$/, '');\n\n// ---- Details bullets, in the house order ----\nconst details = [];\ndetails.push('Beds/Bath: ' + T(f['Beds']) + '/' + T(f['Baths']));\ndetails.push('Living Area: ' + nf(f['Living Area Sqft']) + ' sq ft');\nif (f['Lot Size Sqft']) details.push('Lot Size: ' + nf(f['Lot Size Sqft']) + ' sq ft');\ndetails.push(T(f['Roof Age']) ? 'Roof is ' + T(f['Roof Age']) : 'Roof age unknown');\nif (T(f['Key Upgrades'])) details.push('Key Upgrades - ' + T(f['Key Upgrades']));\ndetails.push(T(f['AC Age']) ? 'AC is ' + T(f['AC Age']) : 'AC age unknown');\nfor (const h of lines(f['Extra Highlights'])) details.push(h);\nif (T(f['HOA'])) details.push(T(f['HOA']));\nif (T(f['Liens or Violations'])) details.push(T(f['Liens or Violations']));\n\nconst occupancy = T(f['Occupancy']);\nconst comps = lines(f['Comps']);\n\n// ---- WhatsApp (single asterisks render as bold) ----\nconst wa = [];\nwa.push('\\uD83C\\uDFE0 *' + fullAddress + '*');\nwa.push('');\nwa.push('\\u2B50' + T(f['Headline']));\nwa.push('');\nwa.push('\\uD83D\\uDFE0 *Details*');\nfor (const b of details) wa.push(' \\u00B7 ' + b);\nif (occupancy) wa.push(' \\u00B7 *' + occupancy + '*');\nwa.push('');\nwa.push('\\uD83D\\uDFE0 *Comps*');\nfor (const c of comps) wa.push(' \\u00B7 ' + c);\nwa.push('');\nwa.push('\\uD83D\\uDCB0 *Price:* Only ' + money(f['Asking Price']));\nwa.push('');\nwa.push('\\uD83D\\uDCC8 *ARV:* ~' + money(f['ARV']));\nwa.push('');\nwa.push('\\uD83D\\uDCF8 *Photos/Videos:*');\nwa.push(T(f['Photos Videos URL']));\nwa.push('\\uD83D\\uDCB5 *Escrow:* ' + money(d.escrow));\nconst whatsapp_post = wa.join('\\n');\n\n// ---- SMS: identical content, asterisks stripped.\n// SMS has no bold — leaving them in shows literal * to the buyer.\nconst sms_post = whatsapp_post.replace(/\\*/g, '');\n\nreturn [{ json: Object.assign({}, d, { fullAddress, whatsapp_post, sms_post }) }];"
+        "jsCode": "// Build the WhatsApp post DETERMINISTICALLY. No LLM touches these numbers:\n// prices, comps and sqft render straight from the form, so they cannot be\n// paraphrased, rounded, or invented.\nconst d = $input.first().json;\nconst p = d.props, f = d.raw;\n\nconst money = (n) => '$' + Number(n).toLocaleString('en-US');\nconst nf = (n) => Number(n).toLocaleString('en-US');\n// Strip any bullet the user typed themselves - the template adds its own.\nconst lines = (s) => (s || '').split('\\n').map(x => x.trim().replace(/^[-\\u2022*\\u00B7\\u2013\\u2014]+\\s*/, '')).filter(Boolean);\nconst T = (v) => (v == null ? '' : String(v).trim());\n\nconst fullAddress = T(f['Address']).replace(/[,\\s]+$/, '');\n// Computed here, not read from upstream - the exclusion engine does not\n// pass it through, which rendered 'Escrow: $NaN'.\nconst escrow = (!f['Escrow'] || Number(f['Escrow']) <= 0) ? 10000 : Number(f['Escrow']);\n// 'unknown' typed into an age field should read as unknown, not 'is unknown'.\nconst UNK = (v) => /^(unknown|unk|n\\/a|na|\\?)$/i.test(T(v));\n\n// ---- Details bullets, in the house order ----\nconst details = [];\ndetails.push('Beds/Bath: ' + T(f['Beds']) + '/' + T(f['Baths']));\ndetails.push('Living Area: ' + nf(f['Living Area Sqft']) + ' sq ft');\nif (f['Lot Size Sqft']) details.push('Lot Size: ' + nf(f['Lot Size Sqft']) + ' sq ft');\ndetails.push((T(f['Roof Age']) && !UNK(f['Roof Age'])) ? 'Roof is ' + T(f['Roof Age']) : 'Roof age unknown');\nif (T(f['Key Upgrades'])) details.push('Key Upgrades - ' + T(f['Key Upgrades']));\ndetails.push((T(f['AC Age']) && !UNK(f['AC Age'])) ? 'AC is ' + T(f['AC Age']) : 'AC age unknown');\nfor (const h of lines(f['Extra Highlights'])) details.push(h);\nif (T(f['HOA'])) details.push(T(f['HOA']));\nif (T(f['Liens or Violations'])) details.push(T(f['Liens or Violations']));\n\nconst occupancy = T(f['Occupancy']);\nconst comps = lines(f['Comps']);\n\n// ---- WhatsApp (single asterisks render as bold) ----\nconst wa = [];\nwa.push('\\uD83C\\uDFE0 *' + fullAddress + '*');\nwa.push('');\nwa.push('\\u2B50' + T(f['Headline']));\nwa.push('');\nwa.push('\\uD83D\\uDFE0 *Details*');\nfor (const b of details) wa.push(' \\u00B7 ' + b);\nif (occupancy) wa.push(' \\u00B7 *' + occupancy + '*');\nwa.push('');\nwa.push('\\uD83D\\uDFE0 *Comps*');\nfor (const c of comps) wa.push(' \\u00B7 ' + c);\nwa.push('');\nwa.push('\\uD83D\\uDCB0 *Price:* Only ' + money(f['Asking Price']));\nwa.push('');\nwa.push('\\uD83D\\uDCC8 *ARV:* ~' + money(f['ARV']));\nwa.push('');\nwa.push('\\uD83D\\uDCF8 *Photos/Videos:*');\nwa.push(T(f['Photos Videos URL']));\nwa.push('\\uD83D\\uDCB5 *Escrow:* ' + money(escrow));\nconst whatsapp_post = wa.join('\\n');\n\n// ---- SMS: identical content, asterisks stripped.\n// SMS has no bold — leaving them in shows literal * to the buyer.\nconst sms_post = whatsapp_post.replace(/\\*/g, '');\n\nreturn [{ json: Object.assign({}, d, { fullAddress, whatsapp_post, sms_post }) }];"
       },
       "id": "build-post",
       "name": "Build WhatsApp + SMS Post",
@@ -495,7 +763,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'claude-opus-5', max_tokens: 8000, system: 'You write short outreach texts for Buying Hero, a South Florida wholesaler, to its cash-buyer list. Non-negotiable rules: (1) The teaser NEVER contains the street address - withholding it is what forces the reply. City is fine. (2) Never invent exclusivity, urgency, competing offers, deadlines, or any claim you were not given. (3) Never state a number you were not given. (4) Sound like a person texting a contact they know. Short sentences, no emoji, no ALL CAPS, no marketing voice.', messages: [{ role: 'user', content: 'Deal facts:\\nCity: ' + $json.derivedCity + '\\nBeds/Baths: ' + $json.raw['Beds'] + '/' + $json.raw['Baths'] + '\\nType: ' + $json.raw['Property Type'] + '\\nARV: ' + $json.raw['ARV'] + '\\nAsking: ' + $json.raw['Asking Price'] + '\\nHeadline feature: ' + $json.raw['Headline'] + '\\n\\nAdditional details from the dispo manager:\\n' + ($json.raw['Additional Details'] || '(none provided - work from the facts above)') + '\\n\\nWrite the teaser set.' }], output_config: { format: { type: 'json_schema', schema: { type: 'object', properties: { teaser_sms: { type: 'string', description: 'Under 320 characters. Beds/baths, city, ARV, price, one standout feature, soft CTA. NO street address. Use {{first_name}} for the buyer and Andrew as sender.' }, hook_used: { type: 'string', description: 'The opener line only, so it can be written to buy_last_hook and never reused on the same buyer.' }, email_subject: { type: 'string', description: 'Subject line for the email version.' }, voice_brief: { type: 'string', description: 'Plain fact sheet the voice AI answers from. Facts only, no script, no persuasion.' } }, required: ['teaser_sms','hook_used','email_subject','voice_brief'], additionalProperties: false } } } }) }}",
+        "jsonBody": "={{ JSON.stringify($json.claudeBody) }}",
         "options": {
           "timeout": 120000
         }
@@ -526,6 +794,19 @@
       "position": [
         1880,
         300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Anthropic request as a real object. n8n's expression parser\n// rejects a body this large inline (\"invalid syntax\"), so it lives here.\nconst d = $input.first().json;\nconst f = d.raw;\n\nconst SYSTEM = [\n  'You write short outreach texts for Buying Hero, a South Florida wholesaler, to its cash-buyer list.',\n  'Non-negotiable rules:',\n  '(1) The teaser NEVER contains the street address - withholding it is what forces the reply. City is fine.',\n  '(2) Never invent exclusivity, urgency, competing offers, deadlines, or any claim you were not given.',\n  '(3) Never state a number you were not given.',\n  '(4) Sound like a person texting a contact they know. Short sentences, no emoji, no ALL CAPS, no marketing voice.'\n].join(' ');\n\nconst facts = [\n  'City: ' + (d.derivedCity || f['City'] || ''),\n  'Beds/Baths: ' + f['Beds'] + '/' + f['Baths'],\n  'Type: ' + f['Property Type'],\n  'ARV: ' + f['ARV'],\n  'Asking: ' + f['Asking Price'],\n  'Headline feature: ' + f['Headline'],\n  '',\n  'Additional details from the dispo manager:',\n  (f['Additional Details'] || '(none provided - work from the facts above)'),\n  '',\n  'Write the teaser set.'\n].join('\\n');\n\nconst claudeBody = {\n  model: 'claude-opus-5',\n  max_tokens: 8000,\n  system: SYSTEM,\n  messages: [{ role: 'user', content: facts }],\n  output_config: {\n    format: {\n      type: 'json_schema',\n      schema: {\n        type: 'object',\n        properties: {\n          teaser_sms:    { type: 'string', description: 'Under 320 characters. Beds/baths, city, ARV, price, one standout feature, soft CTA. NO street address. Use {{first_name}} for the buyer and Andrew as sender.' },\n          hook_used:     { type: 'string', description: 'The opener line only, so it can be written to buy_last_hook and never reused on the same buyer.' },\n          email_subject: { type: 'string', description: 'Subject line for the email version.' },\n          voice_brief:   { type: 'string', description: 'Plain fact sheet the voice AI answers from. Facts only, no script, no persuasion.' }\n        },\n        required: ['teaser_sms', 'hook_used', 'email_subject', 'voice_brief'],\n        additionalProperties: false\n      }\n    }\n  }\n};\n\nreturn [{ json: Object.assign({}, d, { claudeBody }) }];"
+      },
+      "id": "build-claude-req",
+      "name": "Build Claude Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1550,
+        460
       ]
     }
   ],
@@ -629,7 +910,7 @@
       "main": [
         [
           {
-            "node": "Claude — Teaser + Voice Brief",
+            "node": "Build Claude Request",
             "type": "main",
             "index": 0
           }
@@ -652,6 +933,17 @@
         [
           {
             "node": "Build WhatsApp + SMS Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude Request": {
+      "main": [
+        [
+          {
+            "node": "Claude — Teaser + Voice Brief",
             "type": "main",
             "index": 0
           }
