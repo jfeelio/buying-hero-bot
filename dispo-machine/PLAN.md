@@ -243,7 +243,19 @@ deal reuses its existing Property record rather than creating a second one.
 ### Pipelines
 
 - **Dispo** (one opportunity per property): Intake → Packaged → Live → Offers In → Under Contract → Assigned → Dead
-- **Buyer Interest** (one per buyer-property pair): Interested → Info Sent → Walked → Offer → Contract Sent → Closed → Passed
+- **Buyer Interest** (one per buyer-property pair): **Reached Out** → Info Sent → Walked → Offer → Contract Sent → Closed → Passed
+
+> Stage 1 was renamed from *Interested* to **Reached Out** (2026-08-14) so the
+> pipeline states what actually happened. It now maps exactly onto the two-step
+> mechanic: **Reached Out** = teaser sent; **Info Sent** = they replied and got
+> the full house post. "Interested" was a claim about the buyer we hadn't earned.
+>
+> **The blast creates one opportunity per buyer who actually received the text** —
+> named `{address} — {buyer}`. This is the durable buyer↔deal association: open
+> the pipeline, search the address, see every buyer tied to that deal and how far
+> they got. A contact field cannot express it, because a buyer belongs to many
+> deals over time and a single field overwrites. The workflow resolves the stage
+> **by name at runtime**, so renaming or reordering stages needs no code change.
 
 > The Buyer Interest pipeline **replaces the per-deal tab.** Today the master
 > list is copied into a fresh tab every deal and outreach is tracked by hand in

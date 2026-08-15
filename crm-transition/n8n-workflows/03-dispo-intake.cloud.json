@@ -6,7 +6,7 @@
       "parameters": {
         "path": "deal-intake",
         "formTitle": "Buying Hero — Deal Intake",
-        "formDescription": "Fill this out once. It builds the WhatsApp post, the SMS version, the teaser, and the matched buyer list.",
+        "formDescription": "Import the InvestorBase list for this address FIRST, then fill this in. The buyer pool is read at submit time, so anyone imported beforehand is included automatically. Builds the WhatsApp post, the SMS version, the teaser, and the matched buyer list. Nothing sends.",
         "formFields": {
           "values": [
             {
@@ -722,7 +722,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ============================================================\n// EXCLUSION ENGINE — default is INCLUDE.\n//\n// Extracted buy_* data is a GUESS (parsed from old prose notes, never\n// confirmed with the buyer). It is NEVER used to filter a blast. Using it to\n// filter means a buyer whose 2024 note said \"Broward only\" silently stops\n// hearing about Dade deals and nobody ever finds out.\n//\n// A buyer drops out of a blast ONLY when a human set an excl_* rule after\n// actually talking to them.\n//\n// The buy_* data still earns its keep: where it CONTRADICTS the deal but no\n// excl_* rule exists, it produces a review suggestion — an interview queue.\n// ============================================================\nconst pages = $input.all();\nconst pool = pages.flatMap(p => p.json.contacts || []);\n\nconst deal = $('Create or Update?').first().json;\nconst p = deal.props, f = deal.raw;\n\nconst cf = (c, k) => {\n  const hit = (c.customFields || []).find(x => x.id === k || x.key === k);\n  if (!hit) return null;\n  return hit.value !== undefined ? hit.value : (hit.fieldValue !== undefined ? hit.fieldValue : null);\n};\nconst arr = (v) => v == null ? [] : (Array.isArray(v) ? v : String(v).split(';').map(s => s.trim()).filter(Boolean));\nconst norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst n = (v) => (v == null || v === '') ? null : Number(v);\n\nconst dealCounty = norm(f['County']);\nconst dealHood   = norm(f['Neighborhood'] || '');\nconst dealType   = norm(f['Property Type']);\nconst asking = n(p.prop_asking_price);\nconst sqft   = n(p.prop_sqft);\n\nconst included = [], excluded = [], suppressed = [], suggestions = [];\n\nfor (const c of pool) {\n  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.contactName || '(no name)';\n  const tier = cf(c, 'buy_tier') || '(none)';\n  const row = { id: c.id, name, phone: c.phone || null, tier };\n\n  // ---- HARD SUPPRESSIONS: not preferences. Compliance and physics. ----\n  const rt = arr(cf(c, 'record_type')).map(norm);\n  if (rt.length && !rt.includes('buyer')) continue;          // seller-only record\n\n  const status = norm(cf(c, 'buy_status'));\n  if (status === 'dnc' || status === 'blacklist') {\n    suppressed.push({ ...row, why: 'buy_status=' + status });\n    continue;\n  }\n  if (!c.phone) { suppressed.push({ ...row, why: 'no phone on file' }); continue; }\n\n  // ---- EXCLUSION RULES: the only thing that removes a buyer ----\n  const why = [];\n\n  if (norm(cf(c, 'excl_all_blasts')) === 'yes') why.push('held from all blasts');\n\n  const belowPrice = n(cf(c, 'excl_below_price'));\n  if (belowPrice && asking && asking < belowPrice)\n    why.push('asking ' + asking + ' below their floor ' + belowPrice);\n\n  const abovePrice = n(cf(c, 'excl_above_price'));\n  if (abovePrice && asking && asking > abovePrice)\n    why.push('asking ' + asking + ' above their ceiling ' + abovePrice);\n\n  const belowSqft = n(cf(c, 'excl_below_sqft'));\n  if (belowSqft && sqft && sqft < belowSqft)\n    why.push('sqft ' + sqft + ' below their floor ' + belowSqft);\n\n  const exTypes = arr(cf(c, 'excl_prop_types')).map(norm);\n  if (exTypes.length && dealType && exTypes.includes(dealType))\n    why.push('excludes ' + f['Property Type']);\n\n  const onlyCounties = arr(cf(c, 'excl_outside_counties')).map(norm);\n  if (onlyCounties.length && dealCounty && !onlyCounties.includes(dealCounty))\n    why.push('outside their counties');\n\n  const onlyHoods = arr(cf(c, 'excl_outside_neighborhoods')).map(norm);\n  if (onlyHoods.length && dealHood && !onlyHoods.includes(dealHood))\n    why.push('outside their sub-markets');\n\n  if (why.length) {\n    excluded.push({ ...row, why: why.join('; '),\n                    note: cf(c, 'excl_notes') || '', verified: cf(c, 'excl_verified_date') || '' });\n    continue;\n  }\n\n  // ---- INCLUDED. Now: does unverified buy_* data hint at a missing rule? ----\n  const hints = [];\n  const bCounties = arr(cf(c, 'buy_counties')).map(norm);\n  if (!onlyCounties.length && bCounties.length && dealCounty && !bCounties.includes(dealCounty))\n    hints.push('notes say ' + arr(cf(c, 'buy_counties')).join('/') + ' only');\n\n  const bHoods = arr(cf(c, 'buy_neighborhoods'));\n  if (!onlyHoods.length && bHoods.length && dealHood && !bHoods.map(norm).includes(dealHood))\n    hints.push('notes say ' + bHoods.join('/') + ' only');\n\n  const bMin = n(cf(c, 'buy_price_min'));\n  if (!belowPrice && bMin && asking && asking < bMin) hints.push('notes say min ' + bMin);\n\n  const bMax = n(cf(c, 'buy_price_max'));\n  if (!abovePrice && bMax && asking && asking > bMax) hints.push('notes say max ' + bMax);\n\n  const bSqft = n(cf(c, 'buy_sqft_min'));\n  if (!belowSqft && bSqft && sqft && sqft < bSqft) hints.push('notes say min ' + bSqft + ' sqft');\n\n  const bTypes = arr(cf(c, 'buy_prop_types'));\n  if (!exTypes.length && bTypes.length && dealType && !bTypes.map(norm).includes(dealType))\n    hints.push('notes say ' + bTypes.join('/') + ' only');\n\n  included.push(row);\n  if (hints.length) suggestions.push({ ...row, hint: hints.join('; '),\n                                       action: 'CONFIRM WITH BUYER, then set an excl_ rule if true' });\n}\n\nconst rank = { VIP: 0, A: 1, B: 2, C: 3 };\nincluded.sort((a, b) => (rank[a.tier] ?? 9) - (rank[b.tier] ?? 9));\n\nreturn [{ json: {\n  recordId: deal.recordId,\n  created: !deal.exists,\n  props: p,\n  raw: f,\n  pagesFetched: pages.length,\n  poolSize: pool.length,\n  includedCount: included.length,\n  excludedCount: excluded.length,\n  suppressedCount: suppressed.length,\n  included,\n  excluded,\n  suppressed,\n  suggestions,\n} }];"
+        "jsCode": "// ============================================================\n// EXCLUSION ENGINE — default is INCLUDE.\n//\n// Extracted buy_* data is a GUESS (parsed from old prose notes, never\n// confirmed with the buyer). It is NEVER used to filter a blast. Using it to\n// filter means a buyer whose 2024 note said \"Broward only\" silently stops\n// hearing about Dade deals and nobody ever finds out.\n//\n// A buyer drops out of a blast ONLY when a human set an excl_* rule after\n// actually talking to them.\n//\n// The buy_* data still earns its keep: where it CONTRADICTS the deal but no\n// excl_* rule exists, it produces a review suggestion — an interview queue.\n// ============================================================\nconst pages = $input.all();\nconst pool = pages.flatMap(p => p.json.contacts || []);\n\nconst deal = $('Create or Update?').first().json;\nconst p = deal.props, f = deal.raw;\n\n// GHL returns a contact's customFields as [{id, value}] with NO field name,\n// so look the id up from the definitions first. Without this every lookup\n// returns null and no excl_ rule can ever fire - a silent, invisible failure.\nconst defs = ($('Fetch Field Definitions').first().json.customFields) || [];\nconst ID_BY_NAME = {};\nfor (const d of defs) ID_BY_NAME[d.name] = d.id;\n\nconst cf = (c, name) => {\n  const id = ID_BY_NAME[name];\n  const hit = (c.customFields || []).find(x => x.id === id || x.id === name || x.key === name);\n  if (!hit) return null;\n  return hit.value !== undefined ? hit.value : (hit.fieldValue !== undefined ? hit.fieldValue : null);\n};\nconst arr = (v) => v == null ? [] : (Array.isArray(v) ? v : String(v).split(';').map(s => s.trim()).filter(Boolean));\nconst norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst n = (v) => (v == null || v === '') ? null : Number(v);\n\n\n// Address comparison for deal-scoping. Tolerant of \"2165 NW 58th St\" vs\n// \"2165 NW 58th St. Miami, FL 33142\" - either containing the other counts.\nconst normAddr = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');\nconst addrMatch = (a, b) => {\n  if (!a || !b) return false;\n  return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;\n};\nconst dealAddr = normAddr(p.prop_address);\nconst dealCounty = norm(f['County']);\nconst dealHood   = norm(f['Neighborhood'] || '');\nconst dealType   = norm(f['Property Type']);\nconst asking = n(p.prop_asking_price);\nconst sqft   = n(p.prop_sqft);\n\nconst included = [], excluded = [], suppressed = [], suggestions = [];\nlet notBuyers = 0;\n\nfor (const c of pool) {\n  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.contactName || '(no name)';\n  const tier = cf(c, 'buy_tier') || '(none)';\n  const srcList = arr(cf(c, 'buy_source'));\n  const src = srcList.length ? srcList.join(', ') : '(none)';\n  // Recency answers the real question: did the InvestorBase import for\n  // THIS deal actually finish before the form was submitted?\n  const addedMs = c.dateAdded ? Date.parse(c.dateAdded) : 0;\n  const freshlyAdded = addedMs > 0 && (Date.now() - addedMs) < 2 * 60 * 60 * 1000;\n  const row = { id: c.id, name, phone: c.phone || null, tier, source: src, freshlyAdded, segment: '' };\n\n  // ---- HARD SUPPRESSIONS: not preferences. Compliance and physics. ----\n  // record_type must positively say Buyer. A blank record_type is NOT an\n  // implicit buyer - seller leads, inbound web contacts and CRM demo records\n  // all arrive with it empty, and none of them should get a wholesale blast.\n  // This is a classification check, not a preference, so it is not subject to\n  // the exclusion-by-default rule.\n  const rt = arr(cf(c, 'record_type')).map(norm);\n  if (!rt.includes('buyer')) { notBuyers++; continue; }\n\n  const status = norm(cf(c, 'buy_status'));\n  if (status === 'dnc' || status === 'blacklist') {\n    suppressed.push({ ...row, why: 'buy_status=' + status });\n    continue;\n  }\n  if (!c.phone) { suppressed.push({ ...row, why: 'no phone on file' }); continue; }\n\n  // ---- EXCLUSION RULES: the only thing that removes a buyer ----\n  const why = [];\n\n  if (norm(cf(c, 'excl_all_blasts')) === 'yes') why.push('held from all blasts');\n\n  // ---- InvestorBase buyers are DEAL-SCOPED ----\n  // IB returns buyers within ~2 miles of one subject property. They were never\n  // a general buyer list, so they are only eligible for the deal they were\n  // pulled for. Master-list buyers (BH Main / Referral) get everything.\n  const srcNorm = arr(cf(c, 'buy_source')).map(norm);\n  // SEGMENT, do not exclude. Source decides the SCRIPT, not eligibility.\n  // An InvestorBase buyer sourced for another property is still a real cash\n  // buyer in this county - excluding them would throw away the database the\n  // imports exist to build.\n  const pulledLines = String(cf(c, 'buy_ib_property') || '')\n    .split('\n').map(s => normAddr(s)).filter(Boolean);\n  const geoMatched = pulledLines.some(a => addrMatch(a, dealAddr));\n  const inquiredHere = srcNorm.includes('investorlift') && geoMatched;\n\n  let segment;\n  if (inquiredHere) segment = 'inquired';\n  else if (srcNorm.includes('bhmain') || srcNorm.includes('referral')) segment = 'warm';\n  else if (geoMatched) segment = 'geo_cold';\n  else segment = 'general_cold';\n\n\n  const belowPrice = n(cf(c, 'excl_below_price'));\n  if (belowPrice && asking && asking < belowPrice)\n    why.push('asking ' + asking + ' below their floor ' + belowPrice);\n\n  const abovePrice = n(cf(c, 'excl_above_price'));\n  if (abovePrice && asking && asking > abovePrice)\n    why.push('asking ' + asking + ' above their ceiling ' + abovePrice);\n\n  const belowSqft = n(cf(c, 'excl_below_sqft'));\n  if (belowSqft && sqft && sqft < belowSqft)\n    why.push('sqft ' + sqft + ' below their floor ' + belowSqft);\n\n  const exTypes = arr(cf(c, 'excl_prop_types')).map(norm);\n  if (exTypes.length && dealType && exTypes.includes(dealType))\n    why.push('excludes ' + f['Property Type']);\n\n  const onlyCounties = arr(cf(c, 'excl_outside_counties')).map(norm);\n  if (onlyCounties.length && dealCounty && !onlyCounties.includes(dealCounty))\n    why.push('outside their counties');\n\n  const onlyHoods = arr(cf(c, 'excl_outside_neighborhoods')).map(norm);\n  if (onlyHoods.length && dealHood && !onlyHoods.includes(dealHood))\n    why.push('outside their sub-markets');\n\n  if (why.length) {\n    excluded.push({ ...row, why: why.join('; '),\n                    note: cf(c, 'excl_notes') || '', verified: cf(c, 'excl_verified_date') || '' });\n    continue;\n  }\n\n  // ---- INCLUDED. Now: does unverified buy_* data hint at a missing rule? ----\n  const hints = [];\n  const bCounties = arr(cf(c, 'buy_counties')).map(norm);\n  if (!onlyCounties.length && bCounties.length && dealCounty && !bCounties.includes(dealCounty))\n    hints.push('notes say ' + arr(cf(c, 'buy_counties')).join('/') + ' only');\n\n  const bHoods = arr(cf(c, 'buy_neighborhoods'));\n  if (!onlyHoods.length && bHoods.length && dealHood && !bHoods.map(norm).includes(dealHood))\n    hints.push('notes say ' + bHoods.join('/') + ' only');\n\n  const bMin = n(cf(c, 'buy_price_min'));\n  if (!belowPrice && bMin && asking && asking < bMin) hints.push('notes say min ' + bMin);\n\n  const bMax = n(cf(c, 'buy_price_max'));\n  if (!abovePrice && bMax && asking && asking > bMax) hints.push('notes say max ' + bMax);\n\n  const bSqft = n(cf(c, 'buy_sqft_min'));\n  if (!belowSqft && bSqft && sqft && sqft < bSqft) hints.push('notes say min ' + bSqft + ' sqft');\n\n  const bTypes = arr(cf(c, 'buy_prop_types'));\n  if (!exTypes.length && bTypes.length && dealType && !bTypes.map(norm).includes(dealType))\n    hints.push('notes say ' + bTypes.join('/') + ' only');\n\n  row.segment = segment;\n  included.push(row);\n  if (hints.length) suggestions.push({ ...row, hint: hints.join('; '),\n                                       action: 'CONFIRM WITH BUYER, then set an excl_ rule if true' });\n}\n\nconst rank = { VIP: 0, A: 1, B: 2, C: 3 };\nincluded.sort((a, b) => (rank[a.tier] ?? 9) - (rank[b.tier] ?? 9));\n\nreturn [{ json: {\n  recordId: deal.recordId,\n  created: !deal.exists,\n  props: p,\n  raw: f,\n  pagesFetched: pages.length,\n  poolSize: pool.length,\n  notBuyers,\n  fieldDefsLoaded: Object.keys(ID_BY_NAME).length,\n  includedCount: included.length,\n  bySegment: (function () {\n    const m = { inquired: 0, warm: 0, geo_cold: 0, general_cold: 0 };\n    for (const b of included) if (b.segment) m[b.segment] = (m[b.segment] || 0) + 1;\n    return m;\n  })(),\n  bySource: (function () {\n    const m = {};\n    for (const b of included) m[b.source] = (m[b.source] || 0) + 1;\n    return m;\n  })(),\n  freshlyAddedCount: included.filter(b => b.freshlyAdded).length,\n  excludedCount: excluded.length,\n  suppressedCount: suppressed.length,\n  included,\n  excluded,\n  suppressed,\n  suggestions,\n} }];"
       },
       "id": "match",
       "name": "Exclusion Engine",
@@ -785,7 +785,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const res = $input.first().json;\nconst d = $('Build WhatsApp + SMS Post').first().json;\n\nlet ai = {}, aiError = null;\ntry {\n  const t = (res.content || []).find(b => b.type === 'text');\n  ai = JSON.parse(t.text);\n} catch (e) { aiError = String(e); }\n\nreturn [{ json: {\n  status: 'DRAFTS READY - NOTHING SENT',\n  property_record_id: d.recordId,\n  property_action: d.created ? 'CREATED' : 'UPDATED existing record',\n  address: d.fullAddress,\n  buyers_included: d.includedCount,\n  buyers_excluded: d.excludedCount,\n  buyers_suppressed: d.suppressedCount,\n  buyers_scanned: d.poolSize,\n  pages_fetched: d.pagesFetched,\n  whatsapp_post: d.whatsapp_post,\n  sms_post: d.sms_post,\n  teaser_sms: ai.teaser_sms || null,\n  hook_used: ai.hook_used || null,\n  email_subject: ai.email_subject || null,\n  voice_brief: ai.voice_brief || null,\n  ai_error: aiError,\n  included: d.included,\n  excluded: d.excluded,\n  suppressed: d.suppressed,\n  review_suggestions: d.suggestions\n} }];"
+        "jsCode": "const res = $input.first().json;\nconst d = $('Build WhatsApp + SMS Post').first().json;\n\n// Only one of Create/Update ran, so probe both. Referencing a node that did\n// not execute throws, hence the try/catch rather than an if.\nlet recId = d.recordId || null;\nif (!recId) { try { const r = $('Create Property').first().json; recId = (r.record && r.record.id) || r.id || null; } catch (e) {} }\nif (!recId) { try { const r = $('Update Property').first().json; recId = (r.record && r.record.id) || r.id || null; } catch (e) {} }\n\nlet ai = {}, aiError = null;\ntry {\n  const t = (res.content || []).find(b => b.type === 'text');\n  ai = JSON.parse(t.text);\n} catch (e) { aiError = String(e); }\n\nreturn [{ json: {\n  status: 'DRAFTS READY - NOTHING SENT',\n  property_record_id: recId,\n  property_action: d.created ? 'CREATED' : 'UPDATED existing record',\n  address: d.fullAddress,\n  buyers_included: d.includedCount,\n  by_source: d.bySource,\n  by_segment: d.bySegment,\n  imported_last_2h: d.freshlyAddedCount,\n  buyers_excluded: d.excludedCount,\n  buyers_suppressed: d.suppressedCount,\n  buyers_scanned: d.poolSize,\n  not_buyers_skipped: d.notBuyers,\n  pages_fetched: d.pagesFetched,\n  whatsapp_post: d.whatsapp_post,\n  sms_post: d.sms_post,\n  teaser_sms: ai.teaser_sms || null,\n  hook_used: ai.hook_used || null,\n  email_subject: ai.email_subject || null,\n  voice_brief: ai.voice_brief || null,\n  ai_error: aiError,\n  included: d.included,\n  excluded: d.excluded,\n  suppressed: d.suppressed,\n  review_suggestions: d.suggestions\n} }];"
       },
       "id": "format",
       "name": "Format Result",
@@ -808,6 +808,105 @@
         1550,
         460
       ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "=Drafts ready",
+        "completionMessage": "={{ $json.summary_html }}",
+        "options": {
+          "customCss": "\n.form-container, .card, form, body { text-align: left !important; }\nh1 { text-align:left; font-size:19px; font-weight:700; color:#8a1c1c; background:#fdecec;\n     border:1px solid #f3c2c2; border-radius:8px; padding:12px 14px; margin:0 0 18px 0; letter-spacing:.2px; }\nh2 { text-align:left; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.09em;\n     color:#4a5568; border-bottom:2px solid #e2e8f0; padding-bottom:7px; margin:30px 0 12px 0; }\np  { text-align:left; font-size:13.5px; line-height:1.6; color:#4a5568; margin:0 0 12px 0; }\npre { text-align:left; white-space:pre-wrap; word-break:break-word; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;\n      font-size:13px; line-height:1.62; background:#f7fafc; border:1px solid #e2e8f0; border-left:3px solid #2b6cb0;\n      border-radius:8px; padding:14px 16px; margin:0 0 6px 0; color:#1a202c; overflow-x:auto; }\ntable { width:100%; border-collapse:collapse; margin:0 0 8px 0; font-size:13.5px; }\nth { text-align:left; font-weight:600; color:#4a5568; background:#f7fafc; border:1px solid #e2e8f0;\n     padding:8px 11px; white-space:nowrap; }\ntd { text-align:left; border:1px solid #e2e8f0; padding:8px 11px; color:#1a202c; vertical-align:top; }\nb, strong { color:#1a202c; font-weight:650; }\n\na { display:inline-block; text-align:center; background:#1b6b3a; color:#ffffff !important;\n    font-size:15px; font-weight:650; text-decoration:none; padding:13px 22px; border-radius:8px;\n    border:1px solid #14562e; margin:2px 0 4px 0; letter-spacing:.2px; }\na:hover { background:#14562e; }\n"
+        }
+      },
+      "id": "form-ending",
+      "name": "Show Drafts",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        300
+      ],
+      "webhookId": "deal-intake"
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/locations/ib5jEnyqqq06FIEqlVGs/customFields?model=contact",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "field-defs",
+      "name": "Fetch Field Definitions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        140
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read from Format Result - the save node's output is the GHL API response.\nconst d = $('Format Result').first().json;\n\n// n8n sanitises the completion message: only structural tags survive and\n// class/style attributes are stripped, so styling hangs off tag selectors in\n// customCss. It also converts raw newlines to <br>, which would double-space\n// inside <pre> - so emit ONE line of HTML and use <br> explicitly.\nconst esc = (s) => String(s == null ? '' : s)\n  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst block = (s) => esc(s).split('\\n').join('<br>');\n\nconst H = [];\n\n// --- status ---\nH.push('<h1>Nothing has been sent</h1>');\nH.push('<p>These are drafts. Review, then send manually or trigger the blast.</p>');\n\n// --- deal summary ---\nH.push('<h2>Deal</h2>');\nH.push('<table><tr><th>Property</th><td>' + esc(d.address) + '</td></tr>' +\n       '<tr><th>Record</th><td>' + esc(d.property_action) + '</td></tr>' +\n       '<tr><th>Buyers included</th><td><b>' + esc(d.buyers_included) + '</b></td></tr>' +\n       '<tr><th>Excluded by a rule</th><td>' + esc(d.buyers_excluded) + '</td></tr>' +\n       '<tr><th>Suppressed</th><td>' + esc(d.buyers_suppressed) + ' (DNC, blacklist, or no phone)</td></tr>' +\n       '<tr><th>Pool scanned</th><td>' + esc(d.buyers_scanned) + ' across ' + esc(d.pages_fetched) + ' page(s)</td></tr>' +\n       '</table>');\n\n// --- WhatsApp ---\nH.push('<h2>WhatsApp post</h2>');\nH.push('<p>Copy straight into the group.</p>');\nH.push('<pre>' + block(d.whatsapp_post || '(not built)') + '</pre>');\n\n// --- Teaser ---\nH.push('<h2>Teaser SMS &mdash; first cold touch</h2>');\nH.push('<p>No address. Withholding it is what earns the reply.</p>');\nH.push('<pre>' + block(d.teaser_sms || '(not generated)') + '</pre>');\nH.push('<p>Hook: <b>' + esc(d.hook_used || '-') + '</b> &nbsp;|&nbsp; Email subject: <b>' + esc(d.email_subject || '-') + '</b></p>');\n\n// --- SMS full ---\nH.push('<h2>SMS post &mdash; sent after a buyer replies</h2>');\nH.push('<p>Same content as WhatsApp, asterisks stripped (SMS has no bold).</p>');\nH.push('<pre>' + block(d.sms_post || '(not built)') + '</pre>');\n\n// --- buyers ---\nconst rows = (arr, extra) => {\n  if (!arr || !arr.length) return '<p>None.</p>';\n  let t = '<table><tr><th>Buyer</th><th>Tier</th><th>Segment</th><th>Source</th><th>Phone</th>' + (extra ? '<th>' + extra + '</th>' : '') + '</tr>';\n  for (const b of arr) {\n    t += '<tr><td>' + esc(b.name) + (b.freshlyAdded ? ' <b>(new)</b>' : '') + '</td><td>' + esc(b.tier) +\n         '</td><td>' + esc((SEGN[b.segment] || '').split(' · ')[0] || '') + '</td><td>' + esc(b.source || '') + '</td><td>' + esc(b.phone || '') + '</td>' +\n         (extra ? '<td>' + esc(b.why || b.hint || '') + '</td>' : '') + '</tr>';\n  }\n  return t + '</table>';\n};\n\n// The blast form prefills from query params keyed on the field label.\nconst blastUrl = 'https://automations.buyinghero.com/form/send-blast'\n  + '?Property%20Address=' + encodeURIComponent(d.address || '')\n  + '&Teaser%20to%20send=' + encodeURIComponent(d.teaser_sms || '');\nH.push('<h2>Send it</h2>');\nH.push('<p><a href=\"' + blastUrl + '\" target=\"_blank\" rel=\"noopener\">' +\n       'Send teaser to ' + esc(d.buyers_included) + ' buyer(s)' + '</a></p>');\nH.push('<p>Opens the blast page with the address and teaser already filled in - '\n       + 'edit the teaser there if QA turned anything up. ' +\n       'You still type SEND to confirm - that one word is the only thing between a ' +\n       'stray click and a real text to every buyer on the list.</p>');\n\nconst SEGN = {\n  inquired: '1 · Inquired on this property (hottest)',\n  warm: '2 · Warm master list',\n  geo_cold: '3 · Geo-matched cold — sourced for this address',\n  general_cold: '4 · General cold — sourced for another deal'\n};\nH.push('<h2>Segments — who gets which script</h2>');\n{\n  const bs = d.by_segment || {};\n  let t = '<table><tr><th>Segment</th><th>Buyers</th></tr>';\n  for (const k of ['inquired','warm','geo_cold','general_cold'])\n    t += '<tr><td>' + esc(SEGN[k]) + '</td><td><b>' + esc(bs[k] || 0) + '</b></td></tr>';\n  H.push(t + '</table>');\n  H.push('<p>Nobody is excluded for their source. Every buyer above is contacted - ' +\n         'the segment only decides how cold the opener is.</p>');\n}\n\nH.push('<h2>Where these buyers came from</h2>');\n{\n  const bs = d.by_source || {};\n  const keys = Object.keys(bs);\n  if (!keys.length) {\n    H.push('<p>No buyers matched.</p>');\n  } else {\n    let t = '<table><tr><th>Source</th><th>Buyers</th></tr>';\n    for (const k of keys) t += '<tr><td>' + esc(k) + '</td><td><b>' + esc(bs[k]) + '</b></td></tr>';\n    H.push(t + '</table>');\n  }\n  const fresh = d.imported_last_2h || 0;\n  H.push('<p><b>' + esc(fresh) + '</b> of these were imported in the last 2 hours. ' +\n         'If you just pulled an InvestorBase list for this address and that number ' +\n         'looks low, the import is probably still running - wait a minute and submit again.</p>');\n}\n\nH.push('<h2>Buyers who would receive this</h2>');\nH.push(rows(d.included));\n\nH.push('<h2>Excluded &mdash; a human set this rule</h2>');\nH.push(rows(d.excluded, 'Reason'));\n\nH.push('<h2>Worth a call</h2>');\nH.push('<p>Old notes disagree with this deal, but no exclusion rule is set. They still received it. Confirm, then set a rule if it is true.</p>');\nH.push(rows(d.review_suggestions, 'What the notes say'));\n\n// --- voice ---\nH.push('<h2>Voice AI brief</h2>');\nH.push('<pre>' + block(d.voice_brief || '(not generated)') + '</pre>');\n\n// single line - no raw newlines anywhere\nconst summary_html = H.join('');\n\nreturn [{ json: Object.assign({}, d, { summary_html }) }];"
+      },
+      "id": "build-summary",
+      "name": "Build Review Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/objects/custom_objects.property/records/{{ $json.property_record_id }}?locationId=ib5jEnyqqq06FIEqlVGs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { prop_teaser_sms: $json.teaser_sms || '', prop_sms_post: $json.sms_post || '', prop_whatsapp_post: $json.whatsapp_post || '', prop_blast_status: 'draftsready' } }) }}",
+        "options": {}
+      },
+      "id": "save-drafts",
+      "name": "Save Drafts to Property",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1990,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -877,7 +976,7 @@
       "main": [
         [
           {
-            "node": "Fetch Buyer Pool (paginated)",
+            "node": "Fetch Field Definitions",
             "type": "main",
             "index": 0
           }
@@ -888,7 +987,7 @@
       "main": [
         [
           {
-            "node": "Fetch Buyer Pool (paginated)",
+            "node": "Fetch Field Definitions",
             "type": "main",
             "index": 0
           }
@@ -944,6 +1043,50 @@
         [
           {
             "node": "Claude — Teaser + Voice Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Result": {
+      "main": [
+        [
+          {
+            "node": "Save Drafts to Property",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Review Summary": {
+      "main": [
+        [
+          {
+            "node": "Show Drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Field Definitions": {
+      "main": [
+        [
+          {
+            "node": "Fetch Buyer Pool (paginated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Drafts to Property": {
+      "main": [
+        [
+          {
+            "node": "Build Review Summary",
             "type": "main",
             "index": 0
           }

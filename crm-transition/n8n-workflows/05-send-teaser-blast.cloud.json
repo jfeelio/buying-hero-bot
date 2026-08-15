@@ -1,0 +1,638 @@
+{
+  "id": "sendblast0001",
+  "name": "05 - Send Teaser Blast (W2)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "send-blast",
+        "formTitle": "Buying Hero — Send Teaser Blast",
+        "formDescription": "This SENDS REAL TEXT MESSAGES. The teaser below is pre-filled from the drafts - edit it if QA turned anything up. What is in that box is exactly what goes out.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Property Address",
+              "requiredField": true,
+              "placeholder": "Exactly as entered on intake, e.g. 2165 NW 58th St. Miami, FL 33142"
+            },
+            {
+              "fieldLabel": "Teaser to send",
+              "fieldType": "textarea",
+              "requiredField": true,
+              "placeholder": "Pre-filled from the drafts. Edit freely - what is here is exactly what sends."
+            },
+            {
+              "fieldLabel": "Replace SMS post (optional)",
+              "fieldType": "textarea",
+              "placeholder": "Leave blank to keep the saved post. Anything typed here replaces it and is what auto-sends when a buyer replies."
+            },
+            {
+              "fieldLabel": "Type SEND to confirm",
+              "requiredField": true,
+              "placeholder": "SEND"
+            },
+            {
+              "fieldLabel": "Limit (optional)",
+              "fieldType": "number",
+              "placeholder": "Cap how many buyers get it this run. Blank = all matched."
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "form",
+      "name": "Blast Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -340,
+        300
+      ],
+      "webhookId": "send-blast"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/objects/custom_objects.property/records/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', page: 1, pageLimit: 20, query: $json['Property Address'] }) }}",
+        "options": {}
+      },
+      "id": "find-prop",
+      "name": "Find the Deal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -120,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Guard rails before anything sends.\nconst form = $('Blast Form').first().json;\nconst search = $input.first().json;\n\nconst norm = (s) => (s || '').toLowerCase().replace(/\\s+/g, ' ').trim();\nconst target = norm(form['Property Address']);\nconst rec = (search.records || []).find(r => norm(r.properties?.prop_address) === target);\n\nconst confirm = String(form['Type SEND to confirm'] || '').trim().toUpperCase();\n// The teaser that SENDS is the one in the box, not the stored one - QA edits win.\nconst editedTeaser = String(form['Teaser to send'] || '').trim();\nconst editedPost = String(form['Replace SMS post (optional)'] || '').trim();\nconst limitRaw = form['Limit (optional)'];\nconst limit = (limitRaw === '' || limitRaw == null) ? null : Number(limitRaw);\n\nlet abort = null;\nif (confirm !== 'SEND') abort = 'Confirmation text was not exactly SEND. Nothing was sent.';\nelse if (!rec) abort = 'No deal found at that address. It must match the intake address exactly.';\nelse if (!editedTeaser) abort = 'The teaser box was empty. Nothing was sent.';\n\nreturn [{ json: {\n  abort,\n  recordId: rec ? rec.id : null,\n  address: rec ? rec.properties.prop_address : form['Property Address'],\n  teaser: editedTeaser,\n  teaserEdited: !!(rec && editedTeaser && editedTeaser !== (rec.properties.prop_teaser_sms || '')),\n  editedPost,\n  alreadySent: rec ? (rec.properties.prop_blast_status === 'teasersent') : false,\n  props: rec ? rec.properties : {},\n  limit\n} }];"
+      },
+      "id": "guard",
+      "name": "Guard Rails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ok",
+              "leftValue": "={{ $json.abort }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-ok",
+      "name": "Safe to Send?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/locations/ib5jEnyqqq06FIEqlVGs/customFields?model=contact",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "field-defs",
+      "name": "Fetch Field Definitions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        540,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/contacts/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', pageLimit: 100 }) }}",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "searchAfter",
+                    "value": "={{ $response.body.contacts[$response.body.contacts.length - 1].searchAfter }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ $response.body.contacts.length < 100 }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100
+            }
+          }
+        }
+      },
+      "id": "pool",
+      "name": "Fetch Buyer Pool",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Re-run the SAME exclusion logic as intake. Deliberately re-evaluated at send\n// time rather than trusting the list from intake: an excl_ rule or a DNC may\n// have been set in between, and the send is the moment that must be correct.\nconst pages = $input.all();\nconst pool = pages.flatMap(p => p.json.contacts || []);\nconst deal = $('Guard Rails').first().json;\nconst p = deal.props;\n\nconst defs = ($('Fetch Field Definitions').first().json.customFields) || [];\nconst ID = {};\nfor (const d of defs) ID[d.name] = d.id;\nconst cf = (c, name) => {\n  const id = ID[name];\n  const hit = (c.customFields || []).find(x => x.id === id || x.id === name || x.key === name);\n  if (!hit) return null;\n  return hit.value !== undefined ? hit.value : (hit.fieldValue !== undefined ? hit.fieldValue : null);\n};\nconst arr = (v) => v == null ? [] : (Array.isArray(v) ? v : String(v).split(';').map(s => s.trim()).filter(Boolean));\nconst norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst n = (v) => (v == null || v === '') ? null : Number(v);\n\n\n// Address comparison for deal-scoping. Tolerant of \"2165 NW 58th St\" vs\n// \"2165 NW 58th St. Miami, FL 33142\" - either containing the other counts.\nconst normAddr = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');\nconst addrMatch = (a, b) => {\n  if (!a || !b) return false;\n  return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;\n};\nconst dealAddr = normAddr(p.prop_address);\nconst dealCounty = norm(p.prop_county);\nconst dealHood = norm(p.prop_neighborhood || '');\nconst dealType = norm(p.prop_type);\nconst asking = n(p.prop_asking_price);\nconst sqft = n(p.prop_sqft);\n\nconst send = [], skipped = [];\n\nfor (const c of pool) {\n  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.contactName || '(no name)';\n  const row = { id: c.id, name, phone: c.phone || null, tier: cf(c, 'buy_tier') || '(none)', segment: '' };\n\n  const rt = arr(cf(c, 'record_type')).map(norm);\n  if (!rt.includes('buyer')) continue;\n\n  const status = norm(cf(c, 'buy_status'));\n  if (status === 'dnc' || status === 'blacklist') { skipped.push({ ...row, why: 'buy_status=' + status }); continue; }\n  if (c.dnd === true) { skipped.push({ ...row, why: 'contact DND is on' }); continue; }\n  if (!c.phone) { skipped.push({ ...row, why: 'no phone' }); continue; }\n\n  const why = [];\n  if (norm(cf(c, 'excl_all_blasts')) === 'yes') why.push('held from all blasts');\n\n  // ---- InvestorBase buyers are DEAL-SCOPED ----\n  // IB returns buyers within ~2 miles of one subject property. They were never\n  // a general buyer list, so they are only eligible for the deal they were\n  // pulled for. Master-list buyers (BH Main / Referral) get everything.\n  const srcNorm = arr(cf(c, 'buy_source')).map(norm);\n  // SEGMENT, do not exclude. Source decides the SCRIPT, not eligibility.\n  // An InvestorBase buyer sourced for another property is still a real cash\n  // buyer in this county - excluding them would throw away the database the\n  // imports exist to build.\n  const pulledLines = String(cf(c, 'buy_ib_property') || '')\n    .split('\n').map(s => normAddr(s)).filter(Boolean);\n  const geoMatched = pulledLines.some(a => addrMatch(a, dealAddr));\n  const inquiredHere = srcNorm.includes('investorlift') && geoMatched;\n\n  let segment;\n  if (inquiredHere) segment = 'inquired';\n  else if (srcNorm.includes('bhmain') || srcNorm.includes('referral')) segment = 'warm';\n  else if (geoMatched) segment = 'geo_cold';\n  else segment = 'general_cold';\n\n  const bp = n(cf(c, 'excl_below_price')); if (bp && asking && asking < bp) why.push('below their price floor');\n  const ap = n(cf(c, 'excl_above_price')); if (ap && asking && asking > ap) why.push('above their price ceiling');\n  const bs = n(cf(c, 'excl_below_sqft')); if (bs && sqft && sqft < bs) why.push('below their sqft floor');\n  const et = arr(cf(c, 'excl_prop_types')).map(norm); if (et.length && dealType && et.includes(dealType)) why.push('excludes this property type');\n  const oc = arr(cf(c, 'excl_outside_counties')).map(norm); if (oc.length && dealCounty && !oc.includes(dealCounty)) why.push('outside their counties');\n  const oh = arr(cf(c, 'excl_outside_neighborhoods')).map(norm); if (oh.length && dealHood && !oh.includes(dealHood)) why.push('outside their sub-markets');\n\n  if (why.length) { skipped.push({ ...row, why: why.join('; ') }); continue; }\n  row.segment = segment;\n  send.push(row);\n}\n\nconst rank = { VIP: 0, A: 1, B: 2, C: 3 };\nsend.sort((a, b) => (rank[a.tier] ?? 9) - (rank[b.tier] ?? 9));\n\nconst limited = deal.limit ? send.slice(0, deal.limit) : send;\nconst heldByLimit = send.length - limited.length;\n\nif (!limited.length) {\n  return [{ json: { _none: true, address: deal.address, recordId: deal.recordId,\n                    eligible: 0, skipped, heldByLimit } }];\n}\n\n// One item per recipient - the send node runs once per item.\nreturn limited.map(b => ({ json: {\n  contactId: b.id,\n  name: b.name,\n  phone: b.phone,\n  tier: b.tier,\n  segment: b.segment,\n  teaser: deal.teaser,\n  address: deal.address,\n  recordId: deal.recordId,\n  _stats: { eligible: send.length, sending: limited.length, heldByLimit, skipped }\n} }));"
+      },
+      "id": "recipients",
+      "name": "Build Recipient List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        980,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'SMS', contactId: $json.contactId, fromNumber: '+17868414589', message: ($json.teaser || '').split('{{first_name}}').join(($json.name || '').split(' ')[0] || 'there') }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 3,
+              "batchInterval": 2000
+            }
+          }
+        }
+      },
+      "id": "send",
+      "name": "Send Teaser SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.all();\nconst recips = $('Build Recipient List').all();\nconst stats = (recips[0] && recips[0].json._stats) || { eligible: 0, sending: 0, heldByLimit: 0, skipped: [] };\n\nconst sent = [], failed = [];\nfor (let i = 0; i < results.length; i++) {\n  const r = results[i].json || {};\n  const b = (recips[i] && recips[i].json) || {};\n  const row = { name: b.name, phone: b.phone, tier: b.tier };\n  if (r.messageId || r.conversationId || r.success === true) { row.messageId = r.messageId || ''; sent.push(row); }\n  else { row.error = String(r.message || r.error || JSON.stringify(r)).slice(0, 200); failed.push(row); }\n}\n\nreturn [{ json: {\n  address: (recips[0] && recips[0].json.address) || '',\n  recordId: (recips[0] && recips[0].json.recordId) || null,\n  eligible: stats.eligible,\n  attempted: results.length,\n  sent: sent.length,\n  failed: failed.length,\n  held_by_limit: stats.heldByLimit,\n  sent_rows: sent,\n  failed_rows: failed,\n  skipped_rows: stats.skipped\n} }];"
+      },
+      "id": "tally",
+      "name": "Tally Sends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/objects/custom_objects.property/records/{{ $json.recordId }}?locationId=ib5jEnyqqq06FIEqlVGs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: Object.assign({ prop_blast_status: 'teasersent', prop_dispo_status: 'live', prop_teaser_sms: $('Guard Rails').first().json.teaser }, $('Guard Rails').first().json.editedPost ? { prop_sms_post: $('Guard Rails').first().json.editedPost } : {}) }) }}",
+        "options": {}
+      },
+      "id": "mark",
+      "name": "Mark Deal as Blasted",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1640,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const t = $('Tally Sends').first().json;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst rows = (a, extra) => {\n  if (!a || !a.length) return '<p>None.</p>';\n  let h = '<table><tr><th>Buyer</th><th>Tier</th><th>Phone</th>' + (extra ? '<th>' + extra + '</th>' : '') + '</tr>';\n  for (const b of a) h += '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.tier) + '</td><td>' + esc(b.phone || '') + '</td>' + (extra ? '<td>' + esc(b.why || b.error || '') + '</td>' : '') + '</tr>';\n  return h + '</table>';\n};\nconst H = [];\nH.push('<h1>' + esc(t.sent) + ' text message(s) sent</h1>');\nH.push('<p>Deal: ' + esc(t.address) + '</p>');\nH.push('<table><tr><th>Eligible after exclusions</th><td><b>' + esc(t.eligible) + '</b></td></tr>' +\n       '<tr><th>Attempted</th><td>' + esc(t.attempted) + '</td></tr>' +\n       '<tr><th>Sent</th><td><b>' + esc(t.sent) + '</b></td></tr>' +\n       '<tr><th>Failed</th><td>' + esc(t.failed) + '</td></tr>' +\n       '<tr><th>Held back by your limit</th><td>' + esc(t.held_by_limit) + '</td></tr></table>');\nif ($('Guard Rails').first().json.teaserEdited) H.push('<p><b>Note:</b> you edited the teaser before sending. The deal record has been updated to match what actually went out.</p>');\nlet oppNote = '';\ntry {\n  const b = $('Build Buyer Interest Opps').all();\n  const made = b.filter(x => x.json && x.json.opp).length;\n  if (made) oppNote = '<p><b>' + made + '</b> Buyer Interest opportunit(ies) created at stage <b>' +\n    esc(b[0].json._stageName) + '</b>. Open the Buyer Interest pipeline and search this address to see every buyer tied to this deal.</p>';\n} catch (e) {}\nif (oppNote) H.push(oppNote);\nH.push('<h2>Sent to</h2>'); H.push(rows(t.sent_rows));\nH.push('<h2>Failed</h2>'); H.push(rows(t.failed_rows, 'Error'));\nH.push('<h2>Not sent - excluded or suppressed</h2>'); H.push(rows(t.skipped_rows, 'Reason'));\nreturn [{ json: { summary_html: H.join('') } }];"
+      },
+      "id": "sum-ok",
+      "name": "Build Send Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst msg = d.abort || 'No eligible buyers for this deal - every match was excluded or suppressed.';\nreturn [{ json: { summary_html: '<h1>Nothing was sent</h1><p>' + esc(msg) + '</p>' } }];"
+      },
+      "id": "sum-abort",
+      "name": "Build Abort Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "=Blast result",
+        "completionMessage": "={{ $json.summary_html }}",
+        "options": {
+          "customCss": ".form-container, .card, form, body { text-align: left !important; }\nh1 { text-align:left; font-size:19px; font-weight:700; color:#1b4d2e; background:#eaf6ee; border:1px solid #bfe2cb; border-radius:8px; padding:12px 14px; margin:0 0 18px 0; }\nh2 { text-align:left; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:#4a5568; border-bottom:2px solid #e2e8f0; padding-bottom:7px; margin:28px 0 12px 0; }\np { text-align:left; font-size:13.5px; line-height:1.6; color:#4a5568; margin:0 0 12px 0; }\ntable { width:100%; border-collapse:collapse; margin:0 0 8px 0; font-size:13.5px; }\nth { text-align:left; font-weight:600; color:#4a5568; background:#f7fafc; border:1px solid #e2e8f0; padding:8px 11px; }\ntd { text-align:left; border:1px solid #e2e8f0; padding:8px 11px; color:#1a202c; }\n"
+        }
+      },
+      "id": "ending",
+      "name": "Show Result",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        300
+      ],
+      "webhookId": "send-blast"
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/opportunities/pipelines",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "pipelines",
+      "name": "Fetch Pipelines",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1420,
+        380
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// One Buyer Interest opportunity per buyer WHO ACTUALLY RECEIVED the teaser.\n// This is the durable buyer<->deal association: open the Buyer Interest\n// pipeline, search the address, and every buyer tied to that deal is listed\n// with the stage they reached. Contact fields can't express this - a buyer\n// belongs to many deals over time.\nconst pipes = ($input.first().json.pipelines) || [];\nconst bi = pipes.find(p => (p.name || '').toLowerCase().indexOf('buyer interest') !== -1);\n\nconst tally = $('Tally Sends').first().json;\nconst recips = $('Build Recipient List').all();\n\nif (!bi || !bi.stages || !bi.stages.length) {\n  return [{ json: { _skip: true, reason: 'Buyer Interest pipeline not found' } }];\n}\n\n// Prefer a stage that honestly means \"we texted them\"; otherwise fall back to\n// the first stage. Renaming/adding a stage in GHL needs no code change.\nconst wanted = ['reached out', 'texted', 'sent', 'blasted', 'contacted'];\nlet stage = bi.stages.find(s => wanted.indexOf((s.name || '').toLowerCase()) !== -1);\nif (!stage) stage = bi.stages[0];\n\nconst sentNames = new Set((tally.sent_rows || []).map(r => r.name));\nconst out = [];\nfor (const r of recips) {\n  const b = r.json;\n  if (!b || !b.contactId) continue;\n  if (!sentNames.has(b.name)) continue;   // only buyers who actually got it\n  out.push({ json: {\n    opp: {\n      pipelineId: bi.id,\n      locationId: 'ib5jEnyqqq06FIEqlVGs',\n      name: (tally.address || 'Deal') + ' — ' + b.name,\n      pipelineStageId: stage.id,\n      status: 'open',\n      contactId: b.contactId\n    },\n    _stageName: stage.name\n  } });\n}\n\nif (!out.length) return [{ json: { _skip: true, reason: 'nothing sent' } }];\nreturn out;"
+      },
+      "id": "build-opps",
+      "name": "Build Buyer Interest Opps",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1640,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/opportunities/upsert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.opp || {}) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 1000
+            }
+          }
+        }
+      },
+      "id": "create-opps",
+      "name": "Create Buyer Interest Opps",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1860,
+        380
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Blast Form": {
+      "main": [
+        [
+          {
+            "node": "Find the Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the Deal": {
+      "main": [
+        [
+          {
+            "node": "Guard Rails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guard Rails": {
+      "main": [
+        [
+          {
+            "node": "Safe to Send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe to Send?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Field Definitions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Abort Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Field Definitions": {
+      "main": [
+        [
+          {
+            "node": "Fetch Buyer Pool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Buyer Pool": {
+      "main": [
+        [
+          {
+            "node": "Build Recipient List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Recipient List": {
+      "main": [
+        [
+          {
+            "node": "Send Teaser SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Teaser SMS": {
+      "main": [
+        [
+          {
+            "node": "Tally Sends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tally Sends": {
+      "main": [
+        [
+          {
+            "node": "Mark Deal as Blasted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Deal as Blasted": {
+      "main": [
+        [
+          {
+            "node": "Fetch Pipelines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Send Summary": {
+      "main": [
+        [
+          {
+            "node": "Show Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Abort Summary": {
+      "main": [
+        [
+          {
+            "node": "Show Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Pipelines": {
+      "main": [
+        [
+          {
+            "node": "Build Buyer Interest Opps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Buyer Interest Opps": {
+      "main": [
+        [
+          {
+            "node": "Create Buyer Interest Opps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Buyer Interest Opps": {
+      "main": [
+        [
+          {
+            "node": "Build Send Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

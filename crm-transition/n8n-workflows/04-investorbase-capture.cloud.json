@@ -1,0 +1,314 @@
+{
+  "id": "ibcapture0001",
+  "name": "04 - InvestorBase Capture (W12)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ib-buyers",
+        "responseMode": "lastNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "webhook",
+      "name": "IB Buyers Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        300
+      ],
+      "webhookId": "ib-buyers"
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/locations/ib5jEnyqqq06FIEqlVGs/customFields?model=contact",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "field-defs",
+      "name": "Fetch Field Definitions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// InvestorBase -> GHL contact mapping.\n//\n// Zapier's exact payload shape is unknown until the first real fire, so key\n// matching is deliberately tolerant (case/space/punctuation-insensitive with\n// aliases) and every unrecognised key is REPORTED back rather than dropped\n// silently. The first live test tells us the real field names.\n// ============================================================\nconst defs = ($('Fetch Field Definitions').first().json.customFields) || [];\nconst ID = {};\nfor (const d of defs) ID[d.name] = d.id;\n\nconst body = $('IB Buyers Webhook').first().json.body || $('IB Buyers Webhook').first().json || {};\n\n// Zapier may send one buyer, an array, or an object wrapping an array.\nlet rows = [];\nif (Array.isArray(body)) rows = body;\nelse if (Array.isArray(body.buyers)) rows = body.buyers;\nelse if (Array.isArray(body.items)) rows = body.items;\nelse if (Array.isArray(body.data)) rows = body.data;\nelse rows = [body];\n\nconst norm = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');\nconst pick = (row, aliases) => {\n  const map = {};\n  for (const k of Object.keys(row)) map[norm(k)] = row[k];\n  for (const a of aliases) {\n    const v = map[norm(a)];\n    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n};\nconst num = (v) => { const n = Number(String(v).replace(/[^0-9.\\-]/g, '')); return isFinite(n) ? n : null; };\n\n// A joined list ('9876543210,9876543210') means the Zap mapped this field from\n// the TRIGGER instead of the Loop step, so every iteration carries every\n// buyer's number. Deliberately do NOT silently take the first one - that would\n// give all 84 contacts the same phone number and look like it worked.\n// Fail loudly instead.\nconst isJoined = (p) => {\n  const s = String(p || '');\n  return (s.indexOf(',') !== -1 || s.indexOf(';') !== -1) &&\n         s.replace(/\\D/g, '').length > 11;\n};\nconst phoneFmt = (p) => {\n  if (isJoined(p)) return '';\n  const d = String(p || '').replace(/\\D/g, '');\n  const t = (d.length === 11 && d[0] === '1') ? d.slice(1) : d;\n  return t.length === 10 ? '+1' + t : '';\n};\n\n// Tier from LinkedDeal count. The >200 cap is not optional: the profiled\n// sample maxed at 23,078 linked deals against a 994 average - those are\n// iBuyers, title companies and data artifacts, not local flippers.\nconst band = (n) => {\n  if (n == null) return { tier: '', institutional: false, review: false };\n  if (n > 200) return { tier: '', institutional: true, review: false };\n  if (n >= 50)  return { tier: 'A', institutional: false, review: true };\n  if (n >= 15)  return { tier: 'A', institutional: false, review: false };\n  if (n >= 5)   return { tier: 'B', institutional: false, review: false };\n  return { tier: 'C', institutional: false, review: false };\n};\n\nconst KNOWN = ['entity name','entityname','company','registered entity','registered entity name','linkeddeal','last sale date','last sale price','subject address','subject_address','property address','deal address','searched deal address','smart match','buyer status','touchpoint status','state','units count','prior sale date','purchase price per square foot','address','phone 1','phone 2','wireless 2','wireless2','first name','firstname','last name','lastname',\n  'wireless 1','wireless1','phone','mobile','cell','beta: possible email','possible email','email',\n  'buyer type','buyertype','property type','propertytype','city','property city','zip','property zip',\n  'bedrooms','beds','bathrooms','baths','sqft','square feet','building sqft',\n  'most recent sale price','recent sale price','prior sale price','previous sale price',\n  'most recent sale date','recent sale date','linkeddeal count','linked deals','linkeddeals','deals',\n  'buyer mailing address','mailing address','buyer mailing city','mailing city',\n  'buyer mailing state','mailing state','buyer mailing zip','mailing zip'];\nconst knownSet = new Set(KNOWN.map(norm));\n\nconst out = [];\nconst skipped = [];\nconst unmappedKeys = new Set();\n\nfor (const row of rows) {\n  if (!row || typeof row !== 'object') continue;\n  for (const k of Object.keys(row)) if (!knownSet.has(norm(k))) unmappedKeys.add(k);\n\n  const first = pick(row, ['First Name', 'firstname', 'first']);\n  const last  = pick(row, ['Last Name', 'lastname', 'last']);\n  const entity = pick(row, ['Registered Entity', 'Registered Entity Name', 'Entity Name', 'entityname', 'Company']);\n  const phone1 = phoneFmt(pick(row, ['Phone 1', 'Wireless 1', 'wireless1', 'Phone', 'Mobile', 'Cell']));\n  const phone2 = phoneFmt(pick(row, ['Phone 2', 'Wireless 2', 'wireless2']));\n  const phone = phone1 || phone2;\n  const email = pick(row, ['Beta: Possible Email', 'Possible Email', 'Email']);\n  const name = [first, last].filter(Boolean).join(' ') || entity || '(no name)';\n\n  if (!phone) {\n    const raw1 = pick(row, ['Phone 1', 'Wireless 1', 'wireless1', 'Phone', 'Mobile', 'Cell']);\n    const raw2 = pick(row, ['Phone 2', 'Wireless 2', 'wireless2']);\n    const why = (isJoined(raw1) || isJoined(raw2))\n      ? 'MAPPING ERROR: phone arrived as a joined list (' + String(raw1).slice(0, 40) +\n        '). In the Zap, map Phone 1/Phone 2 from the LOOP step, not the trigger.'\n      : 'no usable wireless number';\n    skipped.push({ name, why });\n    continue;\n  }\n\n  const deals = num(pick(row, ['LinkedDeal', 'LinkedDeal count', 'Linked Deals', 'linkeddeals', 'Deals']));\n  const b = band(deals);\n\n  const buyerType = norm(pick(row, ['Buyer Type', 'buyertype']));\n  const types = [];\n  if (b.institutional) types.push('Institutional');\n  if (buyerType.indexOf('flip') !== -1) types.push('Flipper');\n  if (buyerType.indexOf('landlord') !== -1 || buyerType.indexOf('rental') !== -1) types.push('Landlord');\n\n  const propType = norm(pick(row, ['Property Type', 'propertytype']));\n  const propTypes = [];\n  if (propType.indexOf('single') !== -1 || propType === 'sfr') propTypes.push('SFR');\n  if (propType.indexOf('land') !== -1) propTypes.push('Land');\n  if (propType.indexOf('condo') !== -1) propTypes.push('Condo');\n\n  const recent = num(pick(row, ['Last Sale Price', 'Most Recent Sale Price', 'Recent Sale Price']));\n  const prior  = num(pick(row, ['Prior Sale Price', 'Previous Sale Price']));\n  const prices = [recent, prior].filter(v => v != null && v > 0);\n\n  const cf = [];\n  const add = (fieldName, value) => {\n    if (value === '' || value === null || value === undefined) return;\n    if (Array.isArray(value) && !value.length) return;\n    if (ID[fieldName]) cf.push({ id: ID[fieldName], fieldValue: value });\n  };\n\n  // Which deal this list was pulled for. InvestorBase returns buyers within\n  // ~2 miles of the subject, so this is the geographic cross-reference.\n  // Taken from the payload if Zapier sends it, else the row itself.\n  const subject = pick(row, ['Searched Deal Address', 'Subject Address', 'subject_address', 'Property Address', 'Deal Address'])\n                  || String(body.subject_address || body.subjectAddress || body.property_address || '').trim();\n  if (subject && ID['buy_ib_property']) cf.push({ id: ID['buy_ib_property'], fieldValue: subject, _ibProperty: true });\n\n  add('record_type', ['Buyer']);\n  add('buy_source', ['InvestorBase']);\n  add('buy_status', 'Active');\n  if (b.tier) add('buy_tier', b.tier);\n  if (types.length) add('buy_type', types);\n  if (propTypes.length) add('buy_prop_types', propTypes);\n  if (entity) add('buy_entity_name', entity);\n  if (deals != null) add('buy_deals_count', String(deals));\n  const zip = pick(row, ['Zip', 'Property Zip']);\n  if (zip) add('buy_zips', zip);\n  if (prices.length) { add('buy_price_min', String(Math.min.apply(null, prices)));\n                       add('buy_price_max', String(Math.max.apply(null, prices))); }\n  const beds = num(pick(row, ['Bedrooms', 'Beds']));   if (beds != null) add('buy_beds_typ', String(beds));\n  const baths = num(pick(row, ['Bathrooms', 'Baths'])); if (baths != null) add('buy_baths_typ', String(baths));\n  const sqft = num(pick(row, ['Sqft', 'Square Feet', 'Building Sqft'])); if (sqft != null) add('buy_sqft_typ', String(sqft));\n  const lastSale = pick(row, ['Last Sale Date', 'Most Recent Sale Date', 'Recent Sale Date']);\n  if (lastSale) add('buy_last_purchase', lastSale);\n\n  // Consent record stays FACTUAL: skip-traced, never opted in.\n  add('buy_consent_status', 'Not Opted In');\n  if (phone2 && phone2 !== phone) add('buy_notes_phone2', phone2);\n\n  // NO blanket hold. Every imported buyer is blast-eligible by default - that\n  // is the point of buying the list. The scrub REMOVES litigators and DNC hits;\n  // it does not gate everyone else.\n  //\n  // Sole carve-out: >200 linked deals. Those are iBuyers, title companies and\n  // data artifacts (the profiled sample maxed at 23,078 against a 994 average),\n  // not local flippers - texting them is pure waste. Clear excl_all_blasts on\n  // the contact if you want them included.\n  if (b.institutional) {\n    add('excl_all_blasts', 'Yes');\n    add('excl_notes', 'INSTITUTIONAL - ' + deals + ' linked deals (iBuyer/title/data artifact), not a local buyer. Clear this field to include them.');\n  }\n\n  const notes = ['Imported from InvestorBase.'];\n  if (deals != null) notes.push('LinkedDeal count: ' + deals + '.');\n  if (b.review) notes.push('50-200 deals - manual review recommended.');\n  if (b.institutional) notes.push('Over 200 deals - flagged institutional, excluded from calling.');\n  if (email) notes.push('Email is InvestorBase beta/low-confidence - do not cold-blast it.');\n  add('buy_notes', notes.join(' '));\n\n  out.push({ json: {\n    contact: {\n      locationId: 'ib5jEnyqqq06FIEqlVGs',\n      firstName: first || undefined,\n      lastName: last || undefined,\n      name: (!first && !last) ? name : undefined,\n      phone,\n      email: email || undefined,\n      companyName: entity || undefined,\n      address1: pick(row, ['Buyer Mailing Address', 'Mailing Address']) || undefined,\n      city: pick(row, ['Buyer Mailing City', 'Mailing City']) || undefined,\n      state: pick(row, ['Buyer Mailing State', 'Mailing State']) || undefined,\n      postalCode: pick(row, ['Buyer Mailing Zip', 'Mailing Zip']) || undefined,\n      source: 'InvestorBase',\n      customFields: cf\n    },\n    _meta: { name, phone, deals, tier: b.tier || (b.institutional ? 'INSTITUTIONAL' : 'none'),\n             review: b.review, institutional: b.institutional }\n  } });\n}\n\nif (!out.length) {\n  return [{ json: { contact: null, _meta: null, _report: {\n    received: rows.length, mapped: 0, skipped,\n    unmappedKeys: Array.from(unmappedKeys),\n    note: 'Nothing mapped. Check unmappedKeys against the aliases in this node.'\n  } } }];\n}\n\nout[0].json._report = { received: rows.length, mapped: out.length, skipped,\n                        unmappedKeys: Array.from(unmappedKeys) };\nreturn out;"
+      },
+      "id": "map",
+      "name": "Map InvestorBase Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has",
+              "leftValue": "={{ $json.contact }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-any",
+      "name": "Anything to Import?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/contacts/upsert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.contact) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 1200
+            }
+          }
+        }
+      },
+      "id": "upsert",
+      "name": "Upsert Buyer into GHL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        220
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Summarise the import. Upsert dedupes on phone/email per the location's\n// settings, so re-importing the same list updates rather than duplicates.\nconst results = $input.all();\nconst meta = $('Map InvestorBase Rows').all();\nconst report = (meta[0] && meta[0].json._report) || { received: 0, mapped: 0, skipped: [], unmappedKeys: [] };\n\nconst created = [], updated = [], failed = [];\nfor (let i = 0; i < results.length; i++) {\n  const r = results[i].json || {};\n  const m = (meta[i] && meta[i].json._meta) || {};\n  const row = { name: m.name, phone: m.phone, deals: m.deals, tier: m.tier };\n  if (r.contact && r.contact.id) {\n    row.id = r.contact.id;\n    (r.new ? created : updated).push(row);\n  } else {\n    row.error = (r.message || r.error || 'unknown').toString().slice(0, 200);\n    failed.push(row);\n  }\n}\n\nconst institutional = meta.filter(m => m.json._meta && m.json._meta.institutional).length;\nconst review = meta.filter(m => m.json._meta && m.json._meta.review).length;\n\nreturn [{ json: {\n  status: 'IMPORT COMPLETE - buyers are blast-eligible',\n  received: report.received,\n  mapped: report.mapped,\n  created: created.length,\n  updated: updated.length,\n  failed: failed.length,\n  skipped_no_phone: (report.skipped || []).length,\n  flagged_institutional: institutional,\n  flagged_manual_review: review,\n  blast_eligible: created.length + updated.length - institutional,\n  scrub_note: 'Imported buyers are blast-eligible immediately. Only litigator/DNC hits should be excluded - run the scrub and set excl_all_blasts=Yes on those. buy_scrub_date is still empty until a scrub runs.',\n  unmapped_source_keys: report.unmappedKeys,\n  created_rows: created,\n  updated_rows: updated,\n  failed_rows: failed,\n  skipped_rows: report.skipped\n} }];"
+      },
+      "id": "summary",
+      "name": "Import Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: Object.assign({ status: 'NOTHING IMPORTED' }, $json._report || {}) }];"
+      },
+      "id": "nothing",
+      "name": "Nothing to Import",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=ib5jEnyqqq06FIEqlVGs&number={{ encodeURIComponent($json.contact.phone) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 800
+            }
+          }
+        }
+      },
+      "id": "lookup",
+      "name": "Look Up Existing Buyer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        220
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge the new deal association into whatever the buyer already had.\n//\n// A buyer legitimately appears in many InvestorBase pulls over time - they buy\n// all over the county. A single overwriting field would erase every earlier\n// association and wrongly exclude them from the deal they were first sourced\n// for. So buy_ib_property is an append-only, newline-separated list.\nconst mapped = $('Map InvestorBase Rows').all();\nconst lookups = $input.all();\n\n// InvestorBase repeats the searched address per buyer, so a value mapped from\n// the trigger arrives as the same string joined to itself. Collapse that.\nconst dedupeRepeat = (s) => {\n  const t = String(s || '').trim();\n  if (!t) return '';\n  for (let k = 2; k <= 12; k++) {\n    if (t.length % k !== 0) continue;\n    const part = t.slice(0, t.length / k).replace(/,\\s*$/, '').trim();\n    if (!part) continue;\n    if (Array(k).fill(part).join(', ') === t) return part;\n  }\n  return t;\n};\n\nconst out = [];\nfor (let i = 0; i < mapped.length; i++) {\n  const item = mapped[i].json;\n  if (!item || !item.contact) continue;\n  const contact = JSON.parse(JSON.stringify(item.contact));\n\n  const IB_FIELD = (contact.customFields || []).find(f => f._ibProperty);\n  let incoming = dedupeRepeat(IB_FIELD ? IB_FIELD.fieldValue : '');\n\n  const existing = (lookups[i] && lookups[i].json && lookups[i].json.contact) || null;\n  if (incoming && existing) {\n    const prior = (existing.customFields || []).find(f => f.id === (IB_FIELD || {}).id);\n    const priorVal = prior ? String(prior.value || '') : '';\n    const lines = priorVal.split('\\n').map(s => s.trim()).filter(Boolean);\n    const seen = new Set(lines.map(s => s.toLowerCase().replace(/[^a-z0-9]/g, '')));\n    const key = incoming.toLowerCase().replace(/[^a-z0-9]/g, '');\n    if (!seen.has(key)) lines.push(incoming);\n    incoming = lines.join('\\n');\n  }\n\n  contact.customFields = (contact.customFields || []).map(f => {\n    if (f._ibProperty) return { id: f.id, fieldValue: incoming };\n    return f;\n  }).filter(f => f.fieldValue !== '' || !f._ibProperty);\n\n  out.push({ json: Object.assign({}, item, { contact }) });\n}\nreturn out.length ? out : [{ json: { contact: null, _meta: null, _report: { received: 0, mapped: 0, skipped: [], unmappedKeys: [] } } }];"
+      },
+      "id": "merge-ib",
+      "name": "Merge Deal Associations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "IB Buyers Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Field Definitions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Field Definitions": {
+      "main": [
+        [
+          {
+            "node": "Map InvestorBase Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map InvestorBase Rows": {
+      "main": [
+        [
+          {
+            "node": "Anything to Import?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything to Import?": {
+      "main": [
+        [
+          {
+            "node": "Look Up Existing Buyer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing to Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Buyer into GHL": {
+      "main": [
+        [
+          {
+            "node": "Import Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Look Up Existing Buyer": {
+      "main": [
+        [
+          {
+            "node": "Merge Deal Associations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Deal Associations": {
+      "main": [
+        [
+          {
+            "node": "Upsert Buyer into GHL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
