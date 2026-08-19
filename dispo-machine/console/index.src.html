@@ -82,6 +82,20 @@ body{
 .chips input:disabled{opacity:.35;cursor:not-allowed}
 .chip:has(input:disabled){opacity:.45;cursor:not-allowed}
 .stack-tight{display:flex;flex-direction:column;gap:6px}
+/* Drafts. A draft is form state, deliberately NOT a GHL Property record:
+   a half-filled form is not a deal and must not pollute the object the
+   seller side also writes to. */
+.draft-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);
+  border-radius:10px;background:var(--sunk);flex-wrap:wrap}
+.draft-row .who{color:var(--mut);font-size:12px}
+.draft-addr{font-weight:700;color:var(--txt);flex:1 1 240px;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.draft-none{color:var(--dim);font-style:italic;font-weight:600}
+.drive-row{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.drive-row .sub{flex:1 1 260px;min-width:0}
+.drive-ok{color:var(--ok)}
+.drive-bad{color:var(--bad2)}
+.drive-row a{color:var(--acc3)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;
   font-size:13px;font-weight:600;border-radius:999px;padding:7px 15px;
@@ -236,6 +250,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 <div class="wrap">
 
   <!-- ==================== STATE 1: INTAKE ==================== -->
+  <div id="draftsPanel" class="card" hidden style="margin-bottom:14px">
+    <div class="card-hd">
+      <div class="eyebrow">Unfinished drafts</div>
+      <div class="sub push" id="draftsSub">shared with the team — anyone can pick one up</div>
+    </div>
+    <div id="draftsList" class="stack-tight"></div>
+  </div>
+
   <form id="intake">
     <div class="stack">
 
@@ -248,6 +270,10 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
           <div class="c8">
             <label class="lbl" for="f-addr">Address <span class="req">*</span></label>
             <input class="inp inp-big" id="f-addr" name="Address" required placeholder="2165 NW 58th St. Miami, FL 33142" autocomplete="off">
+            <div class="drive-row">
+              <button type="button" class="btn btn-sm" id="driveBtn">Create Drive folder</button>
+              <span class="sub" id="driveMsg">makes the deal folder, the public Photos and Videos folder, and drops in the deal doc</span>
+            </div>
           </div>
           <div class="c4">
             <label class="lbl" for="f-county">County</label>
@@ -346,6 +372,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 
       <div style="display:flex;justify-content:flex-end;gap:14px;align-items:center;flex-wrap:wrap">
         <div class="sub2">Nothing sends yet — next screen is a draft review.</div>
+        <button type="button" class="btn btn-sm" id="draftBtn" title="Save what you have typed so far; anyone on the team can finish it">Save Intake Draft</button>
         <button type="button" class="btn btn-sm" id="fillBtn" title="Fill every field with the 2165 NW 58th St sample deal">Fill test data</button>
         <button type="submit" class="btn btn-pri" id="buildBtn">Build deal drafts</button>
       </div>
@@ -372,6 +399,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px}
 var CONFIG = {
   INTAKE_URL: "/webhook/dispo-intake",
   SEND_URL:   "/webhook/dispo-send",
+  DRIVE_URL:  "/webhook/drive-folder",
+  DRAFTS_URL: "/webhook/drafts",
   TIMEOUT_MS: 180000   // Claude generates 4 teasers; give it room
 };
 
@@ -407,7 +436,7 @@ var MOCK_REVIEW = {
       teaser:"Hey {{first}} — following up on the Liberty City property you asked about. 2/1, new roof, impact windows, vacant at close. Asking $335k, ARV around $450k. Want the address and photos?" },
     { n:"02", key:"Warm list",        desc:"Existing relationships",           count:41,  hot:false,
       teaser:"{{first}} — got another one in Liberty City. 2/1 SFR, new roof plus impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES and I'll send the address and photos." },
-    { n:"03", key:"Geo-matched cold", desc:"Sourced within ~2 mi of this address", count:128, hot:false,
+    { n:"03", key:"InvestorBase Matched", desc:"InvestorBase pulled them for THIS address", count:128, hot:false,
       teaser:"Hi {{first}}, this is Buying Hero — we saw you buy around Liberty City. Off-market 2/1 SFR nearby: new roof, impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES for the address. Reply STOP to opt out." },
     { n:"04", key:"General cold",     desc:"Sourced for a different deal",      count:402, hot:false,
       teaser:"Hi {{first}}, Buying Hero here — off-market 2/1 SFR in Miami-Dade. New roof, impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES for the address and photos. Reply STOP to opt out." }
@@ -422,9 +451,9 @@ var MOCK_REVIEW = {
     {name:"TriCounty Buyers LLC",tier:"A",segment:"Warm list",source:"InvestorLift",phone:"(561) 555-0192"},
     {name:"Ray Osterman",tier:"B",segment:"Warm list",source:"InvestorBase",phone:"(305) 555-0104"},
     {name:"Lucia Ferreira",tier:"B",segment:"Warm list",source:"BH Main",phone:"(786) 555-0175"},
-    {name:"Palm Equity Group",tier:"B",segment:"Geo-matched cold",source:"InvestorBase",phone:"(305) 555-0139"},
-    {name:"Devon Charles",tier:"C",segment:"Geo-matched cold",source:"InvestorLift",phone:"(954) 555-0186"},
-    {name:"Marisol Vega",tier:"C",segment:"Geo-matched cold",source:"InvestorBase",phone:"(305) 555-0150"},
+    {name:"Palm Equity Group",tier:"B",segment:"InvestorBase Matched",source:"InvestorBase",phone:"(305) 555-0139"},
+    {name:"Devon Charles",tier:"C",segment:"InvestorBase Matched",source:"InvestorLift",phone:"(954) 555-0186"},
+    {name:"Marisol Vega",tier:"C",segment:"InvestorBase Matched",source:"InvestorBase",phone:"(305) 555-0150"},
     {name:"Ironwood Holdings",tier:"C",segment:"General cold",source:"InvestorBase",phone:"(407) 555-0122"},
     {name:"Tommy Nguyen",tier:"C",segment:"General cold",source:"InvestorLift",phone:"(813) 555-0168"}
   ],
@@ -1289,7 +1318,250 @@ function fillTestData(){
   if (addr) addr.focus();
 }
 
+/* =====================================================================
+   Create Drive folder
+   Makes <address>/ and <address>/Photos and Videos for <address> under
+   the shared "1. DEALS" folder, shares the photos folder publicly, and
+   copies the deal doc in. Then fills the Photos/Videos field with the
+   public link, because that link is what ends up in the teaser and the
+   WhatsApp post — typing it by hand is the step that gets skipped.
+   The workflow is idempotent, so clicking twice reuses the folder.
+   ===================================================================== */
+function driveSay(text, cls){
+  var e = $("driveMsg");
+  if (!e) return;
+  e.className = "sub" + (cls ? " " + cls : "");
+  e.textContent = text;
+}
+
+function createDriveFolder(){
+  var form = $("intake");
+  var addrEl = form && form.querySelector('[name="Address"]');
+  var addr = addrEl ? addrEl.value.trim() : "";
+  if (!addr){
+    driveSay("Type the address first.", "drive-bad");
+    if (addrEl) addrEl.focus();
+    return;
+  }
+  var btn = $("driveBtn");
+  btn.disabled = true;
+  driveSay("Creating in Google Drive…");
+
+  var ctl = new AbortController();
+  var timer = setTimeout(function(){ ctl.abort(); }, 60000);
+
+  fetch(CONFIG.DRIVE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ address: addr }),
+    signal: ctl.signal
+  }).then(function(r){
+    return r.text().then(function(t){
+      var j; try { j = JSON.parse(t); } catch (e) { j = null; }
+      if (!r.ok || !j) throw new Error((j && j.error) || ("Drive request failed (" + r.status + ")"));
+      return j;
+    });
+  }).then(function(j){
+    clearTimeout(timer);
+    btn.disabled = false;
+    if (!j.ok) { driveSay(j.error || "Could not create the folder.", "drive-bad"); return; }
+
+    /* Fill the photos link in for them. Never clobber something already
+       typed — a link they pasted by hand may be the one they want. */
+    var photoEl = form.querySelector('[name="Photos Videos URL"]');
+    var filled = false;
+    if (photoEl && !photoEl.value.trim() && j.photosLink){
+      photoEl.value = j.photosLink;
+      photoEl.dispatchEvent(new Event("input", { bubbles: true }));
+      filled = true;
+    }
+
+    var e = $("driveMsg");
+    e.className = "sub drive-ok";
+    e.innerHTML = "";
+    e.appendChild(document.createTextNode(
+      (j.reused ? "Folder already existed — reused. " : "Folder created. ")
+      + (filled ? "Photos link filled in below. " : "")));
+    if (j.folderLink){
+      var a = document.createElement("a");
+      a.href = j.folderLink; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = "Open folder";
+      e.appendChild(a);
+    }
+    if (j.dealDocError){
+      var w = document.createElement("span");
+      w.className = "drive-bad";
+      w.textContent = "  " + j.dealDocError;
+      e.appendChild(w);
+    }
+  }).catch(function(err){
+    clearTimeout(timer);
+    btn.disabled = false;
+    driveSay(err && err.name === "AbortError"
+      ? "Drive took too long. Check the folder before clicking again."
+      : ("Drive error: " + (err && err.message ? err.message : String(err))), "drive-bad");
+  });
+}
+
+/* =====================================================================
+   Intake drafts
+   Shared, not per-browser: the team starts intakes they do not finish,
+   and somebody else has to be able to pick one up. Stored server-side
+   as form state only — a half-filled form is NOT a GHL Property record
+   and must not pollute the object the seller side also writes to.
+   ===================================================================== */
+var S_DRAFT = { id: null };
+
+function draftsCall(body){
+  /* Guarded: the offline test harness has no fetch, and a throw here would
+     halt the rest of the inline script - taking the demo badge and anything
+     else after it down with it. */
+  if (typeof fetch !== "function") return Promise.reject(new Error("no fetch"));
+  var ctl = new AbortController();
+  var timer = setTimeout(function(){ ctl.abort(); }, 30000);
+  return fetch(CONFIG.DRAFTS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: ctl.signal
+  }).then(function(r){
+    clearTimeout(timer);
+    return r.text().then(function(t){
+      var j; try { j = JSON.parse(t); } catch (e) { j = null; }
+      if (!r.ok || !j) throw new Error((j && j.error) || ("Drafts request failed (" + r.status + ")"));
+      return j;
+    });
+  });
+}
+
+function formFields(){
+  var form = $("intake"), out = {};
+  var els = form.querySelectorAll("[name]");
+  for (var i = 0; i < els.length; i++){
+    var e = els[i];
+    if (!e.name || e.type === "submit" || e.type === "button") continue;
+    out[e.name] = e.value;
+  }
+  return out;
+}
+
+function ago(iso){
+  var t = Date.parse(iso);
+  if (!t) return "";
+  var m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return m + "m ago";
+  var h = Math.round(m / 60);
+  if (h < 24) return h + "h ago";
+  return Math.round(h / 24) + "d ago";
+}
+
+/* Whose draft is this? On a shared list "anyone can pick it up" is only
+   useful if you can see whose it is. Asked once per browser and remembered,
+   rather than nagging on every save. */
+function whoAmI(){
+  var k = "dispoWho", v = "";
+  try { v = window.localStorage.getItem(k) || ""; } catch (e) {}
+  if (!v){
+    try { v = (window.prompt("Your name, so the team knows whose draft this is:") || "").trim(); } catch (e) { v = ""; }
+    if (v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+  }
+  return v.slice(0, 60);
+}
+
+function saveDraft(){
+  var btn = $("draftBtn");
+  var fields = formFields();
+  var addr = (fields["Address"] || "").trim();
+  btn.disabled = true;
+  var was = btn.textContent;
+  btn.textContent = "Saving…";
+  /* No address is fine and is exactly the case this exists for — someone
+     typed three fields and got pulled away. It still needs a name in the
+     list, which the workflow supplies. */
+  draftsCall({ action: "save", id: S_DRAFT.id, address: addr,
+               savedBy: whoAmI(), fields: fields })
+    .then(function(j){
+      btn.disabled = false; btn.textContent = was;
+      if (!j.ok) { alert(j.error || "Could not save the draft."); return; }
+      /* Keep the id so the next save UPDATES this draft rather than
+         littering the list with one row per click. */
+      S_DRAFT.id = j.id;
+      btn.textContent = "Draft saved";
+      setTimeout(function(){ btn.textContent = was; }, 2000);
+      loadDraftsList();
+    })
+    .catch(function(err){
+      btn.disabled = false; btn.textContent = was;
+      alert("Could not save the draft: " + (err && err.message ? err.message : String(err)));
+    });
+}
+
+function loadDraftsList(){
+  var panel = $("draftsPanel"), list = $("draftsList");
+  if (!panel || !list) return;
+  draftsCall({ action: "list" }).then(function(j){
+    var drafts = (j && j.drafts) || [];
+    if (!drafts.length){ panel.hidden = true; return; }
+    panel.hidden = false;
+    $("draftsSub").textContent = drafts.length + (drafts.length === 1 ? " draft" : " drafts")
+      + " — shared with the team, anyone can pick one up";
+    list.innerHTML = "";
+    drafts.forEach(function(d){
+      var row = el("div","draft-row");
+      var a = el("div","draft-addr" + (d.address === "(no address yet)" ? " draft-none" : ""), d.address);
+      row.appendChild(a);
+      row.appendChild(el("div","who", (d.savedBy ? d.savedBy + " · " : "") + ago(d.updatedAt)));
+
+      var open = el("button","btn btn-sm","Open");
+      open.type = "button";
+      open.onclick = function(){ openDraft(d.id); };
+      row.appendChild(open);
+
+      var del = el("button","btn btn-sm","Delete");
+      del.type = "button";
+      del.onclick = function(){
+        if (!window.confirm("Delete this draft? It is shared, so it disappears for everyone.")) return;
+        draftsCall({ action: "delete", id: d.id }).then(function(){
+          if (S_DRAFT.id === d.id) S_DRAFT.id = null;
+          loadDraftsList();
+        });
+      };
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }).catch(function(){
+    /* The drafts store being down must never block a dispo agent from
+       filing a deal, so this fails quiet and leaves the form usable. */
+    panel.hidden = true;
+  });
+}
+
+function openDraft(id){
+  draftsCall({ action: "load", id: id }).then(function(j){
+    if (!j.ok){ alert(j.error || "Could not open that draft."); loadDraftsList(); return; }
+    var form = $("intake"), f = j.fields || {};
+    Object.keys(f).forEach(function(k){
+      var e = form.querySelector('[name="' + k.replace(/"/g, '\\"') + '"]');
+      if (!e) return;
+      e.value = f[k];
+      e.dispatchEvent(new Event("input", { bubbles: true }));
+      e.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    S_DRAFT.id = j.id;
+    safeTop();
+    var addr = form.querySelector('[name="Address"]');
+    if (addr) addr.focus();
+  }).catch(function(err){
+    alert("Could not open that draft: " + (err && err.message ? err.message : String(err)));
+  });
+}
+
 $("intake").addEventListener("submit", onSubmit);
+$("draftBtn").addEventListener("click", saveDraft);
+/* Never let the drafts panel break the page it sits on. */
+try { loadDraftsList(); } catch (e) {}
+$("driveBtn").addEventListener("click", createDriveFolder);
 $("fillBtn").addEventListener("click", fillTestData);
 if (DEMO){
   var p = $("envPill");

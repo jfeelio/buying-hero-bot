@@ -58,7 +58,7 @@ separate page.
 - Deal header: the address, and whether the record was created or updated
 - **Four segment stat tiles** with counts. These decide which script each buyer
   gets: `1 Inquired` (asked about this property — hottest) · `2 Warm list`
-  (existing relationships) · `3 Geo-matched cold` (sourced within ~2 miles of
+  (existing relationships) · `3 InvestorBase Matched` (sourced within ~2 miles of
   this address) · `4 General cold` (sourced for a different deal)
 - Source breakdown (BH Main / InvestorBase / InvestorLift / Referral) and how
   many were imported in the last 2 hours

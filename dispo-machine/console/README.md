@@ -35,7 +35,7 @@ configurable thing and sit in `CONFIG` at the top of the script block.
 Three things must stay in lockstep across the two sides:
 
 1. **Form field labels** — `name="Living Area Sqft"` is what W1 maps on.
-2. **Segment labels** — `Inquired`, `Warm list`, `Geo-matched cold`,
+2. **Segment labels** — `Inquired`, `Warm list`, `InvestorBase Matched`,
    `General cold`. W2's `SEG_BY_LABEL` maps these back to the internal keys
    (`inquired`, `warm`, `geo_cold`, `general_cold`).
 3. **The review payload shape** — mirrored by `MOCK_REVIEW` in the source.

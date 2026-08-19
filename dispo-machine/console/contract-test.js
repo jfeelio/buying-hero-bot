@@ -71,10 +71,23 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // The payload the send webhook will receive must use the same segment labels
   // W2 maps on. A rename on either side breaks the blast silently.
-  const LABELS = ['Inquired', 'Warm list', 'Geo-matched cold', 'General cold'];
+  const LABELS = ['Inquired', 'Warm list', 'InvestorBase Matched', 'General cold'];
   const bad = (live.segments || []).map((s) => s.key).filter((k) => LABELS.indexOf(k) === -1);
   ok(bad.length === 0, 'segment labels match what W2 maps on' + (bad.length ? ' — UNKNOWN: ' + bad.join(', ') : ''));
 
-  console.log(fails === 0 ? '\nCONTRACT OK' : '\n' + fails + ' CONTRACT CHECK(S) FAILED');
+  // "Geo-matched cold" was renamed to "InvestorBase Matched" on 2026-08-19.
+  // The label is the wire contract - the console keys its teasers on it and W2
+  // maps it back to a segment key - so renaming it on one side only would mean
+  // that segment silently gets no teaser and every buyer in it is skipped. The
+  // old label stays as an alias: a review page opened before the rename is
+  // still sitting in somebody's browser.
+  const guard = JSON.parse(fs.readFileSync(
+    path.join(__dirname, '..', '..', 'crm-transition', 'n8n-workflows',
+              '05-send-teaser-blast.cloud.json'), 'utf8'))
+    .nodes.find((n) => n.name === 'Guard Rails').parameters.jsCode;
+  ok(/'investorbase matched': 'geo_cold'/.test(guard), 'W2 accepts the new segment label');
+  ok(/'geo-matched cold': 'geo_cold'/.test(guard), 'and still accepts the old one');
+
+console.log(fails === 0 ? '\nCONTRACT OK' : '\n' + fails + ' CONTRACT CHECK(S) FAILED');
   process.exit(fails === 0 ? 0 : 1);
 })();

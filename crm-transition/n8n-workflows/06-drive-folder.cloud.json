@@ -1,0 +1,661 @@
+{
+  "id": "drivefolder01",
+  "name": "06 - Deal Drive Folder (W3)",
+  "active": true,
+  "nodes": [
+    {
+      "id": "drivehook",
+      "name": "Create Folder Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        300
+      ],
+      "webhookId": "drive-folder-hook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drive-folder",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "notes": ""
+    },
+    {
+      "id": "validateaddress",
+      "name": "Validate Address",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// The address becomes the folder name, so it is cleaned before anything is\n// created: a slash makes an unusable Drive name, and a trailing space makes a\n// folder that looks identical to one that already exists but is not.\nconst body = $input.first().json.body || $input.first().json;\nconst raw = String(body.address || '').trim();\n// Newlines, tabs, slashes and backslashes break either the Drive name or the\n// URL people paste around. chr(92) rather than a literal backslash: this file\n// is JSON inside a shell inside a generator, and the escape collapses.\nconst SLASHES = ['/', String.fromCharCode(92)];\nlet address = raw.replace(new RegExp('[' + String.fromCharCode(13, 10, 9) + ']+', 'g'), ' ');\nfor (const s of SLASHES) address = address.split(s).join(' ');\naddress = address.replace(/\\s+/g, ' ').trim();\n\nif (!address) return [{ json: { ok: false, error: 'Type the address first.' } }];\nif (address.length > 180) return [{ json: { ok: false, error: 'That address is too long for a folder name.' } }];\n\nreturn [{ json: {\n  ok: true,\n  address,\n  parentId: \"1_Uqp-ekHV6_P-xu5Df7yzqMERVRgwXrg\",\n  templateDocId: \"1PP_jSph3JIBgFW7UgOVFX7sljZI1kcwQ-X5JppNe8o4\",\n  photosName: 'Photos and Videos for ' + address,\n  // Drive's q syntax is single-quoted, so an apostrophe in a street name\n  // has to be escaped or the query is malformed.\n  addressQ: address.split(\"'\").join(\"\\\\'\"),\n} }];"
+      }
+    },
+    {
+      "id": "addressok?",
+      "name": "Address OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.ok === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "findexistingfold",
+      "name": "Find Existing Folder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        200
+      ],
+      "parameters": {
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files?corpora=allDrives&includeItemsFromAllDrives=true&supportsAllDrives=true&fields=files(id,name,webViewLink)&q=' + encodeURIComponent(\"'\" + $json.parentId + \"' in parents and name = '\" + $json.addressQ + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\") }}",
+        "method": "GET",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mc19Yx4B7euJxrE2",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Clicking the button twice must not create two folders for one house."
+    },
+    {
+      "id": "createorreuse?",
+      "name": "Create or Reuse?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// Idempotent by design - the dispo agent will click this twice.\nconst v = $('Validate Address').first().json;\nconst found = ($input.first().json.files || [])[0] || null;\nreturn [{ json: Object.assign({}, v, {\n  existingId: found ? found.id : '',\n  existingLink: found ? found.webViewLink : '',\n  reused: !!found,\n}) }];"
+      }
+    },
+    {
+      "id": "folderexists?",
+      "name": "Folder Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        600,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.existingId ? true : false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "createpropertyfo",
+      "name": "Create Property Folder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        820,
+        380
+      ],
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,name,webViewLink",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.address, mimeType: 'application/vnd.google-apps.folder', parents: [$json.parentId] }) }}"
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mc19Yx4B7euJxrE2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "id": "folderid",
+      "name": "Folder Id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// Both branches land here: one made a folder, the other found one.\nconst v = $('Create or Reuse?').first().json;\nconst made = $input.first().json || {};\nconst folderId = v.existingId || made.id || '';\nif (!folderId) throw new Error('No property folder id after create/reuse');\nconst folderLink = v.existingLink || made.webViewLink\n  || ('https://drive.google.com/drive/folders/' + folderId);\nreturn [{ json: Object.assign({}, v, { folderId, folderLink }) }];"
+      }
+    },
+    {
+      "id": "findphotossubfol",
+      "name": "Find Photos Subfolder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1240,
+        200
+      ],
+      "parameters": {
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files?corpora=allDrives&includeItemsFromAllDrives=true&supportsAllDrives=true&fields=files(id,name,webViewLink)&q=' + encodeURIComponent(\"'\" + $json.folderId + \"' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false\") }}",
+        "method": "GET",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mc19Yx4B7euJxrE2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "id": "photosneeded?",
+      "name": "Photos Needed?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const v = $('Folder Id').first().json;\nconst kids = $input.first().json.files || [];\n// Match on the prefix, not the whole name: the address half of the name\n// changes if someone renames the property folder, the prefix does not.\nconst hit = kids.find(f => String(f.name || '').toLowerCase()\n  .indexOf('photos and videos') === 0) || null;\nreturn [{ json: Object.assign({}, v, {\n  photosId: hit ? hit.id : '', photosLink: hit ? hit.webViewLink : '' }) }];"
+      }
+    },
+    {
+      "id": "photosexists?",
+      "name": "Photos Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1640,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.photosId ? true : false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "createphotosfold",
+      "name": "Create Photos Folder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1860,
+        380
+      ],
+      "parameters": {
+        "url": "https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,name,webViewLink",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.photosName, mimeType: 'application/vnd.google-apps.folder', parents: [$json.folderId] }) }}"
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mc19Yx4B7euJxrE2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "id": "photosid",
+      "name": "Photos Id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const v = $('Photos Needed?').first().json;\nconst made = $input.first().json || {};\nconst photosId = v.photosId || made.id || '';\nif (!photosId) throw new Error('No photos folder id after create/reuse');\nconst photosLink = v.photosLink || made.webViewLink\n  || ('https://drive.google.com/drive/folders/' + photosId);\nreturn [{ json: Object.assign({}, v, { photosId, photosLink }) }];"
+      }
+    },
+    {
+      "id": "sharephotospubli",
+      "name": "Share Photos Publicly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2280,
+        200
+      ],
+      "parameters": {
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.photosId + '/permissions?supportsAllDrives=true' }}",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ role: 'reader', type: 'anyone' }) }}"
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mc19Yx4B7euJxrE2",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Anyone-with-the-link, read only. This link goes into the teaser and the WhatsApp post, so it has to open for a buyer who is not signed in to Google. Re-running is harmless.",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "copydealdoc",
+      "name": "Copy Deal Doc",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        200
+      ],
+      "parameters": {
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $('Photos Id').first().json.templateDocId + '/copy?supportsAllDrives=true&fields=id,name,webViewLink' }}",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $('Photos Id').first().json.address + ' - Deal Doc', parents: [$('Photos Id').first().json.folderId] }) }}"
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "mc19Yx4B7euJxrE2",
+          "name": "Google Drive account"
+        }
+      },
+      "notes": "Reads from $('Photos Id') rather than $json: the Share node before it is an HTTP node whose response REPLACES $json, so templateDocId and folderId are gone by here - that produced .../files/undefined/copy and an HTML 404.\n\nRuns as the OAuth user, NOT the service account. A service account has zero Drive storage, so copying a Doc it would own fails with storageQuotaExceeded. Folders are zero-byte and worked either way, which is what made this confusing.",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "buildresponse",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2700,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const v = $('Photos Id').first().json;\nconst copy = $input.first().json || {};\nconst docOk = !!copy.id;\n\n// photosLink is the one that matters downstream: the console drops it into\n// the Photos/Videos field, and from there it reaches the teaser and the\n// WhatsApp post. It must work for a buyer who is not signed in to Google.\nreturn [{ json: {\n  ok: true,\n  reused: !!v.reused,\n  address: v.address,\n  folderId: v.folderId,\n  folderLink: v.folderLink,\n  photosId: v.photosId,\n  photosLink: v.photosLink,\n  dealDocLink: docOk ? (copy.webViewLink || '') : '',\n  dealDocError: docOk ? '' : 'Deal doc was not copied. Copy it in by hand and tell whoever maintains this.',\n  message: (v.reused ? 'Folder already existed, reused it. ' : 'Folder created. ')\n    + (docOk ? 'Deal doc copied in.' : 'Deal doc NOT copied.'),\n} }];"
+      }
+    },
+    {
+      "id": "builderror",
+      "name": "Build Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        460
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { ok: false,\n  error: $input.first().json.error || 'Could not create the folder.' } }];"
+      }
+    },
+    {
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2920,
+        300
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Create Folder Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Address",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Address": {
+      "main": [
+        [
+          {
+            "node": "Address OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Address OK?": {
+      "main": [
+        [
+          {
+            "node": "Find Existing Folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Existing Folder": {
+      "main": [
+        [
+          {
+            "node": "Create or Reuse?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or Reuse?": {
+      "main": [
+        [
+          {
+            "node": "Folder Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Folder Exists?": {
+      "main": [
+        [
+          {
+            "node": "Folder Id",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Property Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Property Folder": {
+      "main": [
+        [
+          {
+            "node": "Folder Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Folder Id": {
+      "main": [
+        [
+          {
+            "node": "Find Photos Subfolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Photos Subfolder": {
+      "main": [
+        [
+          {
+            "node": "Photos Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Photos Needed?": {
+      "main": [
+        [
+          {
+            "node": "Photos Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Photos Exists?": {
+      "main": [
+        [
+          {
+            "node": "Photos Id",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Photos Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Photos Folder": {
+      "main": [
+        [
+          {
+            "node": "Photos Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Photos Id": {
+      "main": [
+        [
+          {
+            "node": "Share Photos Publicly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share Photos Publicly": {
+      "main": [
+        [
+          {
+            "node": "Copy Deal Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Deal Doc": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Error": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

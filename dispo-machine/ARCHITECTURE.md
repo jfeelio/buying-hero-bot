@@ -130,7 +130,7 @@ flowchart TD
 
   SEG --> S1["<b>1 · Inquired</b><br/>InvestorLift, on THIS property<br/><i>hottest — they asked</i>"]
   SEG --> S2["<b>2 · Warm list</b><br/>BH Main / Referral<br/><i>they know us</i>"]
-  SEG --> S3["<b>3 · Geo-matched cold</b><br/>InvestorBase pulled for THIS address<br/><i>bought within ~2 mi</i>"]
+  SEG --> S3["<b>3 · InvestorBase Matched</b><br/>InvestorBase pulled for THIS address<br/><i>bought within ~2 mi</i>"]
   SEG --> S4["<b>4 · General cold</b><br/>InvestorBase from other deals<br/><i>still a real cash buyer</i>"]
 ```
 
@@ -138,7 +138,7 @@ flowchart TD
 |---|---|---|---|
 | 1 | **Inquired** | references their inquiry | They already raised their hand on this exact property |
 | 2 | **Warm list** | familiar, first-name, "got another one" | Existing relationship |
-| 3 | **Geo-matched cold** | leads with the neighborhood | They demonstrably buy on this street |
+| 3 | **InvestorBase Matched** | leads with the neighborhood | They demonstrably buy on this street |
 | 4 | **General cold** | straight, credible, AI disclosure | No relationship, no geographic hook |
 
 Nobody is excluded for being in segment 3 or 4. **Everyone gets contacted;

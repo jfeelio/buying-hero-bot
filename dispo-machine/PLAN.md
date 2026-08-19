@@ -835,7 +835,7 @@ until there is enough data to make them worth solving another way.
 
 The Buyer Interest pipeline answers *who and what stage*. It cannot answer:
 
-- **Reply rate by segment.** Does the geo-matched cold script beat general cold?
+- **Reply rate by segment.** Does the InvestorBase Matched script beat general cold?
   Four scripts per deal only pays off if the difference is measured.
 - **Reply rate by source.** InvestorBase costs money per pull. Replies per 100
   texted, by `buy_source`, is the number that decides whether to keep buying.

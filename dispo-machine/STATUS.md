@@ -30,8 +30,9 @@ to one number, and the buyer 10DLC campaign still gates real volume.
 | **W2 Send Teaser Blast** | `sendblast0001` · active · `/webhook/dispo-send` |
 | **W12 InvestorBase Capture** | `ibcapture0001` · active |
 | **W1c Buyer Reply Handler** | `replyhandler01` · active · `/webhook/buyer-reply` |
+| **W3 Deal Drive Folder** | `drivefolder01` · active · `/webhook/drive-folder` — button on the intake form |
 | **Deal Console** | https://automations.buyinghero.com/dispo/ |
-| **Test suite** | `cd console && npm test` — 9 files, all green, runs offline against the workflow JSON |
+| **Test suite** | `cd console && npm test` — 10 files, all green, runs offline against the workflow JSON |
 | **Test send** | `buy_type = TEST` + a whitelist switch on the review page. Off by default; TEST is held from real blasts |
 | **Reply handler** | GHL workflow *Buyer Reply → n8n* is published and firing |
 
@@ -55,7 +56,7 @@ buy_vetted set             0    blank = blastable, as designed
 1. **Buyer 10DLC campaign** — *the long pole.* No SMS goes out until this
    clears. Jorge's task, no dependency on anything below.
 2. **InvestorBase import (W12).** Next up. It is also the first real test of
-   the *Geo-matched cold* segment, which has never had data — `buy_ib_property`
+   the *InvestorBase Matched* segment, which has never had data — `buy_ib_property`
    is what drives it. Run it against the same 2165 NW 58th St deal.
 3. **W11 InvestorLift capture** — not built. Spec is agreed: inquiry →
    create/merge contact → `buy_source = InvestorLift` → `buy_vetted = Unvetted`
@@ -125,6 +126,20 @@ of a flag. And count what the write node RETURNED, not what you queued for it.
 **Debugging n8n:** the console only ever shows `[object Object]`. The real error
 is in `select data from execution_data where "executionId"=N` on the n8n
 postgres.
+
+**Google Drive runs as the OAuth user, never the service account.** A service
+account has **zero Drive storage**: creating folders works (zero-byte), but
+copying a Doc it would own fails with `storageQuotaExceeded`. There is no fix
+via sharing. Shared Drives and domain-wide delegation are both Workspace-only
+and `1. DEALS` sits in a personal Gmail My Drive, so the answer is the
+`Google Drive account` OAuth2 credential in n8n. Consequence to remember:
+files created this way are owned by Jorge, so the service account cannot
+delete them.
+
+**An n8n HTTP node's response REPLACES `$json`.** Anything downstream that
+still reads `$json` gets undefined — which produced `/files/undefined/copy`
+and an HTML 404 that looked nothing like a Drive error. Read from
+`$('Node Name')` after any HTTP node.
 
 **Merge policy is add-only, everywhere.** W12 and the importer may never
 overwrite a tier, status, `excl_` rule, or a name a human set. If you write a

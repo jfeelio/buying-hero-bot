@@ -1,0 +1,468 @@
+{
+  "id": "intakedrafts1",
+  "name": "08 - Intake Drafts (W4)",
+  "active": true,
+  "nodes": [
+    {
+      "id": "draftshook",
+      "name": "Drafts Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        300
+      ],
+      "webhookId": "intake-drafts-hook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drafts",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "routeaction",
+      "name": "Route Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// One webhook, four actions. A draft is form state and nothing more - it is\n// deliberately NOT a GHL Property record, because a half-filled form is not\n// a deal and should not pollute the object the seller side also writes to.\nconst raw = $input.first().json;\nconst b = (raw && raw.body && typeof raw.body === 'object') ? raw.body : raw;\nconst action = String(b.action || 'list').toLowerCase().trim();\n\nconst fields = (b.fields && typeof b.fields === 'object') ? b.fields : {};\nconst address = String(b.address || fields.Address || '').trim();\nconst savedBy = String(b.savedBy || '').trim().slice(0, 80);\n\n// The id is generated CLIENT side on first save and sent back on every\n// later save, so re-saving updates one row instead of littering the table.\n// A draft with no address is still worth keeping - that is exactly the\n// half-finished state this feature exists for.\nlet id = String(b.id || '').trim().slice(0, 40);\nif (!id) {\n  id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);\n}\n\nif (['save', 'list', 'load', 'delete'].indexOf(action) === -1) {\n  return [{ json: { ok: false, error: 'Unknown action: ' + action } }];\n}\nif ((action === 'load' || action === 'delete') && !b.id) {\n  return [{ json: { ok: false, error: 'That action needs a draft id.' } }];\n}\n\nreturn [{ json: {\n  ok: true, action, id, address, savedBy,\n  // Postgres node query replacement: $1, $2, ... in order.\n  params: action === 'save'   ? [id, address, JSON.stringify(fields), savedBy]\n        : action === 'load'   ? [id]\n        : action === 'delete' ? [id]\n        : [],\n} }];"
+      }
+    },
+    {
+      "id": "valid?",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c",
+              "leftValue": "={{ $json.ok === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "switchact",
+      "name": "Which Action?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        180,
+        240
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "s",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "save",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "save"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "l",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "list",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "list"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "o",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "load",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "load"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "delete",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "delete"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "savedraft",
+      "name": "Save Draft",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        60
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "dispodraftsdb01",
+          "name": "Dispo Drafts DB"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO dispo_drafts (id, address, payload, saved_by) VALUES ($1, $2, $3::jsonb, $4) ON CONFLICT (id) DO UPDATE SET address = EXCLUDED.address, payload = EXCLUDED.payload, saved_by = EXCLUDED.saved_by, updated_at = now() RETURNING id, address, updated_at",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "notes": "Upsert on id, so re-saving the same draft updates one row rather than littering the table with a new draft every few minutes.",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "listdrafts",
+      "name": "List Drafts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "dispodraftsdb01",
+          "name": "Dispo Drafts DB"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, address, saved_by, updated_at FROM dispo_drafts ORDER BY updated_at DESC LIMIT 25",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "notes": "No payload column on purpose - the picker only needs enough to choose.",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "loaddraft",
+      "name": "Load Draft",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        380
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "dispodraftsdb01",
+          "name": "Dispo Drafts DB"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, address, payload, saved_by, updated_at FROM dispo_drafts WHERE id = $1",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "deletedraft",
+      "name": "Delete Draft",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        540
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "dispodraftsdb01",
+          "name": "Dispo Drafts DB"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM dispo_drafts WHERE id = $1 RETURNING id",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "shaperesponse",
+      "name": "Shape Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "jsCode": "const r = $('Route Action').first().json;\n// A Postgres node with an empty result still emits ONE item, so rows must be\n// filtered on having a real id or an empty table renders as one blank draft.\nconst rows = $input.all().map(i => i.json)\n  .filter(x => x && !x._skip && !x.error && x.id);\n\nif (r.action === 'list') {\n  return [{ json: { ok: true, action: 'list', drafts: rows.map(x => ({\n    id: x.id, address: x.address || '(no address yet)',\n    savedBy: x.saved_by || '', updatedAt: x.updated_at,\n  })) } }];\n}\n\nif (r.action === 'load') {\n  const row = rows[0];\n  if (!row) return [{ json: { ok: false, error: 'That draft is gone - someone may have deleted it.' } }];\n  return [{ json: { ok: true, action: 'load', id: row.id,\n    address: row.address || '', fields: row.payload || {},\n    savedBy: row.saved_by || '', updatedAt: row.updated_at } }];\n}\n\nif (r.action === 'delete') {\n  // rows is the RETURNING id, so an empty result means the draft was already\n  // gone - which is success from the caller's point of view either way.\n  return [{ json: { ok: true, action: 'delete', id: r.id,\n    deleted: rows.length > 0 } }];\n}\n\n// save\nconst row = rows[0] || {};\nreturn [{ json: { ok: true, action: 'save', id: row.id || r.id,\n  address: row.address || r.address, updatedAt: row.updated_at || null,\n  message: 'Draft saved. Anyone on the team can pick it up from /dispo.' } }];"
+      }
+    },
+    {
+      "id": "builderror",
+      "name": "Build Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        480
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { ok: false,\n  error: $input.first().json.error || 'Could not reach the drafts store.' } }];"
+      }
+    },
+    {
+      "id": "draftrespond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        920,
+        380
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Drafts Request": {
+      "main": [
+        [
+          {
+            "node": "Route Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Action": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Which Action?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Which Action?": {
+      "main": [
+        [
+          {
+            "node": "Save Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List Drafts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Draft": {
+      "main": [
+        [
+          {
+            "node": "Shape Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Drafts": {
+      "main": [
+        [
+          {
+            "node": "Shape Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Draft": {
+      "main": [
+        [
+          {
+            "node": "Shape Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Draft": {
+      "main": [
+        [
+          {
+            "node": "Shape Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Error": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

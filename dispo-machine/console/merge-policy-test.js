@@ -123,5 +123,36 @@ ok(fresh.contact.firstName === 'MARLON', 'new buyer keeps the name from the impo
 ok(String(fcf.buy_ib_property) === '1420 SW 9th Ter, Miami, FL',
    'buy_ib_property starts the list');
 
+// ================ the address InvestorBase repeats once per row
+// A 77-buyer pull arrives as the SAME address 77 times in one 2,540-char
+// string, comma-joined. The first collapse tried at most 12 repeats and assumed
+// a ", " separator, so every contact in the Hialeah import was written with an
+// unusable field that no smart list could match.
+console.log('\nRepeated-address collapse:\n');
+const mapSrc = wf.nodes.find((n) => n.name === 'Map InvestorBase Rows').parameters.jsCode;
+const ci = mapSrc.indexOf('const collapseRepeat');
+const cj = mapSrc.indexOf('};', mapSrc.indexOf('return t;', ci)) + 2;
+const collapse = new Function(mapSrc.slice(ci, cj) + '; return collapseRepeat;')();
+
+const ADDR = '580 Se 6th St, Hialeah, FL 33010';
+ok(collapse(new Array(77).fill(ADDR).join(',')) === ADDR,
+   '77 repeats joined by a bare comma collapse to one address');
+ok(collapse(new Array(77).fill(ADDR).join(', ')) === ADDR, 'and joined by comma-space');
+ok(collapse(new Array(2).fill(ADDR).join(',')) === ADDR, 'two repeats collapse');
+ok(collapse(ADDR + '; ' + ADDR) === ADDR, 'semicolon-joined repeats too');
+ok(collapse(ADDR) === ADDR, 'a single clean address is untouched');
+ok(collapse('') === '', 'empty stays empty');
+
+// buy_ib_property is append-only. Collapsing two REAL entries would cost a
+// buyer their geo match on an earlier deal — worse than an over-long field.
+const twoAddrs = ADDR + ',1420 SW 9th Ter, Miami, FL';
+ok(collapse(twoAddrs) === twoAddrs, 'two genuinely different addresses are left alone');
+
+// The merge path needs the same function, or an existing buyer gets the broken
+// value appended to their history instead.
+const mergeSrc = wf.nodes.find((n) => n.name === 'Merge into Existing Buyer').parameters.jsCode;
+ok(/const dedupeRepeat/.test(mergeSrc) && /SEPS/.test(mergeSrc),
+   'the merge path uses the same period detection, not the old guesswork');
+
 console.log(fails === 0 ? '\nMERGE POLICY OK' : '\n' + fails + ' CHECK(S) FAILED');
 process.exit(fails === 0 ? 0 : 1);
