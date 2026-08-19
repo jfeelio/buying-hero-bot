@@ -30,6 +30,31 @@ people's deals.
 
 ---
 
+## First principle — the database is the product
+
+> **We are building ONE centralized buyer database in GoHighLevel. Every other
+> decision is downstream of that.** InvestorBase, InvestorLift, referrals, the
+> master list, the console, the blasts — those are all just ways of feeding it
+> or reading from it. None of them owns data. GHL is the master.
+
+Nothing gets built in a way that only works for the thing being built. Before
+anything ships, it answers all five:
+
+| # | Test | Why it is not negotiable |
+|---|---|---|
+| 1 | **Does it write to GHL as the master?** | No source keeps its own copy. A CSV, a sheet, or a workflow's memory is a second truth that immediately starts drifting. |
+| 2 | **Can I filter on it?** | A smart list can only filter a **field**. Anything recorded as free text, a note, or a workflow variable is invisible to every list and report forever. |
+| 3 | **Is the vocabulary controlled?** | `Miami-Dade` / `miami dade` / `Dade` are three values to a filter. Picklists, not text boxes, wherever a filter will ever touch it. |
+| 4 | **Does it only ADD?** | An import may never downgrade, overwrite, or clear something a human set. See [Buyer identity](#buyer-identity--the-one-open-hole). |
+| 5 | **Is it written at the moment it happens?** | A field nobody populates is worse than no field: the smart list exists, returns nonsense, and gets trusted. |
+
+**The corollary that keeps biting:** every question you want to ask later has to
+be recorded as a filterable field *now*, at the moment the event happens. You
+cannot reconstruct "which buyers went quiet after we texted them three times"
+from message logs after the fact.
+
+---
+
 ## Architecture
 
 Extends the already-approved *buy the plumbing, build the brain* stack. No new
@@ -99,11 +124,19 @@ Without it a seller "contact created" workflow fires on imported buyers, and a
 buyer blast Smart List texts seller leads a wholesale deal. Cheap discipline at
 4 workflows, a multi-day debug at 20.
 
-**④ The seller import must UPDATE, not overwrite.** Wholesalers and JV partners
-already exist here as buyer contacts — 29 of them carry both Buyer and Seller in
-`record_type`. Match on phone, merge, append `Seller`; never blank-overwrite, or
-the extracted `buy_*` data is destroyed. Build the `sell_*` field schema
-*before* importing, not after.
+**④ The seller import must UPDATE, not overwrite.** Some wholesalers already
+exist here as buyer contacts. Match on phone, merge, append `Seller`; never
+blank-overwrite, or the extracted `buy_*` data is destroyed. Build the `sell_*`
+field schema *before* importing, not after.
+
+> **`Seller` is only for people who actually sell us houses.** An earlier
+> version of this plan had JV partners carrying both `Buyer` and `Seller` on the
+> theory that they sit on both sides of the table. **Corrected 2026-08-18 —
+> they are not sellers.** It was never cosmetic: per rule ③ every workflow and
+> Smart List filters on `record_type`, so a stray `Seller` would have pulled 22
+> JV partners into seller nurture sequences the day the REsimpli migration
+> landed. That they partner on deals is what `buy_type = JV` records. The 22
+> live records were corrected and the importer no longer writes it.
 
 > Consequence to accept, not fix: **opt-outs are global across buyers and
 > sellers.** A seller who texts STOP is suppressed as a buyer too. This is
@@ -130,7 +163,8 @@ original plan; see below)*
 |---|---|---|
 | `record_type` | multi-select | Buyer · Seller |
 | `buy_tier` | **single**-select | VIP · A · B · C |
-| `buy_status` | **single**-select | Active · Dormant · DNC · Blacklist |
+| `buy_status` | **single**-select | Active · DNC · Blacklist |
+| `buy_vetted` | **single**-select | Vetted · Unvetted · Rejected · *(blank)* |
 | `buy_type` | multi-select | Cash · Flipper · Landlord · Builder · JV · Realtor · Novation · Institutional |
 | `buy_source` | multi-select | InvestorLift · InvestorBase · BH Main · Referral |
 
@@ -243,12 +277,20 @@ deal reuses its existing Property record rather than creating a second one.
 ### Pipelines
 
 - **Dispo** (one opportunity per property): Intake → Packaged → Live → Offers In → Under Contract → Assigned → Dead
-- **Buyer Interest** (one per buyer-property pair): **Reached Out** → Info Sent → Walked → Offer → Contract Sent → Closed → Passed
+- **Buyer Interest** (one per buyer-property pair): **Reached Out** → Info Sent → Interested → Walked → Offer → Contract Sent → Closed → Passed
 
-> Stage 1 was renamed from *Interested* to **Reached Out** (2026-08-14) so the
-> pipeline states what actually happened. It now maps exactly onto the two-step
-> mechanic: **Reached Out** = teaser sent; **Info Sent** = they replied and got
-> the full house post. "Interested" was a claim about the buyer we hadn't earned.
+> **Interested moved to third, behind Info Sent (2026-08-17, Jorge).** It had
+> been the entry stage, which meant the first column filled with people who had
+> only been *texted* — a board that misreads at a glance, which is the one thing
+> a pipeline must not do. Every stage is now something the buyer did:
+> **Reached Out** = we sent the teaser · **Info Sent** = they replied and got the
+> full house post · **Interested** = they said they want it. Drop-off between
+> columns is now a number worth reading.
+>
+> The blast resolves its stage **by name at runtime**, so reordering or renaming
+> stages in the GHL UI needs no code change. The reorder also improves the
+> fallback: `stages[0]` used to be *Interested* (wrong if the name lookup ever
+> missed) and is now *Reached Out* (right).
 >
 > **The blast creates one opportunity per buyer who actually received the text** —
 > named `{address} — {buyer}`. This is the durable buyer↔deal association: open
@@ -465,7 +507,7 @@ them.
 
 | Layer | Fields | Effect |
 |---|---|---|
-| **Hard suppression** | `record_type`, `buy_status` (DNC/Blacklist), missing phone | Compliance and physics. Not preferences |
+| **Hard suppression** | `record_type`, `buy_status` (DNC/Blacklist), `buy_vetted` (Unvetted/Rejected), missing phone | Compliance, trust, and physics. Not preferences |
 | **Exclusion rules** | `excl_all_blasts` · `excl_below_price` · `excl_above_price` · `excl_below_sqft` · `excl_prop_types` · `excl_outside_counties` · `excl_outside_neighborhoods` | The **only** thing that removes a buyer from a blast |
 | **Provenance** | `excl_notes` · `excl_verified_date` | Who set the rule, why, and when it was last confirmed |
 
@@ -537,8 +579,12 @@ dying in REsimpli.
 buyer data forever.
 
 **⑥ Learning loop.** Responses update buy-box fields. Closings bump
-`buy_deals_count` and tier. Three blasts with no response → `status:dormant` →
-quarterly reactivation. Opt-outs → `status:dnc`, globally suppressed.
+`buy_deals_count` and tier. Opt-outs → `buy_status: DNC`, globally suppressed.
+
+A quiet buyer is **not** a status. "`buy_deals_sent` ≥ N and `buy_replies` = 0"
+is a question the live counters already answer as a smart list; a `Dormant`
+status would have been a second, staler copy of the same fact that nothing in
+the send path reads. Removed from `buy_status` on 2026-08-18.
 
 ---
 
@@ -671,6 +717,35 @@ bandwidth from the critical path.
 **Phase 0 has no blockers remaining.** Next action is the live import of the
 121 reviewed contacts.
 
+### Buyer identity — the one open hole
+
+Buyer records are joined on the **phone number** and nothing else. The merge
+policy that protects an existing record from being downgraded by a skip-traced
+import is built and tested (see
+[`ARCHITECTURE.md`](ARCHITECTURE.md#how-two-records-become-one-buyer)).
+
+What is *not* built: **a buyer whose InvestorBase number differs from the one on
+file** — their cell against your office line — creates a second contact record.
+Both then land in the same blast, so they get two texts about one house, with
+two different scripts, one of them cold. That is the kind of thing a buyer
+notices.
+
+Worth building once real volume exists, roughly in order of value:
+
+1. **A duplicate sweep, not a merge-on-write.** Compare candidates on
+   `companyName`, mailing address, and last-name + zip; queue matches for a
+   human. Never auto-merge on anything but the phone.
+2. **Use `additionalPhones`.** `Phone 2` / `Wireless 2` from InvestorBase goes
+   into `buy_notes_phone2` today, where nothing can match on it. GHL contacts
+   carry an `additionalPhones` array — putting second numbers there makes the
+   *next* import find them.
+3. **Email as a secondary key.** Weak on both sides today (only 17 of 143 master
+   rows have one, and InvestorBase email is flagged beta), but it costs nothing
+   to check after the phone lookup misses.
+4. **Suppress at send time, not just at import.** Deduplicate the recipient list
+   on phone digits before the blast — cheap insurance that survives whatever
+   duplicates exist in the database.
+
 **Received:**
 
 - ✅ Master buyer sheet — profiled, mapping built
@@ -699,6 +774,80 @@ decides which build steps are scriptable and which need a human in the UI.
 Undocumented but working: `locations.create-custom-field` accepts an `options`
 array of strings for `SINGLE_OPTIONS` / `MULTIPLE_OPTIONS`, returned as
 `picklistOptions`. It is absent from the operation's published schema.
+
+---
+
+## Reporting & smart lists
+
+Smart lists are how the team touches the database day to day, so the schema has
+to be designed for them rather than retrofitted. Two hard platform limits shape
+everything here:
+
+1. **Smart lists cannot be created through the API.** No CRUD operation exists
+   (checked 2026-08-17 — same category as pipelines and custom-object schemas:
+   UI-only). Each one is built by hand, once, from the recipes in
+   [`SMART_LISTS.md`](SMART_LISTS.md). What *is* automated is proving the filter
+   first: `POST /contacts/search` accepts the identical field filters, so every
+   recipe is run against live data and counted before anyone opens the UI, and
+   re-run afterwards to confirm the list matches.
+2. **A contact smart list can only filter CONTACT fields.** It cannot see
+   opportunities. So anything you want to segment on — how many deals a buyer
+   was sent, whether they ever replied — has to be denormalised onto the contact
+   even though the Buyer Interest pipeline already knows it.
+
+### Engagement write-back ✅ built (2026-08-17)
+
+The blast used to read the buyer pool, send, and write nothing back — so every
+buyer looked never-contacted forever, *never contacted* and *went quiet* both
+returned the whole database, and source ROI could not be computed at all. This
+is data that only exists at the moment of the send.
+
+**W2 now PUTs to every buyer who ACTUALLY received a text** (failed sends are
+not marked as contacted):
+
+| Field | id | Written |
+|---|---|---|
+| `buy_last_contacted` | `H7h5xLsf4fEK7RWmUPjE` | every send |
+| `buy_last_deal` | `RPLXsO5CyYJtkuvxUnrH` | the address |
+| `buy_last_hook` | `rK6q8uV5jaj1tByQO2BE` | the teaser's **opener only**, so a hook is never reused on the same buyer |
+| `buy_deals_sent` | `Bm5OguP73NrZtf05KoRH` | incremented from the value already on the contact |
+| `buy_first_contacted` | `rw9HInNhbME2Y2vY27xU` | **set once**, never rewritten — it is the buyer's tenure |
+
+The counters are read off the pool already in memory rather than re-fetching 600
+contacts. The write step is `onError: continueRegularOutput`: the texts have
+already gone, and reporting data is never worth failing a send over.
+
+Still unwritten: `buy_replies` and `buy_last_responded` — those belong to the
+reply handler (W1c), which does not exist yet. Until it does, *dead weight* and
+*responsive* have no data behind them.
+
+Verified by `console/writeback-test.js`, including the increment, the set-once
+rule, failed sends, and unresolvable field ids.
+
+### The lists to build
+
+Full recipes — exact field, operator and value for each — in
+[](SMART_LISTS.md). Twelve are plain field filters GHL builds
+natively; two are cross-field conditions the UI cannot express and are parked
+until there is enough data to make them worth solving another way.
+
+### Reporting the pipeline cannot show
+
+The Buyer Interest pipeline answers *who and what stage*. It cannot answer:
+
+- **Reply rate by segment.** Does the geo-matched cold script beat general cold?
+  Four scripts per deal only pays off if the difference is measured.
+- **Reply rate by source.** InvestorBase costs money per pull. Replies per 100
+  texted, by `buy_source`, is the number that decides whether to keep buying.
+- **Time to first reply** — the 48-hour pricing signal, made concrete.
+- **Tier, earned.** `buy_tier` is a guess from a LinkedDeal count today. Once
+  `buy_replies` and `buy_deals_sent` exist, tier can be derived from behaviour.
+- **Objection themes** across non-responders, from `buy_objection_last`.
+
+All of it is a scheduled n8n job reading the search API into a sheet, once there
+is anything to read. **Nothing here works until the engagement write-back
+above exists**, which is the whole point of putting this section in the plan
+now rather than discovering it after ten blasts.
 
 ---
 

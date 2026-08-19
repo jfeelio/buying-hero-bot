@@ -14,7 +14,8 @@ from never removes them — it only changes how we talk to them.
 
 A buyer is removed from a blast for exactly two reasons:
 
-1. **Hard suppression** — DNC, blacklist, no phone. Compliance and physics.
+1. **Hard suppression** — DNC, blacklist, unvetted, no phone. Compliance,
+   trust, and physics.
 2. **An `excl_` rule a human set** after talking to them — "$1M+ only",
    "Gables and Pinecrest only", "no condos".
 
@@ -37,6 +38,36 @@ flowchart LR
 
 **The database is cumulative and shared.** Nothing is scoped to one deal. A
 buyer sourced for 2165 NW 58th St is available for every deal after it.
+
+### How two records become one buyer
+
+**The join key is the phone number**, normalised to `+1XXXXXXXXXX` before any
+write. Every import looks the number up first
+(`GET /contacts/search/duplicate?number=…`) and merges into whatever it finds.
+
+**Names are never matched on.** "Marlon Pierre" / "Marlon R. Pierre" /
+"PIERRE HOLDINGS LLC" cannot be reliably told apart from three different people.
+A wrong merge is unrecoverable; a duplicate is merely annoying.
+
+**An import may only ever ADD.** InvestorBase data is skip-traced and was never
+confirmed with anyone, so on a match it is the weaker source:
+
+| Field | On a phone match |
+|---|---|
+| `buy_source`, `record_type`, `buy_type` | **union** — a buyer is on the master list *and* was returned by an IB pull |
+| `buy_ib_property` | **append** — every address they were ever sourced for |
+| `buy_notes` | **append** |
+| `buy_tier`, `buy_status`, every `excl_*` | **existing wins, always** |
+| name, email, company, `source` | **existing wins** if set |
+| buy box, beds, zips, sale history | fills blanks only |
+
+Without this the first re-import silently moves a VIP master-list buyer into the
+cold segment, resets their tier from a LinkedDeal count, and **reactivates
+anyone you blacklisted**. Locked down by `console/merge-policy-test.js`.
+
+**Known gap:** a buyer whose InvestorBase phone differs from the one on file
+(cell vs. office) creates a second record. Nothing detects that today — see the
+duplicate sweep in [`PLAN.md`](PLAN.md).
 
 ---
 
@@ -72,7 +103,14 @@ flowchart TD
 independent status. A contact field can never express this — it overwrites.
 
 To see every buyer on a deal: open the **Buyer Interest** pipeline and search the
-address.
+address. Stages, in order:
+
+**Reached Out** → **Info Sent** → **Interested** → Walked → Offer → Contract Sent → Closed / Passed
+
+Every stage is something the *buyer* did, except the first: we sent the teaser
+(Reached Out), they replied and got the full house post (Info Sent), they said
+they want it (Interested). Workflows resolve stages **by name at runtime**, so
+reordering or renaming them in the GHL UI never needs a code change.
 
 ---
 
@@ -84,7 +122,7 @@ facts, different opener.
 ```mermaid
 flowchart TD
   DEAL["Deal submitted<br/>2165 NW 58th St"] --> POOL["Pull ENTIRE buyer database"]
-  POOL --> SUP{"Hard suppression?<br/>DNC · blacklist · no phone"}
+  POOL --> SUP{"Hard suppression?<br/>DNC · blacklist · unvetted · no phone"}
   SUP -->|yes| DROP1["Suppressed"]
   SUP -->|no| EXCL{"Does an excl_ rule<br/>match this deal?"}
   EXCL -->|yes| DROP2["Excluded<br/><i>with the reason</i>"]
@@ -184,10 +222,36 @@ a call list — and the buyer still receives the deal until someone confirms.
 | InvestorBase capture (W12) | ✅ |
 | Deal intake + house post + teaser (W1) | ✅ |
 | Blast + Buyer Interest opportunities (W2) | ✅ |
-| **Per-segment teasers** | ⏳ replacing the source-exclusion mistake |
+| Per-segment teasers | ✅ verified live — four distinct openers per deal |
+| **Dispo Deal Console** (intake + review + send, one page) | ✅ [`console/`](console/) |
+| **A real blast** | ⛔ never run — no message has ever been sent |
 | **InvestorLift capture (W11)** | ❌ |
 | **Reply handler (W1c)** | ❌ |
 | **Deal dashboard** | ⏸ deferred — use the Buyer Interest pipeline for now |
+
+### The console
+
+<https://automations.buyinghero.com/dispo/> — one page, two states. Source in
+[`console/`](console/); `bash console/deploy.sh` builds, tests and publishes it.
+
+```mermaid
+flowchart LR
+  A["Intake form<br/><i>26 fields</i>"] -->|"POST /webhook/dispo-intake"| B["W1"]
+  B -->|"JSON: segments · teasers<br/>posts · buyers"| C["Review state"]
+  C -->|"edit anything<br/>hold segments back"| C
+  C -->|"POST /webhook/dispo-send<br/><i>what you see is what sends</i>"| D["W2"]
+  D --> E["SMS + Buyer Interest opps"]
+```
+
+Everything is editable before it sends — four teasers, the WhatsApp post, the
+SMS post, the voice brief — each with a Revert. Any segment can be held back,
+and the send button counts only what is switched on. `?demo=1` runs the whole
+flow against mock data with no network calls.
+
+**Two test suites, both runnable offline** (`npm test` in `console/`):
+`smoke.js` drives the page headlessly through submit → edit → toggle → send;
+`contract-test.js` renders a captured **live** W1 response and fails if the
+backend and front end have drifted apart.
 
 ### Deferred: the deal dashboard
 

@@ -1,0 +1,101 @@
+{
+ "body": {
+  "buy_price_max": "",
+  "buy_last_purchase": "",
+  "buy_ib_property": "",
+  "buy_scrub_date": "",
+  "buy_relationship_building": "",
+  "buy_consent_status": "Opted In",
+  "buy_tier": "VIP",
+  "excl_prop_types": "",
+  "buy_beds_typ": "",
+  "buy_consent_source": "Master List",
+  "excl_notes": "",
+  "buy_objection_last": "",
+  "buy_last_responded": "2026-08-17",
+  "buy_deals_sent": "",
+  "buy_rehab_appetite": "",
+  "excl_below_sqft": "",
+  "buy_financing": "",
+  "buy_high_end": "",
+  "buy_pof_date": "",
+  "buy_pof_on_file": "",
+  "buy_extract_confidence": "",
+  "buy_out_of_state": "",
+  "buy_last_contacted": "",
+  "buy_neighborhoods": "",
+  "buy_prop_types": "",
+  "excl_verified_date": "",
+  "buy_price_min": "",
+  "buy_type": [
+   "Cash",
+   "TEST"
+  ],
+  "excl_below_price": "",
+  "buy_last_deal": "",
+  "buy_zips": "",
+  "excl_above_price": "",
+  "buy_sqft_min": "",
+  "buy_entity_name": "Buying Hero",
+  "buy_counties": "",
+  "buy_sqft_typ": "",
+  "buy_consent_date": "",
+  "buy_notes": "TEST BUYER - Jorge. Sole buyer for end-to-end dispo testing. No excl_ rules set, so receives every blast.",
+  "buy_deals_count": "",
+  "buy_source": [
+   "BH Main"
+  ],
+  "buy_status": "Active",
+  "buy_replies": "",
+  "excl_outside_neighborhoods": "",
+  "buy_vetted": "",
+  "buy_baths_typ": "",
+  "buy_close_days": "",
+  "buy_last_hook": "",
+  "buy_avg_price": "",
+  "buy_first_contacted": "",
+  "record_type": [
+   "Buyer"
+  ],
+  "excl_outside_counties": "",
+  "excl_all_blasts": "",
+  "contact_id": "nmJtaJQhjdyGZBDDkiwI",
+  "first_name": "Jorge",
+  "last_name": "Siverio",
+  "full_name": "Jorge Siverio",
+  "email": "jsiverio@gmail.com",
+  "phone": "+13052021404",
+  "tags": "",
+  "country": "US",
+  "date_created": "2026-08-14T15:34:53.284Z",
+  "company_name": "Buying Hero",
+  "contact_source": "dispo machine test",
+  "full_address": "",
+  "contact_type": "lead",
+  "location": {
+   "name": "Buying Hero",
+   "address": "14406 Noto Ave",
+   "city": "Clermont",
+   "state": "FL",
+   "country": "US",
+   "postalCode": "34714",
+   "fullAddress": "14406 Noto Ave, Clermont FL 34714",
+   "id": "ib5jEnyqqq06FIEqlVGs"
+  },
+  "message": {
+   "type": 2,
+   "body": "Okay send details"
+  },
+  "workflow": {
+   "id": "0d2804a2-97c7-4d15-b3bb-c3001cc09d35",
+   "name": "Buyer Reply → n8n"
+  },
+  "triggerData": {},
+  "customData": {
+   "contactId": "nmJtaJQhjdyGZBDDkiwI",
+   "message": "Okay send details",
+   "direction": "inbound",
+   "type": "SMS"
+  }
+ }
+}

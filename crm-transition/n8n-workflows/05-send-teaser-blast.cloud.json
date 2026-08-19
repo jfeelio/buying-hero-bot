@@ -88,7 +88,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Guard rails before anything sends.\nconst form = $('Blast Form').first().json;\nconst search = $input.first().json;\n\nconst norm = (s) => (s || '').toLowerCase().replace(/\\s+/g, ' ').trim();\nconst target = norm(form['Property Address']);\nconst rec = (search.records || []).find(r => norm(r.properties?.prop_address) === target);\n\nconst confirm = String(form['Type SEND to confirm'] || '').trim().toUpperCase();\n// The teaser that SENDS is the one in the box, not the stored one - QA edits win.\nconst editedTeaser = String(form['Teaser to send'] || '').trim();\nconst editedPost = String(form['Replace SMS post (optional)'] || '').trim();\nconst limitRaw = form['Limit (optional)'];\nconst limit = (limitRaw === '' || limitRaw == null) ? null : Number(limitRaw);\n\nlet abort = null;\nif (confirm !== 'SEND') abort = 'Confirmation text was not exactly SEND. Nothing was sent.';\nelse if (!rec) abort = 'No deal found at that address. It must match the intake address exactly.';\nelse if (!editedTeaser) abort = 'The teaser box was empty. Nothing was sent.';\n\nreturn [{ json: {\n  abort,\n  recordId: rec ? rec.id : null,\n  address: rec ? rec.properties.prop_address : form['Property Address'],\n  teaser: editedTeaser,\n  teaserEdited: !!(rec && editedTeaser && editedTeaser !== (rec.properties.prop_teaser_sms || '')),\n  editedPost,\n  alreadySent: rec ? (rec.properties.prop_blast_status === 'teasersent') : false,\n  props: rec ? rec.properties : {},\n  limit\n} }];"
+        "jsCode": "// Guard rails before anything sends.\n// Two entry points: the n8n form, and the Dispo Deal Console (JSON body).\n// The console's own two-step \"Yes - send to N buyers now\" confirmation is the\n// equivalent of typing SEND, so it is not asked for it twice.\nlet form = null, con = null;\ntry { form = $('Blast Form').first().json; } catch (e) {}\ntry { const c = $('Console Send').first().json; con = (c && c.body) ? c.body : null; } catch (e) {}\n\nconst search = $input.first().json;\nconst norm = (s) => (s || '').toLowerCase().replace(/\\s+/g, ' ').trim();\n\nconst SEG_BY_LABEL = {\n  'inquired': 'inquired',\n  'warm list': 'warm',\n  'geo-matched cold': 'geo_cold',\n  'general cold': 'general_cold'\n};\n\nlet address, teaser, teasers, enabled, editedPost, limit, confirmed;\n// Buyer types the dispo manager held on the review page. Absent for the\n// legacy form path, which has no such control - an empty list holds nobody.\nlet typesHeld = [], tiersHeld = [], testOnly = false;\n\nif (con) {\n  address = String(con.address || '').trim();\n  teasers = {};\n  enabled = {};\n  const t = con.teasers || {}, en = con.segmentsEnabled || {};\n  typesHeld = Array.isArray(con.typesHeld) ? con.typesHeld.map(String) : [];\n  tiersHeld = Array.isArray(con.tiersHeld) ? con.tiersHeld.map(String) : [];\n  testOnly  = con.testOnly === true;\n  for (const label of Object.keys(t)) {\n    const k = SEG_BY_LABEL[norm(label)];\n    if (k) teasers[k] = String(t[label] || '').trim();\n  }\n  for (const label of Object.keys(en)) {\n    const k = SEG_BY_LABEL[norm(label)];\n    if (k) enabled[k] = en[label] === true;\n  }\n  editedPost = String(con.smsPost || '').trim();\n  limit = null;\n  confirmed = true;\n  // Representative teaser for the record; each buyer still gets their own.\n  teaser = teasers.warm || teasers.inquired || teasers.geo_cold || teasers.general_cold || '';\n} else {\n  form = form || {};\n  address = String(form['Property Address'] || '').trim();\n  teaser = String(form['Teaser to send'] || '').trim();\n  // The form has one box, so every segment gets the same text.\n  teasers = { inquired: teaser, warm: teaser, geo_cold: teaser, general_cold: teaser };\n  enabled = { inquired: true, warm: true, geo_cold: true, general_cold: true };\n  editedPost = String(form['Replace SMS post (optional)'] || '').trim();\n  const limitRaw = form['Limit (optional)'];\n  limit = (limitRaw === '' || limitRaw == null) ? null : Number(limitRaw);\n  confirmed = String(form['Type SEND to confirm'] || '').trim().toUpperCase() === 'SEND';\n}\n\nconst target = norm(address);\nconst rec = (search.records || []).find(r => norm(r.properties?.prop_address) === target);\n\nconst anyOn = Object.keys(enabled).some(k => enabled[k]);\nconst anyText = Object.keys(teasers).some(k => enabled[k] && teasers[k]);\n\nlet abort = null;\nif (!confirmed) abort = 'Confirmation text was not exactly SEND. Nothing was sent.';\nelse if (!rec) abort = 'No deal found at that address. It must match the intake address exactly.';\nelse if (!anyOn) abort = 'Every segment was held back. Nothing was sent.';\nelse if (!anyText) abort = 'Every segment that was switched on had an empty teaser. Nothing was sent.';\n\nreturn [{ json: {\n  abort,\n  viaConsole: !!con,\n  recordId: rec ? rec.id : null,\n  address: rec ? rec.properties.prop_address : address,\n  teaser,\n  teasers,\n  enabled,\n  typesHeld,\n  tiersHeld,\n  testOnly,\n  teaserEdited: !!(rec && teaser && teaser !== (rec.properties.prop_teaser_sms || '')),\n  editedPost,\n  alreadySent: rec ? (rec.properties.prop_blast_status === 'teasersent') : false,\n  props: rec ? rec.properties : {},\n  limit\n} }];\n"
       },
       "id": "guard",
       "name": "Guard Rails",
@@ -220,7 +220,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Re-run the SAME exclusion logic as intake. Deliberately re-evaluated at send\n// time rather than trusting the list from intake: an excl_ rule or a DNC may\n// have been set in between, and the send is the moment that must be correct.\nconst pages = $input.all();\nconst pool = pages.flatMap(p => p.json.contacts || []);\nconst deal = $('Guard Rails').first().json;\nconst p = deal.props;\n\nconst defs = ($('Fetch Field Definitions').first().json.customFields) || [];\nconst ID = {};\nfor (const d of defs) ID[d.name] = d.id;\nconst cf = (c, name) => {\n  const id = ID[name];\n  const hit = (c.customFields || []).find(x => x.id === id || x.id === name || x.key === name);\n  if (!hit) return null;\n  return hit.value !== undefined ? hit.value : (hit.fieldValue !== undefined ? hit.fieldValue : null);\n};\nconst arr = (v) => v == null ? [] : (Array.isArray(v) ? v : String(v).split(';').map(s => s.trim()).filter(Boolean));\nconst norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst n = (v) => (v == null || v === '') ? null : Number(v);\n\n\n// Address comparison for deal-scoping. Tolerant of \"2165 NW 58th St\" vs\n// \"2165 NW 58th St. Miami, FL 33142\" - either containing the other counts.\nconst normAddr = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');\nconst addrMatch = (a, b) => {\n  if (!a || !b) return false;\n  return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;\n};\nconst dealAddr = normAddr(p.prop_address);\nconst dealCounty = norm(p.prop_county);\nconst dealHood = norm(p.prop_neighborhood || '');\nconst dealType = norm(p.prop_type);\nconst asking = n(p.prop_asking_price);\nconst sqft = n(p.prop_sqft);\n\nconst send = [], skipped = [];\n\nfor (const c of pool) {\n  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.contactName || '(no name)';\n  const row = { id: c.id, name, phone: c.phone || null, tier: cf(c, 'buy_tier') || '(none)', segment: '' };\n\n  const rt = arr(cf(c, 'record_type')).map(norm);\n  if (!rt.includes('buyer')) continue;\n\n  const status = norm(cf(c, 'buy_status'));\n  if (status === 'dnc' || status === 'blacklist') { skipped.push({ ...row, why: 'buy_status=' + status }); continue; }\n  if (c.dnd === true) { skipped.push({ ...row, why: 'contact DND is on' }); continue; }\n  if (!c.phone) { skipped.push({ ...row, why: 'no phone' }); continue; }\n\n  const why = [];\n  if (norm(cf(c, 'excl_all_blasts')) === 'yes') why.push('held from all blasts');\n\n  // ---- InvestorBase buyers are DEAL-SCOPED ----\n  // IB returns buyers within ~2 miles of one subject property. They were never\n  // a general buyer list, so they are only eligible for the deal they were\n  // pulled for. Master-list buyers (BH Main / Referral) get everything.\n  const srcNorm = arr(cf(c, 'buy_source')).map(norm);\n  // SEGMENT, do not exclude. Source decides the SCRIPT, not eligibility.\n  // An InvestorBase buyer sourced for another property is still a real cash\n  // buyer in this county - excluding them would throw away the database the\n  // imports exist to build.\n  const pulledLines = String(cf(c, 'buy_ib_property') || '')\n    .split('\n').map(s => normAddr(s)).filter(Boolean);\n  const geoMatched = pulledLines.some(a => addrMatch(a, dealAddr));\n  const inquiredHere = srcNorm.includes('investorlift') && geoMatched;\n\n  let segment;\n  if (inquiredHere) segment = 'inquired';\n  else if (srcNorm.includes('bhmain') || srcNorm.includes('referral')) segment = 'warm';\n  else if (geoMatched) segment = 'geo_cold';\n  else segment = 'general_cold';\n\n  const bp = n(cf(c, 'excl_below_price')); if (bp && asking && asking < bp) why.push('below their price floor');\n  const ap = n(cf(c, 'excl_above_price')); if (ap && asking && asking > ap) why.push('above their price ceiling');\n  const bs = n(cf(c, 'excl_below_sqft')); if (bs && sqft && sqft < bs) why.push('below their sqft floor');\n  const et = arr(cf(c, 'excl_prop_types')).map(norm); if (et.length && dealType && et.includes(dealType)) why.push('excludes this property type');\n  const oc = arr(cf(c, 'excl_outside_counties')).map(norm); if (oc.length && dealCounty && !oc.includes(dealCounty)) why.push('outside their counties');\n  const oh = arr(cf(c, 'excl_outside_neighborhoods')).map(norm); if (oh.length && dealHood && !oh.includes(dealHood)) why.push('outside their sub-markets');\n\n  if (why.length) { skipped.push({ ...row, why: why.join('; ') }); continue; }\n  row.segment = segment;\n  send.push(row);\n}\n\nconst rank = { VIP: 0, A: 1, B: 2, C: 3 };\nsend.sort((a, b) => (rank[a.tier] ?? 9) - (rank[b.tier] ?? 9));\n\nconst limited = deal.limit ? send.slice(0, deal.limit) : send;\nconst heldByLimit = send.length - limited.length;\n\nif (!limited.length) {\n  return [{ json: { _none: true, address: deal.address, recordId: deal.recordId,\n                    eligible: 0, skipped, heldByLimit } }];\n}\n\n// One item per recipient - the send node runs once per item.\nreturn limited.map(b => ({ json: {\n  contactId: b.id,\n  name: b.name,\n  phone: b.phone,\n  tier: b.tier,\n  segment: b.segment,\n  teaser: deal.teaser,\n  address: deal.address,\n  recordId: deal.recordId,\n  _stats: { eligible: send.length, sending: limited.length, heldByLimit, skipped }\n} }));"
+        "jsCode": "// Re-run the SAME exclusion logic as intake. Deliberately re-evaluated at send\n// time rather than trusting the list from intake: an excl_ rule or a DNC may\n// have been set in between, and the send is the moment that must be correct.\nconst pages = $input.all();\nconst pool = pages.flatMap(p => p.json.contacts || []);\nconst deal = $('Guard Rails').first().json;\nconst p = deal.props;\n\nconst defs = ($('Fetch Field Definitions').first().json.customFields) || [];\nconst ID = {};\nfor (const d of defs) ID[d.name] = d.id;\nconst cf = (c, name) => {\n  const id = ID[name];\n  const hit = (c.customFields || []).find(x => x.id === id || x.id === name || x.key === name);\n  if (!hit) return null;\n  return hit.value !== undefined ? hit.value : (hit.fieldValue !== undefined ? hit.fieldValue : null);\n};\nconst arr = (v) => v == null ? [] : (Array.isArray(v) ? v : String(v).split(';').map(s => s.trim()).filter(Boolean));\nconst norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');\nconst n = (v) => (v == null || v === '') ? null : Number(v);\n\n\n// Address comparison for deal-scoping. Tolerant of \"2165 NW 58th St\" vs\n// \"2165 NW 58th St. Miami, FL 33142\" - either containing the other counts.\nconst normAddr = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');\nconst addrMatch = (a, b) => {\n  if (!a || !b) return false;\n  return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;\n};\nconst dealAddr = normAddr(p.prop_address);\nconst dealCounty = norm(p.prop_county);\nconst dealHood = norm(p.prop_neighborhood || '');\nconst dealType = norm(p.prop_type);\nconst asking = n(p.prop_asking_price);\nconst sqft = n(p.prop_sqft);\n\n// The merge token Claude is told to write. Assembled from pieces so the raw\n// '{{' never appears in this file either - see the note at row.smsBody.\nconst TOKEN = '{' + '{first_name}' + '}';\nconst send = [], skipped = [];\n\nfor (const c of pool) {\n  const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.contactName || '(no name)';\n  const row = { id: c.id, name, phone: c.phone || null, tier: cf(c, 'buy_tier') || '(none)', segment: '',\n                priorDealsSent: Number(cf(c, 'buy_deals_sent') || 0) || 0,\n                priorFirstContacted: cf(c, 'buy_first_contacted') || '' };\n\n  const rt = arr(cf(c, 'record_type')).map(norm);\n  if (!rt.includes('buyer')) continue;\n\n  const status = norm(cf(c, 'buy_status'));\n  if (status === 'dnc' || status === 'blacklist') { skipped.push({ ...row, why: 'buy_status=' + status }); continue; }\n  if (c.dnd === true) { skipped.push({ ...row, why: 'contact DND is on' }); continue; }\n  if (!c.phone) { skipped.push({ ...row, why: 'no phone' }); continue; }\n  // ---- VETTING GATE ----\n  // InvestorLift inquiries arrive as buy_vetted=Unvetted because some of them\n  // are competing wholesalers fishing for the address, not buyers. A dispo\n  // agent flips one field - buy_vetted=Vetted - and they blast normally\n  // forever after. Rejected means confirmed snake: held permanently, kept on\n  // file so we never have to re-learn who they are.\n  // BLANK IS BLASTABLE. The 121 master buyers and every InvestorBase import\n  // have no value here and must not be affected.\n  const vetted = norm(cf(c, 'buy_vetted'));\n  if (vetted === 'unvetted') { skipped.push({ ...row, why: 'not vetted yet - dispo must set buy_vetted=Vetted' }); continue; }\n  if (vetted === 'rejected') { skipped.push({ ...row, why: 'buy_vetted=Rejected (known snake)' }); continue; }\n\n  const why = [];\n  if (norm(cf(c, 'excl_all_blasts')) === 'yes') why.push('held from all blasts');\n\n  // ---- InvestorBase buyers are DEAL-SCOPED ----\n  // IB returns buyers within ~2 miles of one subject property. They were never\n  // a general buyer list, so they are only eligible for the deal they were\n  // pulled for. Master-list buyers (BH Main / Referral) get everything.\n  const srcNorm = arr(cf(c, 'buy_source')).map(norm);\n  // SEGMENT, do not exclude. Source decides the SCRIPT, not eligibility.\n  // An InvestorBase buyer sourced for another property is still a real cash\n  // buyer in this county - excluding them would throw away the database the\n  // imports exist to build.\n  const pulledLines = String(cf(c, 'buy_ib_property') || '')\n    .split(/[;\\n]/).map(s => normAddr(s)).filter(Boolean);\n  const geoMatched = pulledLines.some(a => addrMatch(a, dealAddr));\n  const inquiredHere = srcNorm.includes('investorlift') && geoMatched;\n\n  let segment;\n  if (inquiredHere) segment = 'inquired';\n  else if (srcNorm.includes('bhmain') || srcNorm.includes('referral')) segment = 'warm';\n  else if (geoMatched) segment = 'geo_cold';\n  else segment = 'general_cold';\n\n  const bp = n(cf(c, 'excl_below_price')); if (bp && asking && asking < bp) why.push('below their price floor');\n  const ap = n(cf(c, 'excl_above_price')); if (ap && asking && asking > ap) why.push('above their price ceiling');\n  const bs = n(cf(c, 'excl_below_sqft')); if (bs && sqft && sqft < bs) why.push('below their sqft floor');\n  const et = arr(cf(c, 'excl_prop_types')).map(norm); if (et.length && dealType && et.includes(dealType)) why.push('excludes this property type');\n  const oc = arr(cf(c, 'excl_outside_counties')).map(norm); if (oc.length && dealCounty && !oc.includes(dealCounty)) why.push('outside their counties');\n  const oh = arr(cf(c, 'excl_outside_neighborhoods')).map(norm); if (oh.length && dealHood && !oh.includes(dealHood)) why.push('outside their sub-markets');\n\n  if (why.length) { skipped.push({ ...row, why: why.join('; ') }); continue; }\n  row.segment = segment;\n\n  // A segment switched off in the console is held back, and says so.\n  if (deal.enabled && deal.enabled[segment] === false) {\n    skipped.push({ ...row, why: 'segment held back for this blast' });\n    continue;\n  }\n  // No approved text for this segment means no send. Never silently fall\n  // back to another segment's script - the wrong opener to a cold buyer is\n  // worse than no text at all.\n  // ---- TEST SEND: a WHITELIST, checked before every other rule ----\n  // When the dispo manager flips Test send, exactly one thing is true: only\n  // buy_type TEST goes out. Deliberately not expressed as \"hold everything\n  // else\" - that would depend on eight checkboxes all being right, and one\n  // missed chip is a text to the whole database.\n  const testSend = deal.testOnly === true;\n  if (testSend) {\n    const mineT = arr(cf(c, 'buy_type')).map(norm);\n    if (mineT.indexOf('test') === -1) {\n      skipped.push({ ...row, why: 'TEST SEND - only buy_type TEST receives this blast' });\n      continue;\n    }\n  }\n\n  // ---- PER-BLAST HOLD BY BUYER TYPE ----\n  // Chosen on the review page, travels with the send. This is NOT an exclusion\n  // and nothing is written to buy_type: a JV partner is a real buyer, just not\n  // the audience for an end-buyer blast. Re-checked here rather than trusted\n  // from intake because the list is rebuilt at send time.\n  const heldTypes = (!testSend && Array.isArray(deal.typesHeld)) ? deal.typesHeld.map(norm) : [];\n  if (heldTypes.length) {\n    const mine = arr(cf(c, 'buy_type'));\n    const hit = mine.filter(t => heldTypes.indexOf(norm(t)) !== -1);\n    if (hit.length) {\n      skipped.push({ ...row, why: 'buy_type ' + hit.join('/') + ' held back for this blast' });\n      continue;\n    }\n  }\n\n  // Same idea by tier. The usual case is holding VIPs: they get a phone call\n  // from a partner, not a mass text. buy_tier is never written here either.\n  const heldTiers = (!testSend && Array.isArray(deal.tiersHeld)) ? deal.tiersHeld.map(norm) : [];\n  if (heldTiers.length) {\n    const myTier = cf(c, 'buy_tier');\n    if (myTier && heldTiers.indexOf(norm(myTier)) !== -1) {\n      skipped.push({ ...row, why: 'tier ' + myTier + ' held back for this blast' });\n      continue;\n    }\n  }\n\n  row.teaser = (deal.teasers && deal.teasers[segment]) || '';\n  if (!row.teaser) {\n    skipped.push({ ...row, why: 'no approved teaser for the ' + segment + ' segment' });\n    continue;\n  }\n\n  // Build the EXACT string that will be texted, here in code.\n  // It used to be assembled inside the HTTP node's expression, which meant a\n  // literal '{{first_name}}' sat nested inside n8n's own {{ }} template. n8n\n  // parsed the inner braces as the end of its expression and every send died\n  // with a bare \"invalid syntax\". Nothing that ships to a buyer should be\n  // assembled in an expression field.\n  const firstName = String(row.name || '').trim().split(' ')[0] || 'there';\n  row.smsBody = String(row.teaser).split(TOKEN).join(firstName);\n\n  send.push(row);\n}\n\n\n// ---- Deduplicate on phone. One human, one text. ----\n// Records are joined on phone at IMPORT time, so duplicates here mean two\n// contact records carrying the SAME number - a merge that never happened, a\n// manual entry, a re-import under a second record. Whatever the cause, the\n// buyer must not receive the same deal twice, and definitely not once warm and\n// once cold.\nconst TIER_RANK = { VIP: 0, A: 1, B: 2, C: 3 };\nconst SEG_RANK = { inquired: 0, warm: 1, geo_cold: 2, general_cold: 3 };\nconst phoneKey = (p) => String(p == null ? '' : p).replace(/\\D/g, '').replace(/^1(?=\\d{10}$)/, '');\n// Keep the record most likely to be the curated one: best tier, then warmest\n// segment, then whichever was already ahead in the list.\nconst betterOf = (a, b) => {\n  const ta = TIER_RANK[a.tier] == null ? 9 : TIER_RANK[a.tier];\n  const tb = TIER_RANK[b.tier] == null ? 9 : TIER_RANK[b.tier];\n  if (ta !== tb) return ta < tb ? a : b;\n  const sa = SEG_RANK[a.segment] == null ? 9 : SEG_RANK[a.segment];\n  const sb = SEG_RANK[b.segment] == null ? 9 : SEG_RANK[b.segment];\n  if (sa !== sb) return sa < sb ? a : b;\n  return a;\n};\n\nconst byPhone = new Map();\nconst dupes = [];\nfor (const b of send) {\n  const k = phoneKey(b.phone);\n  if (!k) continue;\n  const prev = byPhone.get(k);\n  if (!prev) { byPhone.set(k, b); continue; }\n  const keep = betterOf(prev, b);\n  byPhone.set(k, keep);\n  dupes.push(keep === prev ? b : prev);\n}\nconst kept = new Set(Array.from(byPhone.values()));\nconst uniq = send.filter(b => kept.has(b));\nfor (const d of dupes) {\n  const winner = byPhone.get(phoneKey(d.phone));\n  skipped.push(Object.assign({}, d, {\n    why: 'duplicate phone - already texting ' + (winner ? winner.name : 'another buyer') + ' on this number'\n  }));\n}\nsend.length = 0;\nfor (const b of uniq) send.push(b);\n\nconst rank = { VIP: 0, A: 1, B: 2, C: 3 };\nsend.sort((a, b) => (rank[a.tier] ?? 9) - (rank[b.tier] ?? 9));\n\nconst limited = deal.limit ? send.slice(0, deal.limit) : send;\nconst heldByLimit = send.length - limited.length;\n\nif (!limited.length) {\n  return [{ json: { _none: true, address: deal.address, recordId: deal.recordId,\n                    eligible: 0, skipped, heldByLimit } }];\n}\n\n// One item per recipient - the send node runs once per item.\nreturn limited.map(b => ({ json: {\n  contactId: b.id,\n  name: b.name,\n  phone: b.phone,\n  tier: b.tier,\n  segment: b.segment,\n  teaser: b.teaser,\n  // The finished, personalised text. This projection is explicit, so anything\n  // added to the row above has to be added HERE too or it silently vanishes\n  // and the send node posts an empty message.\n  smsBody: b.smsBody,\n  priorDealsSent: b.priorDealsSent,\n  priorFirstContacted: b.priorFirstContacted,\n  address: deal.address,\n  recordId: deal.recordId,\n  _stats: { eligible: send.length, sending: limited.length, heldByLimit, skipped }\n} }));"
       },
       "id": "recipients",
       "name": "Build Recipient List",
@@ -248,7 +248,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ type: 'SMS', contactId: $json.contactId, fromNumber: '+17868414589', message: ($json.teaser || '').split('{{first_name}}').join(($json.name || '').split(' ')[0] || 'there') }) }}",
+        "jsonBody": "={{ JSON.stringify({ type: 'SMS', locationId: 'ib5jEnyqqq06FIEqlVGs', contactId: $json.contactId, fromNumber: '+17868414589', message: $json.smsBody }) }}",
         "options": {
           "batching": {
             "batch": {
@@ -272,11 +272,12 @@
           "name": "Header Auth account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "notes": "locationId must be in the BODY (undocumented; GHL 422s COMMON_LOCATION_ID_UNDEFINED without it). Keep this expression trivial - the message is built in Build Recipient List because a nested {{ }} here breaks n8n's parser."
     },
     {
       "parameters": {
-        "jsCode": "const results = $input.all();\nconst recips = $('Build Recipient List').all();\nconst stats = (recips[0] && recips[0].json._stats) || { eligible: 0, sending: 0, heldByLimit: 0, skipped: [] };\n\nconst sent = [], failed = [];\nfor (let i = 0; i < results.length; i++) {\n  const r = results[i].json || {};\n  const b = (recips[i] && recips[i].json) || {};\n  const row = { name: b.name, phone: b.phone, tier: b.tier };\n  if (r.messageId || r.conversationId || r.success === true) { row.messageId = r.messageId || ''; sent.push(row); }\n  else { row.error = String(r.message || r.error || JSON.stringify(r)).slice(0, 200); failed.push(row); }\n}\n\nreturn [{ json: {\n  address: (recips[0] && recips[0].json.address) || '',\n  recordId: (recips[0] && recips[0].json.recordId) || null,\n  eligible: stats.eligible,\n  attempted: results.length,\n  sent: sent.length,\n  failed: failed.length,\n  held_by_limit: stats.heldByLimit,\n  sent_rows: sent,\n  failed_rows: failed,\n  skipped_rows: stats.skipped\n} }];"
+        "jsCode": "const results = $input.all();\nconst recips = $('Build Recipient List').all();\nconst stats = (recips[0] && recips[0].json._stats) || { eligible: 0, sending: 0, heldByLimit: 0, skipped: [] };\n\nconst sent = [], failed = [];\nfor (let i = 0; i < results.length; i++) {\n  const r = results[i].json || {};\n  const b = (recips[i] && recips[i].json) || {};\n  const row = { contactId: b.contactId, name: b.name, phone: b.phone, tier: b.tier };\n  if (r.messageId || r.conversationId || r.success === true) { row.messageId = r.messageId || ''; sent.push(row); }\n  else { row.error = String(r.message || r.error || JSON.stringify(r)).slice(0, 200); failed.push(row); }\n}\n\nreturn [{ json: {\n  address: (recips[0] && recips[0].json.address) || '',\n  recordId: (recips[0] && recips[0].json.recordId) || null,\n  eligible: stats.eligible,\n  attempted: results.length,\n  sent: sent.length,\n  failed: failed.length,\n  held_by_limit: stats.heldByLimit,\n  sent_rows: sent,\n  failed_rows: failed,\n  skipped_rows: stats.skipped\n} }];"
       },
       "id": "tally",
       "name": "Tally Sends",
@@ -370,7 +371,7 @@
     },
     {
       "parameters": {
-        "url": "https://services.leadconnectorhq.com/opportunities/pipelines",
+        "url": "https://services.leadconnectorhq.com/opportunities/pipelines?locationId=ib5jEnyqqq06FIEqlVGs",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -398,11 +399,12 @@
           "name": "Header Auth account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "notes": "locationId is required on the query string. Without it this 422s and the workflow concludes the Buyer Interest pipeline does not exist, so no opportunities are created and nothing says why."
     },
     {
       "parameters": {
-        "jsCode": "// One Buyer Interest opportunity per buyer WHO ACTUALLY RECEIVED the teaser.\n// This is the durable buyer<->deal association: open the Buyer Interest\n// pipeline, search the address, and every buyer tied to that deal is listed\n// with the stage they reached. Contact fields can't express this - a buyer\n// belongs to many deals over time.\nconst pipes = ($input.first().json.pipelines) || [];\nconst bi = pipes.find(p => (p.name || '').toLowerCase().indexOf('buyer interest') !== -1);\n\nconst tally = $('Tally Sends').first().json;\nconst recips = $('Build Recipient List').all();\n\nif (!bi || !bi.stages || !bi.stages.length) {\n  return [{ json: { _skip: true, reason: 'Buyer Interest pipeline not found' } }];\n}\n\n// Prefer a stage that honestly means \"we texted them\"; otherwise fall back to\n// the first stage. Renaming/adding a stage in GHL needs no code change.\nconst wanted = ['reached out', 'texted', 'sent', 'blasted', 'contacted'];\nlet stage = bi.stages.find(s => wanted.indexOf((s.name || '').toLowerCase()) !== -1);\nif (!stage) stage = bi.stages[0];\n\nconst sentNames = new Set((tally.sent_rows || []).map(r => r.name));\nconst out = [];\nfor (const r of recips) {\n  const b = r.json;\n  if (!b || !b.contactId) continue;\n  if (!sentNames.has(b.name)) continue;   // only buyers who actually got it\n  out.push({ json: {\n    opp: {\n      pipelineId: bi.id,\n      locationId: 'ib5jEnyqqq06FIEqlVGs',\n      name: (tally.address || 'Deal') + ' — ' + b.name,\n      pipelineStageId: stage.id,\n      status: 'open',\n      contactId: b.contactId\n    },\n    _stageName: stage.name\n  } });\n}\n\nif (!out.length) return [{ json: { _skip: true, reason: 'nothing sent' } }];\nreturn out;"
+        "jsCode": "// One Buyer Interest opportunity per buyer WHO ACTUALLY RECEIVED the teaser.\n// This is the durable buyer<->deal association: open the Buyer Interest\n// pipeline, search the address, and every buyer tied to that deal is listed\n// with the stage they reached. Contact fields can't express this - a buyer\n// belongs to many deals over time.\nconst pipes = ($input.first().json.pipelines) || [];\nconst bi = pipes.find(p => (p.name || '').toLowerCase().indexOf('buyer interest') !== -1);\n\nconst tally = $('Tally Sends').first().json;\nconst recips = $('Build Recipient List').all();\n\nif (!bi || !bi.stages || !bi.stages.length) {\n  return [{ json: { _skip: true, reason: 'Buyer Interest pipeline not found' } }];\n}\n\n// Prefer a stage that honestly means \"we texted them\"; otherwise fall back to\n// the first stage. Renaming/adding a stage in GHL needs no code change.\nconst wanted = ['reached out', 'texted', 'sent', 'blasted', 'contacted'];\nlet stage = bi.stages.find(s => wanted.indexOf((s.name || '').toLowerCase()) !== -1);\nif (!stage) stage = bi.stages[0];\n\nconst sentNames = new Set((tally.sent_rows || []).map(r => r.name));\nconst out = [];\nfor (const r of recips) {\n  const b = r.json;\n  if (!b || !b.contactId) continue;\n  if (!sentNames.has(b.name)) continue;   // only buyers who actually got it\n  out.push({ json: {\n    opp: {\n      pipelineId: bi.id,\n      locationId: 'ib5jEnyqqq06FIEqlVGs',\n      // Buyer first: the pipeline card shows the name, and with several deals\n      // running the address is what you filter on, not what you read.\n      name: b.name + ' — ' + (tally.address || 'Deal'),\n      // Opportunity custom fields use fieldValue; CONTACT custom fields use\n      // value. Same API, different key. Getting it wrong fails silently.\n      customFields: [{ id: '23Qr6cqR1IP1zFknf5Wn', fieldValue: tally.address || '' }],\n      pipelineStageId: stage.id,\n      status: 'open',\n      contactId: b.contactId\n    },\n    _stageName: stage.name\n  } });\n}\n\nif (!out.length) return [{ json: { _skip: true, reason: 'nothing sent' } }];\nreturn out;"
       },
       "id": "build-opps",
       "name": "Build Buyer Interest Opps",
@@ -455,6 +457,227 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dispo-send",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "consolesend0001",
+      "name": "Console Send",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        520
+      ],
+      "webhookId": "dispo-send"
+    },
+    {
+      "parameters": {
+        "jsCode": "// JSON result for the Dispo Deal Console's send button.\nconst t = $('Tally Sends').first().json;\n\nlet opps = 0, stage = '';\ntry {\n  const b = $('Build Buyer Interest Opps').all();\n  opps = b.filter(x => x.json && x.json.opp).length;\n  if (opps) stage = b[0].json._stageName || '';\n} catch (e) {}\n\nconst bits = [];\nbits.push(t.sent + ' teaser' + (t.sent === 1 ? '' : 's') + ' sent.');\nif (t.failed) bits.push(t.failed + ' failed.');\nif (opps) bits.push(opps + ' Buyer Interest opportunit' + (opps === 1 ? 'y' : 'ies') +\n                    ' created at \"' + stage + '\" — open the pipeline and search this address.');\nelse bits.push('Track replies in the Buyer Interest pipeline.');\n\nlet engagementWrites = 0;\n// Count what the WRITE node actually returned, not what we queued for it.\n// Counting the built items reported engagementWrites:1 while an IF quietly\n// routed every one of them down the false branch and nothing was written.\ntry {\n  engagementWrites = $('Write Engagement to Buyers').all()\n    .filter(x => x.json && !x.json.error && (x.json.contact || x.json.id || x.json.succeded)).length;\n} catch (e) { engagementWrites = 0; }\n\nreturn [{ json: {\n  ok: true,\n  engagementWrites,\n  queued: t.sent,\n  failed: t.failed,\n  eligible: t.eligible,\n  opportunities: opps,\n  message: bits.join(' '),\n  failed_rows: t.failed_rows\n} }];\n"
+      },
+      "id": "consolesendres1",
+      "name": "Build Console Send Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1620,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The run aborted before anything sent. Report it as a failure so the console\n// shows the red \"did not go out\" banner rather than a green success box.\nconst g = $('Guard Rails').first().json;\nreturn [{ json: { ok: false, error: g.abort || 'Aborted before sending.', queued: 0 } }];\n"
+      },
+      "id": "consoleabortres",
+      "name": "Build Console Abort Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respondsend0001",
+      "name": "Respond to Console (send)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1840,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "routesent000001",
+              "leftValue": "={{ $('Guard Rails').first().json.viaConsole }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "routesent000001",
+      "name": "Console or Form? (sent)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1400,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "routeabort00001",
+              "leftValue": "={{ $('Guard Rails').first().json.viaConsole }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "routeabort00001",
+      "name": "Console or Form? (abort)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        200,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One update per buyer who ACTUALLY received the text.\n//\n// Everything here is written at the only moment it can be known. A field\n// nobody populates is worse than no field: the smart list still exists, returns\n// nonsense, and gets trusted anyway.\nconst defs = ($('Fetch Field Definitions').first().json.customFields) || [];\nconst ID = {};\nfor (const d of defs) ID[d.name] = d.id;\n\nconst tally = $('Tally Sends').first().json;\nconst recips = $('Build Recipient List').all().map(r => r.json);\nconst byId = {};\nfor (const r of recips) if (r && r.contactId) byId[r.contactId] = r;\n\nconst nowIso = new Date().toISOString();\nconst address = tally.address || '';\n\n// The opener only - the whole teaser would blow past the field and the point is\n// to know which hook a buyer has already seen so it is not reused on them.\nconst opener = (t) => {\n  const first = String(t || '').split(/(?<=[.!?])\\s+/)[0] || String(t || '');\n  return first.slice(0, 240);\n};\n\nconst out = [];\nfor (const row of (tally.sent_rows || [])) {\n  const id = row.contactId;\n  if (!id) continue;\n  const r = byId[id] || {};\n\n  const cf = [];\n  const put = (name, value) => { if (ID[name]) cf.push({ id: ID[name], value }); };\n\n  put('buy_last_contacted', nowIso);\n  put('buy_last_deal', address);\n  // smsBody, not teaser: the teaser still carries the raw {{first_name}}\n  // token. This field exists so the generator does not reuse an opener on\n  // someone, which means it has to hold what the buyer actually READ.\n  put('buy_last_hook', opener(r.smsBody || r.teaser));\n  put('buy_deals_sent', Number(r.priorDealsSent || 0) + 1);\n  // Set once, never updated - it is the buyer's tenure with us.\n  if (!r.priorFirstContacted) put('buy_first_contacted', nowIso);\n\n  if (!cf.length) continue;\n  out.push({ json: { contactId: id, name: row.name, body: { customFields: cf } } });\n}\n\n// Nothing sent, or no field ids resolved. Pass a marker through rather than\n// stalling the branch - the opportunities still need to be created.\nif (!out.length) return [{ json: { _skip: true, reason: (tally.sent_rows || []).length ? 'no field ids resolved' : 'nothing sent' } }];\nreturn out;\n"
+      },
+      "id": "engagebuild0001",
+      "name": "Build Engagement Updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contactId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body || {}) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 1000
+            }
+          }
+        }
+      },
+      "id": "engagewrite0001",
+      "name": "Write Engagement to Buyers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        380
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "haswrite",
+              "leftValue": "={{ $json.contactId ? true : false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "engagecheck0001",
+      "name": "Anything to Write?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1060,
+        380
+      ],
+      "notes": "Tests for a contactId being PRESENT, not for the absence of a _skip flag. _skip is undefined on a real row and n8n's boolean operator does not accept undefined, so the old condition sent every engagement write down the false branch - reported as success, wrote nothing."
     }
   ],
   "connections": {
@@ -502,7 +725,7 @@
         ],
         [
           {
-            "node": "Build Abort Summary",
+            "node": "Console or Form? (abort)",
             "type": "main",
             "index": 0
           }
@@ -568,7 +791,7 @@
       "main": [
         [
           {
-            "node": "Fetch Pipelines",
+            "node": "Build Engagement Updates",
             "type": "main",
             "index": 0
           }
@@ -623,7 +846,116 @@
       "main": [
         [
           {
+            "node": "Console or Form? (sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Console Send": {
+      "main": [
+        [
+          {
+            "node": "Find the Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Console or Form? (sent)": {
+      "main": [
+        [
+          {
+            "node": "Build Console Send Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Build Send Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Console Send Result": {
+      "main": [
+        [
+          {
+            "node": "Respond to Console (send)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Console or Form? (abort)": {
+      "main": [
+        [
+          {
+            "node": "Build Console Abort Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Abort Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Console Abort Result": {
+      "main": [
+        [
+          {
+            "node": "Respond to Console (send)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Engagement Updates": {
+      "main": [
+        [
+          {
+            "node": "Anything to Write?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything to Write?": {
+      "main": [
+        [
+          {
+            "node": "Write Engagement to Buyers",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Pipelines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Engagement to Buyers": {
+      "main": [
+        [
+          {
+            "node": "Fetch Pipelines",
             "type": "main",
             "index": 0
           }

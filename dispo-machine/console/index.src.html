@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buying Hero — Dispo Deal Console</title>
+<style>
+/* ---------------------------------------------------------------- fonts */
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:400 800;font-display:swap;src:url("__ASSET:jakarta.woff2__") format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url("__ASSET:plex400.woff2__") format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;src:url("__ASSET:plex500.woff2__") format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;font-display:swap;src:url("__ASSET:plex600.woff2__") format('woff2')}
+
+/* --------------------------------------------------------------- tokens */
+:root{
+  /* The page stays near-black; the CARD is the lighter surface that lifts off
+     it. --sunk stays at page level so inputs read as recessed wells inside
+     the lighter card rather than floating on it. */
+  --bg:#04121b; --card:#1a2b36; --sunk:#0b1922; --line:#2c3e4b; --line2:#435765;
+  --ink:#ffffff; --txt:#eaeef2; --txt2:#bcc7d1; --mut:#93a1ad; --dim:#697887; --faint:#4c5b69;
+  --acc:#0083ca; --acc2:#2ba0da; --acc3:#6cbfe8; --acc4:#a6d8f2; --acc5:#d3ecf9;
+  --ok:#3ecf8e; --okbg:rgba(26,158,95,0.12); --okln:rgba(26,158,95,0.40);
+  --wrn:#f5a300; --wrn2:#f0b942; --wrnbg:rgba(245,163,0,0.12); --wrnln:rgba(245,163,0,0.40);
+  --bad:#e0432f; --bad2:#ef7a68; --bad3:#f2938a; --badbg:rgba(224,67,47,0.08); --badln:rgba(224,67,47,0.40);
+  --mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--txt); min-height:100vh;
+  font-family:'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+[hidden]{display:none !important}
+
+/* --------------------------------------------------------------- header */
+.hdr{background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.hdr-in{max-width:1120px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.hdr-in img{height:34px;width:auto;display:block}
+.hdr-sep{width:1px;height:20px;background:var(--line)}
+.hdr-t{font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--txt)}
+.hdr-rule{height:2px;background:linear-gradient(90deg,var(--acc) 0%,#06466c 60%,transparent 100%)}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 16px 48px}
+
+/* ---------------------------------------------------------------- atoms */
+.stack{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.card.flush{padding:18px}
+.card.tight{padding:13px 18px}
+.card-hd{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+.ico{width:30px;height:30px;border-radius:9px;background:rgba(0,131,202,.14);border:1px solid rgba(0,131,202,.35);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc3)}
+.h2{font-size:15px;font-weight:800;color:var(--ink)}
+.sub{font-size:12px;color:var(--dim)}
+.sub2{font-size:13px;color:var(--dim)}
+.push{margin-left:auto}
+.mono{font-family:var(--mono)}
+.req{color:var(--bad)}
+.hint{font-weight:500;color:var(--faint)}
+
+.pill{font-size:12px;font-weight:700;border-radius:999px;padding:3px 12px;display:inline-block;white-space:nowrap}
+.pill-mut{color:var(--mut);background:rgba(147,161,173,.10);border:1px solid var(--line)}
+.pill-ok{color:var(--ok);background:var(--okbg);border:1px solid var(--okln)}
+.pill-wrn{color:var(--wrn);background:var(--wrnbg);border:1px solid var(--wrnln)}
+.pill-bad{color:var(--bad2);background:var(--badbg);border:1px solid var(--badln)}
+.pill-acc{color:var(--acc3);background:rgba(0,131,202,.12);border:1px solid rgba(0,131,202,.40)}
+/* Buyer-type holds. A held type reads as switched OFF, not as an error: these
+   are real buyers we are choosing not to text on this particular deal. */
+/* A held row is still in the pool - it is simply not getting THIS text.
+   Dimmed and struck, not red: nothing is wrong with these buyers. */
+.row-held td{opacity:.45}
+.row-held .td-name{text-decoration:line-through;text-decoration-thickness:1px}
+/* Test send. Loud on purpose: it is the difference between texting one
+   phone and texting the whole database, and it has to be obvious at a
+   glance which mode the page is in. */
+.sent-bad{border-color:var(--badln) !important;background:var(--badbg) !important}
+.sent-bad,.sent-bad .sub{color:var(--bad2) !important}
+.sent-warn{border-color:var(--wrnln) !important;background:var(--wrnbg) !important}
+.sent-warn,.sent-warn .sub{color:var(--wrn2) !important}
+.testbar{border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;background:rgba(147,161,173,.05)}
+.testbar-on{border:1px solid var(--wrnln);background:var(--wrnbg)}
+.testbar-on .sw span{color:var(--wrn2);font-weight:800}
+.chips input:disabled{opacity:.35;cursor:not-allowed}
+.chip:has(input:disabled){opacity:.45;cursor:not-allowed}
+.stack-tight{display:flex;flex-direction:column;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;
+  font-size:13px;font-weight:600;border-radius:999px;padding:7px 15px;
+  color:var(--acc3);background:rgba(0,131,202,.12);border:1px solid rgba(0,131,202,.40)}
+.chip input{accent-color:var(--acc);cursor:pointer;margin:0}
+.chip-off{color:var(--mut);background:rgba(147,161,173,.08);border-color:var(--line)}
+.chip-off span{text-decoration:line-through;text-decoration-thickness:1px}
+
+.btn{font:inherit;font-size:14px;font-weight:700;border-radius:999px;padding:8px 18px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--txt);white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.06)}
+.btn:active{transform:scale(.97)}
+.btn-sm{font-size:13px;padding:5px 13px}
+.btn-pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:800;font-size:15px;padding:13px 28px;letter-spacing:-.01em;box-shadow:0 6px 22px rgba(0,131,202,.40)}
+.btn-pri:hover{background:#006ba7}
+.btn-pri:active{transform:translateY(1px) scale(.98);box-shadow:none}
+.btn-pri:disabled{background:#20323f;border-color:#20323f;color:var(--dim);box-shadow:none;cursor:not-allowed;transform:none}
+.btn-dgr{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:800;font-size:15px;padding:13px 28px;box-shadow:0 6px 22px rgba(224,67,47,.40)}
+.btn-dgr:hover{background:#bd3221}
+.btn-copied{background:var(--okbg) !important;border-color:var(--okln) !important;color:var(--ok) !important}
+
+/* ---------------------------------------------------------------- forms */
+.lbl{display:block;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--mut);margin:0 0 5px}
+.lbl-acc{color:var(--acc4)}
+.inp,.sel,.ta{width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:12px;font:inherit;font-size:15px;color:var(--txt);background:var(--sunk)}
+.sel{padding:11px 12px;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 55%, calc(100% - 11px) 55%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
+.ta{resize:vertical}
+.inp-big{padding:11px 14px;font-size:17px;font-weight:700;color:var(--ink)}
+.inp-num{font-family:var(--mono);font-size:15px}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(0,131,202,.18)}
+.inp::placeholder,.ta::placeholder{color:#3f5060}
+
+.grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.c2{grid-column:span 2;min-width:110px}
+.c3{grid-column:span 3;min-width:130px}
+.c4{grid-column:span 4;min-width:150px}
+.c6{grid-column:span 6;min-width:180px}
+.c8{grid-column:span 8;min-width:240px}
+.cfull{grid-column:1 / -1}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start}
+.cols-wide{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start}
+
+.money-card{background:linear-gradient(135deg,#06304a 0%,var(--card) 55%);border:1px solid rgba(0,131,202,.45);border-radius:16px;padding:20px;box-shadow:0 8px 32px rgba(0,131,202,.12)}
+.money-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.money-wrap{position:relative}
+.money-wrap span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:17px;font-weight:700;color:var(--acc2);pointer-events:none}
+.money{width:100%;padding:12px 14px 12px 30px;border:1px solid rgba(0,131,202,.45);border-radius:12px;font-family:var(--mono);font-size:18px;font-weight:600;color:var(--ink);background:rgba(0,16,25,.55)}
+.money.date{padding-left:14px;font-size:15px}
+.money:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(0,131,202,.18)}
+
+/* --------------------------------------------------------------- review */
+.banner{border-radius:12px;padding:11px 16px;display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.banner svg{flex:0 0 auto;margin-top:2px}
+.banner-info{background:rgba(0,131,202,.10);border:1px solid rgba(0,131,202,.40);color:var(--acc4)}
+.banner-info strong{color:var(--acc5)}
+.banner-bad{background:var(--badbg);border:1px solid var(--badln);color:var(--bad3)}
+.banner-bad strong{color:#ffd7d0}
+
+.deal-hd{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.addr{font-size:26px;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.tile.hot{background:linear-gradient(135deg,rgba(0,131,202,.22) 0%,var(--card) 60%);border-color:rgba(0,131,202,.55)}
+.tile-hd{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tile-n{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--dim);background:rgba(147,161,173,.12);border-radius:5px;padding:1px 6px}
+.tile-k{font-size:13px;font-weight:700;color:var(--txt)}
+.tile-c{font-family:var(--mono);font-size:30px;font-weight:600;color:var(--ink);margin:6px 0 2px}
+.tile.hot .tile-c{color:var(--acc3)}
+.tile-off{opacity:.42}
+
+.srcbar{display:flex;flex-wrap:wrap;gap:20px;align-items:center}
+.src{display:flex;align-items:baseline;gap:7px}
+.src b{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink)}
+.src span{font-size:13px;color:var(--mut)}
+
+.post{margin:0;background:#0b141a;border:1px solid var(--line);border-radius:12px;padding:16px;
+  font-family:var(--mono);font-size:13px;line-height:1.6;color:#e9edef;white-space:pre-wrap;word-break:break-word}
+textarea.post{width:100%;resize:vertical;background:var(--sunk)}
+textarea.post:focus{outline:none;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(0,131,202,.18)}
+.meta{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.meta .warn{color:var(--wrn)}
+.blk-hd{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 4px}
+
+.tsr{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:rgba(4,18,27,.45)}
+.tsr.on{border-color:rgba(0,131,202,.40)}
+.tsr.off{opacity:.5}
+.tsr-hd{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 9px}
+.sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.sw input{appearance:none;width:34px;height:19px;border-radius:999px;background:#25333f;border:1px solid var(--line2);position:relative;cursor:pointer;flex:0 0 auto;transition:background 120ms}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--mut);transition:transform 120ms,background 120ms}
+.sw input:checked{background:var(--acc);border-color:var(--acc)}
+.sw input:checked::after{transform:translateX(15px);background:#fff}
+.sw span{font-size:13px;font-weight:700;color:var(--mut)}
+.sw input:checked+span{color:var(--txt)}
+
+.acc-btn{width:100%;display:flex;align-items:center;gap:9px;background:transparent;border:none;padding:16px 18px;font:inherit;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;text-align:left}
+.chev{display:inline-block;transition:transform 120ms ease}
+.chev.open{transform:rotate(90deg)}
+
+.scroll{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;padding:8px 10px;color:var(--dim);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px 10px;border-bottom:1px solid rgba(67,87,101,.45);color:var(--txt2)}
+.tbl tbody tr:hover{background:rgba(0,131,202,.06)}
+.td-name{font-weight:700;color:var(--txt);white-space:nowrap}
+.td-nw{white-space:nowrap}
+.td-mono{font-family:var(--mono);white-space:nowrap}
+.td-mut{color:var(--mut);white-space:nowrap}
+.td-bad{color:var(--bad3);background:var(--badbg)}
+.td-wrn{color:var(--wrn2);background:rgba(245,163,0,.08)}
+.tier{font-size:12px;font-weight:800;border-radius:6px;padding:2px 9px;white-space:nowrap}
+.empty{padding:14px 10px;font-size:13px;color:var(--dim)}
+
+.sendbar{position:sticky;bottom:12px;z-index:15;background:rgba(4,18,27,.92);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;
+  align-items:center;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.sent-box{display:flex;align-items:flex-start;gap:9px;font-size:14px;font-weight:700;color:var(--ok);
+  background:var(--okbg);border:1px solid var(--okln);border-radius:12px;padding:12px 18px;width:100%}
+
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;
+  display:inline-block;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.overlay{position:fixed;inset:0;background:rgba(4,18,27,.82);backdrop-filter:blur(3px);z-index:50;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:24px}
+.overlay .big{font-size:17px;font-weight:800;color:var(--ink)}
+.overlay .sm{font-size:13px;color:var(--mut);max-width:420px}
+.ring{width:34px;height:34px;border:3px solid rgba(0,131,202,.25);border-top-color:var(--acc2);border-radius:50%;animation:sp .8s linear infinite}
+
+@media (max-width:640px){
+  .c2,.c3,.c4,.c6,.c8{grid-column:1 / -1}
+  .addr{font-size:20px}
+  .btn-pri,.btn-dgr{width:100%}
+  .sendbar{position:static}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-in">
+    <img src="__ASSET:logo.png__" alt="Buying Hero">
+    <div class="hdr-sep"></div>
+    <div class="hdr-t">Dispo Deal Console</div>
+    <div class="pill pill-mut push" id="envPill" style="letter-spacing:.06em">INTERNAL</div>
+  </div>
+  <div class="hdr-rule"></div>
+</div>
+
+<div class="wrap">
+
+  <!-- ==================== STATE 1: INTAKE ==================== -->
+  <form id="intake">
+    <div class="stack">
+
+      <div class="card">
+        <div class="card-hd">
+          <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ba0da" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg></div>
+          <div class="eyebrow">Property</div>
+        </div>
+        <div class="grid12">
+          <div class="c8">
+            <label class="lbl" for="f-addr">Address <span class="req">*</span></label>
+            <input class="inp inp-big" id="f-addr" name="Address" required placeholder="2165 NW 58th St. Miami, FL 33142" autocomplete="off">
+          </div>
+          <div class="c4">
+            <label class="lbl" for="f-county">County</label>
+            <select class="sel" id="f-county" name="County" data-opts="COUNTIES"></select>
+          </div>
+          <div class="c6">
+            <label class="lbl" for="f-hood">Neighborhood</label>
+            <select class="sel" id="f-hood" name="Neighborhood" data-opts="NEIGHBORHOODS" data-blank="— Optional —"></select>
+          </div>
+          <div class="c6">
+            <label class="lbl" for="f-type">Property Type</label>
+            <select class="sel" id="f-type" name="Property Type" data-opts="PROPERTY_TYPES"></select>
+          </div>
+          <div class="c2"><label class="lbl">Beds</label><input class="inp inp-num" name="Beds" inputmode="numeric" placeholder="3"></div>
+          <div class="c2"><label class="lbl">Baths</label><input class="inp inp-num" name="Baths" inputmode="numeric" placeholder="2"></div>
+          <div class="c2"><label class="lbl">Living Area Sqft</label><input class="inp inp-num" name="Living Area Sqft" inputmode="numeric" placeholder="1,250"></div>
+          <div class="c2"><label class="lbl">Lot Size Sqft</label><input class="inp inp-num" name="Lot Size Sqft" inputmode="numeric" placeholder="5,400"></div>
+          <div class="c2"><label class="lbl">Year Built</label><input class="inp inp-num" name="Year Built" inputmode="numeric" placeholder="1958"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ba0da" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg></div>
+          <div class="eyebrow">Condition &amp; highlights</div>
+        </div>
+        <div class="grid12">
+          <div class="cfull">
+            <label class="lbl" for="f-head">Headline <span class="req">*</span> <span class="hint">— the single biggest selling point</span></label>
+            <input class="inp inp-big" id="f-head" name="Headline" required placeholder="New Roof plus Impact Windows and Doors" autocomplete="off">
+          </div>
+          <div class="c3"><label class="lbl">Roof Age</label><input class="inp" name="Roof Age" placeholder="years"></div>
+          <div class="c3"><label class="lbl">AC Age</label><input class="inp" name="AC Age" placeholder="blank = unknown"></div>
+          <div class="c3"><label class="lbl">HOA</label><input class="inp" name="HOA" placeholder="e.g. None"></div>
+          <div class="c3"><label class="lbl">Liens or Violations</label><input class="inp" name="Liens or Violations" placeholder="e.g. None found"></div>
+          <div class="c4">
+            <label class="lbl" for="f-occ">Occupancy</label>
+            <select class="sel" id="f-occ" name="Occupancy" data-opts="OCCUPANCIES"></select>
+          </div>
+          <div class="c4">
+            <label class="lbl">Key Upgrades</label>
+            <textarea class="ta" name="Key Upgrades" rows="3" placeholder="Impact windows 2024, water heater 2023…"></textarea>
+          </div>
+          <div class="c4">
+            <label class="lbl">Extra Highlights <span class="hint">— one per line</span></label>
+            <textarea class="ta" name="Extra Highlights" rows="3" placeholder="Large fenced lot&#10;No HOA"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="money-card">
+        <div class="card-hd">
+          <div class="ico" style="background:rgba(0,131,202,.22);border-color:rgba(0,131,202,.5)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6cbfe8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 6.5c0-1.9-2.2-3-5-3s-5 1.1-5 3 1.6 2.6 5 3.3 5 1.6 5 3.7-2.2 3-5 3-5-1.1-5-3"/></svg></div>
+          <div class="eyebrow">Numbers</div>
+          <div class="sub push" style="color:var(--mut)">these drive every script downstream</div>
+        </div>
+        <div class="money-grid">
+          <div><label class="lbl lbl-acc">Asking Price</label><div class="money-wrap"><span>$</span><input class="money" name="Asking Price" inputmode="numeric" placeholder="335,000"></div></div>
+          <div><label class="lbl lbl-acc">ARV</label><div class="money-wrap"><span>$</span><input class="money" name="ARV" inputmode="numeric" placeholder="450,000"></div></div>
+          <div><label class="lbl lbl-acc">Repair Estimate</label><div class="money-wrap"><span>$</span><input class="money" name="Repair Estimate" inputmode="numeric" placeholder="45,000"></div></div>
+          <div><label class="lbl lbl-acc">Escrow</label><div class="money-wrap"><span>$</span><input class="money" name="Escrow" inputmode="numeric" value="10000"></div></div>
+          <div><label class="lbl lbl-acc">Close Date</label><input class="money date" name="Close Date" type="date"></div>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="card">
+          <div class="card-hd">
+            <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ba0da" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-4.5-4.5L9 19"/></svg></div>
+            <div class="eyebrow">Comps &amp; media</div>
+          </div>
+          <div class="stack">
+            <div>
+              <label class="lbl">Comps <span class="hint">— one per line</span></label>
+              <textarea class="ta" name="Comps" rows="4" placeholder="1846 NW 49 ST, Miami, FL 33142 - Sold for $480,000 on 7/10/26"></textarea>
+            </div>
+            <div>
+              <label class="lbl">Photos Videos URL <span class="req">*</span></label>
+              <input class="inp" name="Photos Videos URL" required placeholder="https://drive.google.com/…">
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ba0da" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M15 3v5h5"/></svg></div>
+            <div class="eyebrow">Notes</div>
+          </div>
+          <div class="stack">
+            <div><label class="lbl">Access Notes</label><textarea class="ta" name="Access Notes" rows="2" placeholder="Lockbox on front door, code 4415"></textarea></div>
+            <div><label class="lbl">Additional Details</label><textarea class="ta" name="Additional Details" rows="2" placeholder="Seller motivated, prefers 2-week close"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="intakeErr" class="banner banner-bad" hidden></div>
+
+      <div style="display:flex;justify-content:flex-end;gap:14px;align-items:center;flex-wrap:wrap">
+        <div class="sub2">Nothing sends yet — next screen is a draft review.</div>
+        <button type="button" class="btn btn-sm" id="fillBtn" title="Fill every field with the 2165 NW 58th St sample deal">Fill test data</button>
+        <button type="submit" class="btn btn-pri" id="buildBtn">Build deal drafts</button>
+      </div>
+
+    </div>
+  </form>
+
+  <!-- ==================== STATE 2: REVIEW ==================== -->
+  <div id="review" hidden></div>
+
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="ring"></div>
+  <div class="big" id="ovTitle">Working…</div>
+  <div class="sm" id="ovSub"></div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   CONFIG — the only thing to change when the n8n endpoints move.
+   ===================================================================== */
+var CONFIG = {
+  INTAKE_URL: "/webhook/dispo-intake",
+  SEND_URL:   "/webhook/dispo-send",
+  TIMEOUT_MS: 180000   // Claude generates 4 teasers; give it room
+};
+
+/* Demo mode: append ?demo=1 to the URL to run against mock data with no
+   network calls at all. Used to review design changes safely. */
+var DEMO = /[?&]demo=1/.test(location.search);
+
+/* ---------------------------------------------------------- pick lists */
+var COUNTIES = ["Miami-Dade","Broward","Palm Beach","St. Lucie","Martin","Indian River","Monroe","Collier","Lee","Orange","Osceola","Hillsborough","Pinellas","Polk","Other"];
+var NEIGHBORHOODS = ["Allapattah","Aventura","Belle Glade","Boca Raton","Boynton Beach","Brandon","Brownsville","Cape Coral","Carol City","Clearwater","Coconut Creek","Coconut Grove","Coral Gables","Coral Springs","Cutler Bay","Dania Beach","Davie","Deerfield Beach","Delray Beach","Doral","El Portal","Florida City","Fort Lauderdale","Fort Myers","Fort Pierce","Golden Glades","Goulds","Greenacres","Hallandale Beach","Hialeah","Hobe Sound","Hollywood","Homestead","Immokalee","Jupiter","Kendall","Key Largo","Key West","Kissimmee","Lake Worth","Lakeland","Lantana","Lauderdale Lakes","Lauderhill","Lehigh Acres","Leisure City","Liberty City","Little Haiti","Little Havana","Margate","Miami Gardens","Miami Springs","Miramar","Naples","Naranja","North Lauderdale","North Miami","North Miami Beach","Norland","Oakland Park","Opa-locka","Orlando","Overtown","Pahokee","Palm Beach Gardens","Palm Springs","Palmetto Bay","Pembroke Pines","Perrine","Pine Hills","Pinecrest","Plantation","Poinciana","Pompano Beach","Port St. Lucie","Princeton","Richmond Heights","Riviera Beach","Royal Palm Beach","Sebastian","St. Petersburg","Stuart","Sunrise","Sweetwater","Tamarac","Tampa","Vero Beach","West Little River","West Palm Beach","Westchester","Wilton Manors","Winter Haven"];
+var PROPERTY_TYPES = ["SFR","2-4 Unit","5+ Unit","Condo","Land"];
+var OCCUPANCIES = ["VACANT AT CLOSE","Vacant Now","Tenant Occupied","Owner Occupied","Occupancy Unknown"];
+var LISTS = { COUNTIES:COUNTIES, NEIGHBORHOODS:NEIGHBORHOODS, PROPERTY_TYPES:PROPERTY_TYPES, OCCUPANCIES:OCCUPANCIES };
+
+var TIER_STYLES = {
+  VIP:{c:"#6cbfe8",bg:"rgba(0,131,202,0.16)"},
+  A:{c:"#3ecf8e",bg:"rgba(26,158,95,0.16)"},
+  B:{c:"#f5a300",bg:"rgba(245,163,0,0.14)"},
+  C:{c:"#93a1ad",bg:"rgba(147,161,173,0.12)"}
+};
+
+/* =====================================================================
+   MOCK — shape-accurate example of what the backend returns.
+   Only used when DEMO is on. The live response must match this shape.
+   ===================================================================== */
+var MOCK_REVIEW = {
+  ok: true,
+  propertyId: "mock-prop-0001",
+  address: "2165 NW 58th St. Miami, FL 33142",
+  recordAction: "created",
+  segments: [
+    { n:"01", key:"Inquired",         desc:"Asked about this property",        count:3,   hot:true,
+      teaser:"Hey {{first}} — following up on the Liberty City property you asked about. 2/1, new roof, impact windows, vacant at close. Asking $335k, ARV around $450k. Want the address and photos?" },
+    { n:"02", key:"Warm list",        desc:"Existing relationships",           count:41,  hot:false,
+      teaser:"{{first}} — got another one in Liberty City. 2/1 SFR, new roof plus impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES and I'll send the address and photos." },
+    { n:"03", key:"Geo-matched cold", desc:"Sourced within ~2 mi of this address", count:128, hot:false,
+      teaser:"Hi {{first}}, this is Buying Hero — we saw you buy around Liberty City. Off-market 2/1 SFR nearby: new roof, impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES for the address. Reply STOP to opt out." },
+    { n:"04", key:"General cold",     desc:"Sourced for a different deal",      count:402, hot:false,
+      teaser:"Hi {{first}}, Buying Hero here — off-market 2/1 SFR in Miami-Dade. New roof, impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES for the address and photos. Reply STOP to opt out." }
+  ],
+  sources: [{name:"BH Main",count:301},{name:"InvestorBase",count:158},{name:"InvestorLift",count:97},{name:"Referral",count:18}],
+  importedLast2h: 37,
+  included: [
+    {name:"Marlon Pierre",tier:"VIP",segment:"Inquired",source:"BH Main",phone:"(305) 555-0141"},
+    {name:"GreenGate Capital — Dana R.",tier:"VIP",segment:"Inquired",source:"Referral",phone:"(786) 555-0117"},
+    {name:"Yosef Abramov",tier:"A",segment:"Inquired",source:"BH Main",phone:"(954) 555-0163"},
+    {name:"Carmen Delgado",tier:"A",segment:"Warm list",source:"BH Main",phone:"(305) 555-0128"},
+    {name:"TriCounty Buyers LLC",tier:"A",segment:"Warm list",source:"InvestorLift",phone:"(561) 555-0192"},
+    {name:"Ray Osterman",tier:"B",segment:"Warm list",source:"InvestorBase",phone:"(305) 555-0104"},
+    {name:"Lucia Ferreira",tier:"B",segment:"Warm list",source:"BH Main",phone:"(786) 555-0175"},
+    {name:"Palm Equity Group",tier:"B",segment:"Geo-matched cold",source:"InvestorBase",phone:"(305) 555-0139"},
+    {name:"Devon Charles",tier:"C",segment:"Geo-matched cold",source:"InvestorLift",phone:"(954) 555-0186"},
+    {name:"Marisol Vega",tier:"C",segment:"Geo-matched cold",source:"InvestorBase",phone:"(305) 555-0150"},
+    {name:"Ironwood Holdings",tier:"C",segment:"General cold",source:"InvestorBase",phone:"(407) 555-0122"},
+    {name:"Tommy Nguyen",tier:"C",segment:"General cold",source:"InvestorLift",phone:"(813) 555-0168"}
+  ],
+  excluded: [
+    {name:"Hector Ruiz",phone:"(305) 555-0111",reason:"Asked to never be texted — call only (set by Mike, 5/22/26)"},
+    {name:"BlueDoor Investments",phone:"(561) 555-0177",reason:"Retrade on last two contracts — blacklisted"},
+    {name:"Sandra Kim",phone:"(786) 555-0132",reason:"Wrong number confirmed 7/26 — pending re-verify"}
+  ],
+  worthACall: [
+    {name:"Marlon Pierre",phone:"(305) 555-0141",note:"Notes say \"no 33142 zips\" — but he inquired on this one"},
+    {name:"TriCounty Buyers LLC",phone:"(561) 555-0192",note:"Max budget on file $250k; this asks more"},
+    {name:"Ray Osterman",phone:"(305) 555-0104",note:"Notes say SFR only if vacant — verify VACANT AT CLOSE is enough"}
+  ],
+  whatsappPost: "🏠 *2165 NW 58th St. Miami, FL 33142*\n\n⭐New Roof plus Impact Windows and Doors\n\n🟠 *Details*\n · Beds/Bath: 2/1\n · Living Area: 805 sq ft\n · Lot Size: 5,400 sq ft\n · Roof is 3 years old\n · AC age unknown\n · NO HOA\n · *VACANT AT CLOSE*\n\n🟠 *Comps*\n · 1846 NW 49 ST, Miami, FL 33142 - Sold for $480,000 on 7/10/26\n\n💰 *Price:* Only $335,000\n\n📈 *ARV:* ~$450,000\n\n💵 *Escrow:* $10,000",
+  smsPost: "2165 NW 58th St. Miami, FL 33142\n\nNew Roof plus Impact Windows and Doors\n\nDetails\n- Beds/Bath: 2/1\n- Living Area: 805 sq ft\n- Roof is 3 years old\n- AC age unknown\n- NO HOA\n- VACANT AT CLOSE\n\nComps\n- 1846 NW 49 ST, Miami, FL 33142 - Sold for $480,000 on 7/10/26\n\nPrice: Only $335,000\nARV: ~$450,000\nEscrow: $10,000",
+  voiceBrief: "PROPERTY: 2165 NW 58th St. Miami, FL 33142 — 2/1 SFR, 805 sq ft, built 1949.\n\nLEAD WITH: New Roof plus Impact Windows and Doors.\n\nNUMBERS: asking $335,000 firm to start; ARV ~$450,000; repairs ~$45,000. Never quote below asking without human approval.\n\nTERMS: $10,000 escrow to lock it up; close by 9/4/26. Occupancy: VACANT AT CLOSE.\n\nGOAL: confirm interest, send photos link, book a showing window. Escalate to a human for any offer discussion."
+};
+
+/* =====================================================================
+   Helpers
+   ===================================================================== */
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function nfmt(n){ return Number(n||0).toLocaleString("en-US"); }
+
+/* Scrolling is cosmetic. It must never be able to throw inside a promise
+   handler — a failed scroll after a SUCCESSFUL blast would fall through to
+   the catch and tell the dispo manager the send failed when it did not. */
+function safeScroll(node){
+  try { if (node && node.scrollIntoView) node.scrollIntoView({behavior:"smooth", block:"center"}); } catch(e){}
+}
+function safeTop(){ try { window.scrollTo(0,0); } catch(e){} }
+
+/* SMS segment math. Emoji / non-GSM characters force UCS-2, which cuts the
+   per-segment budget from 160 to 70 — worth surfacing before a 600-buyer blast. */
+var GSM = "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
+var GSM_EXT = "^{}\\[~]|€";
+function isGsm(s){
+  for (var i=0;i<s.length;i++){ var c=s[i]; if (GSM.indexOf(c)===-1 && GSM_EXT.indexOf(c)===-1) return false; }
+  return true;
+}
+function smsInfo(s){
+  s = String(s||"");
+  var gsm = isGsm(s);
+  // GSM extension chars cost 2 septets. UCS-2 bills per UTF-16 unit, so a
+  // non-BMP emoji legitimately counts as 2 — s.length is already right there.
+  var len = gsm ? s.length + s.split("").filter(function(c){return GSM_EXT.indexOf(c)!==-1;}).length : s.length;
+  var single = gsm ? 160 : 70, multi = gsm ? 153 : 67;
+  var segs = len === 0 ? 0 : (len <= single ? 1 : Math.ceil(len/multi));
+  return { len:len, segs:segs, gsm:gsm };
+}
+
+/* =====================================================================
+   State
+   ===================================================================== */
+var S = {
+  deal: null,          // the submitted intake payload
+  review: null,        // backend response
+  original: null,      // pristine copy of every editable string, for Revert
+  enabled: {},         // segment key -> bool
+  confirming: false,
+  sent: null           // send result
+};
+
+/* =====================================================================
+   Intake
+   ===================================================================== */
+function fillSelects(){
+  var sels = document.querySelectorAll("select[data-opts]");
+  for (var i=0;i<sels.length;i++){
+    var s = sels[i], list = LISTS[s.getAttribute("data-opts")] || [];
+    var blank = s.getAttribute("data-blank");
+    if (blank){ var o0=document.createElement("option"); o0.value=""; o0.textContent=blank; s.appendChild(o0); }
+    for (var j=0;j<list.length;j++){ var o=document.createElement("option"); o.value=list[j]; o.textContent=list[j]; s.appendChild(o); }
+  }
+}
+
+function showOverlay(title, sub){
+  $("ovTitle").textContent = title;
+  $("ovSub").textContent = sub || "";
+  $("overlay").hidden = false;
+}
+function hideOverlay(){ $("overlay").hidden = true; }
+
+function showIntakeError(msg){
+  var box = $("intakeErr");
+  box.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef7a68" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16h.01"/></svg>'
+    + '<div><strong>Could not build the drafts.</strong> ' + esc(msg) + '</div>';
+  box.hidden = false;
+}
+
+function postJSON(url, body){
+  var ctl = ("AbortController" in window) ? new AbortController() : null;
+  var timer = ctl ? setTimeout(function(){ ctl.abort(); }, CONFIG.TIMEOUT_MS) : null;
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: ctl ? ctl.signal : undefined
+  }).then(function(r){
+    if (timer) clearTimeout(timer);
+    return r.text().then(function(t){
+      var j = null;
+      try { j = JSON.parse(t); } catch(e){}
+      if (!r.ok) throw new Error((j && (j.message || j.error)) || ("HTTP " + r.status + " — " + t.slice(0,200)));
+      if (!j) throw new Error("The server did not return JSON. First 200 chars: " + t.slice(0,200));
+      if (j.ok === false) throw new Error(j.error || j.message || "The workflow reported a failure.");
+      return j;
+    });
+  }, function(e){
+    if (timer) clearTimeout(timer);
+    if (e && e.name === "AbortError") throw new Error("Timed out after " + Math.round(CONFIG.TIMEOUT_MS/1000) + "s. The workflow may still be running — check n8n before resubmitting.");
+    throw new Error("Network error reaching " + url + " — " + (e && e.message ? e.message : e));
+  });
+}
+
+function onSubmit(e){
+  e.preventDefault();
+  $("intakeErr").hidden = true;
+  var fd = new FormData(e.target), deal = {};
+  fd.forEach(function(v,k){ deal[k] = String(v).trim(); });
+  if (!deal["Escrow"]) deal["Escrow"] = "10000";
+  S.deal = deal;
+
+  $("buildBtn").disabled = true;
+  showOverlay("Building drafts…", "Pulling the buyer pool, applying exclusions, and writing one teaser per segment. This usually takes 20–60 seconds.");
+
+  var work = DEMO
+    ? new Promise(function(res){ setTimeout(function(){ res(JSON.parse(JSON.stringify(MOCK_REVIEW))); }, 700); })
+    : postJSON(CONFIG.INTAKE_URL, deal);
+
+  work.then(function(r){
+    hideOverlay(); $("buildBtn").disabled = false;
+    adoptReview(r);
+    $("intake").hidden = true;
+    $("review").hidden = false;
+    safeTop();
+  }).catch(function(err){
+    hideOverlay(); $("buildBtn").disabled = false;
+    showIntakeError(err.message || String(err));
+    safeScroll($("intakeErr"));
+  });
+}
+
+/* Normalise whatever the backend sent into the shape the review renders,
+   so a missing optional block degrades to an empty section instead of a crash. */
+function adoptReview(r){
+  r = r || {};
+  r.segments   = Array.isArray(r.segments) ? r.segments : [];
+  r.sources    = Array.isArray(r.sources) ? r.sources : [];
+  r.included   = Array.isArray(r.included) ? r.included : [];
+  r.excluded   = Array.isArray(r.excluded) ? r.excluded : [];
+  r.worthACall = Array.isArray(r.worthACall) ? r.worthACall : [];
+  r.address    = r.address || (S.deal && S.deal["Address"]) || "";
+  r.whatsappPost = r.whatsappPost || "";
+  r.smsPost      = r.smsPost || "";
+  r.voiceBrief   = r.voiceBrief || "";
+  r.segments.forEach(function(s,i){
+    s.key = s.key || ("Segment " + (i+1));
+    s.n = s.n || ("0" + (i+1));
+    s.count = Number(s.count||0);
+    s.teaser = s.teaser || "";
+  });
+  S.review = r;
+  S.confirming = false;
+  S.sent = null;
+  S.enabled = {};
+  r.segments.forEach(function(s){ S.enabled[s.key] = s.count > 0; });
+  /* Buyer types held back for THIS blast. JV and Realtor arrive pre-held: the
+     first blast to a freshly imported list goes to end buyers only. Holding is
+     per-blast and never touches buy_type on the contact - a JV partner is a
+     real buyer, just not the audience for this particular text. */
+  S.heldTypes = {};
+  (r.buyerTypes || []).forEach(function(t){ S.heldTypes[t.key] = !!t.heldByDefault; });
+  /* Tiers hold the same way. Nothing is held by default: a VIP is the buyer we
+     most want on a deal. The reason to hold them is that they get a phone call
+     instead of a mass text, and that is a per-deal judgement. */
+  /* Test send is a WHITELIST, not another hold. Getting "only me" by
+     unchecking eight type chips is a footgun: miss one and 120 people get
+     a text. One switch, one rule - only buy_type TEST goes out. */
+  S.testOnly = false;
+  S.heldTiers = {};
+  (r.buyerTiers || []).forEach(function(t){ S.heldTiers[t.key] = !!t.heldByDefault; });
+  S.original = {
+    whatsappPost: r.whatsappPost,
+    smsPost: r.smsPost,
+    voiceBrief: r.voiceBrief,
+    teasers: r.segments.map(function(s){ return s.teaser; })
+  };
+  renderReview();
+}
+
+/* =====================================================================
+   Review — rendering
+   ===================================================================== */
+function currentText(id){ var e = $(id); return e ? e.value : ""; }
+
+/* A group is held if EITHER its type or its tier is held. Because W1 keys a
+   group on segment+types+tier, a buyer who is both VIP and JV lives in exactly
+   one group and is therefore subtracted exactly once. */
+function groupHeld(g){
+  var types = g.types || [];
+  /* Test send inverts the question: everyone is held EXCEPT the test records.
+     Placed first so no chip or tier can re-open the gate by accident. */
+  if (S.testOnly) return types.indexOf("TEST") === -1;
+  for (var i = 0; i < types.length; i++) if (S.heldTypes[types[i]]) return true;
+  return !!(g.tier && S.heldTiers[g.tier]);
+}
+
+/* How many of a segment are removed by the current type holds. Counts whole
+   GROUPS, so a buyer carrying two held types is subtracted once, not twice. */
+function heldInSegment(s){
+  return (s.typeGroups || []).reduce(function(a, g){
+    return a + (groupHeld(g) ? g.count : 0);
+  }, 0);
+}
+
+function segmentSendable(s){ return Math.max(0, s.count - heldInSegment(s)); }
+
+function enabledTotal(){
+  return S.review.segments.reduce(function(a, s){
+    return a + (S.enabled[s.key] ? segmentSendable(s) : 0);
+  }, 0);
+}
+
+function heldTotal(){
+  return S.review.segments.reduce(function(a, s){
+    return a + (S.enabled[s.key] ? heldInSegment(s) : 0);
+  }, 0);
+}
+
+/* "18 buyers" normally; "18 buyers · 4 held" once a type is held back, so the
+   number on the segment always matches what will actually be texted. */
+function segLabelCount(s){
+  var sendable = segmentSendable(s), held = heldInSegment(s);
+  var base = nfmt(sendable) + (sendable === 1 ? " buyer" : " buyers");
+  return held ? base + " · " + nfmt(held) + " held" : base;
+}
+
+/* Paint the per-blast holds onto the included table. Runs on first render and
+   again every time a chip is toggled, because "included" is decided by the
+   exclusion engine while "held" is decided here — and the dispo manager reads
+   one table, not two. */
+function rowHeld(b){
+  return groupHeld({ types: b.types || [], tier: b.tier === "(none)" ? "" : b.tier });
+}
+
+function markHeldRows(){
+  var sub = $("inc-sub");
+  var pool = S.review.segments.reduce(function(a,s){ return a + s.count; }, 0);
+  var rows = document.querySelectorAll("#inc-tbl tbody tr");
+  var shownHeld = 0;
+  for (var i = 0; i < rows.length; i++){
+    var b = S.review.included[i];
+    if (!b) continue;
+    var held = rowHeld(b);
+    if (held) shownHeld++;
+    rows[i].className = held ? "row-held" : "";
+    var badge = rows[i].querySelector(".held-badge");
+    if (badge) badge.style.display = held ? "" : "none";
+  }
+  if (sub){
+    /* heldTotal() covers the WHOLE pool; shownHeld only the rows on screen. */
+    var n = heldTotal();
+    sub.textContent = "showing " + S.review.included.length + " of " + nfmt(pool)
+      + (n ? "  ·  " + nfmt(n) + " held, not sending" : "");
+  }
+}
+
+function renderTypeNote(){
+  var e = $("typenote");
+  if (!e) return;
+  if (S.testOnly) {
+    var t = enabledTotal();
+    e.textContent = "TEST SEND is on. " + nfmt(t) + (t === 1 ? " record" : " records")
+      + " will be texted — buy_type TEST only. Nothing else goes out.";
+    return;
+  }
+  var held = heldTypeList().concat(heldTierList()), n = heldTotal();
+  e.textContent = held.length
+    ? "Holding " + held.join(" and ") + " — " + nfmt(n) + (n === 1 ? " buyer" : " buyers")
+      + " removed from this blast. Nothing on their record changes."
+    : "Nothing held. Every buyer in the enabled segments gets this blast.";
+}
+
+function heldTypeList(){
+  return Object.keys(S.heldTypes).filter(function(k){ return S.heldTypes[k]; }).sort();
+}
+
+function heldTierList(){
+  return Object.keys(S.heldTiers || {}).filter(function(k){ return S.heldTiers[k]; }).sort();
+}
+
+function updateMeta(taId, metaId){
+  var info = smsInfo(currentText(taId));
+  var m = $(metaId);
+  if (!m) return;
+  var parts = [];
+  parts.push('<span>' + info.len + ' characters</span>');
+  parts.push('<span>' + info.segs + ' SMS segment' + (info.segs===1?"":"s") + '</span>');
+  if (!info.gsm) parts.push('<span class="warn">contains emoji / special characters — 70 chars per segment</span>');
+  m.innerHTML = parts.join("");
+}
+
+function updateSendBar(){
+  var n = enabledTotal();
+  var btn = $("sendBtn"), cbtn = $("confirmBtn"), cnt = $("sendCount");
+  if (cnt) cnt.textContent = nfmt(n);
+  if (btn) { btn.textContent = "Send teaser to " + nfmt(n) + (n === 1 ? " buyer" : " buyers"); btn.disabled = n === 0; }
+  if (cbtn) cbtn.textContent = "Yes — send to " + nfmt(n) + (n === 1 ? " buyer" : " buyers") + " now";
+  var no = $("noneOn");
+  if (no) no.hidden = n !== 0;
+}
+
+function editableBlock(opts){
+  // opts: id, title, badge, badgeCls, note, value, rows, mono, showCopy, origKey
+  var card = el("div","card flush");
+  var hd = el("div","blk-hd");
+  hd.appendChild(el("div","h2",opts.title));
+  if (opts.badge) hd.appendChild(el("span","pill " + (opts.badgeCls||"pill-mut"), opts.badge));
+
+  var right = el("div","push");
+  right.style.display = "flex"; right.style.gap = "8px";
+  if (opts.showCopy){
+    var cp = el("button","btn btn-sm","Copy");
+    cp.type = "button";
+    cp.onclick = function(){ copyText(currentText(opts.id), cp); };
+    right.appendChild(cp);
+  }
+  var rv = el("button","btn btn-sm","Revert");
+  rv.type = "button";
+  rv.onclick = function(){
+    $(opts.id).value = opts.original;
+    if (opts.metaId) updateMeta(opts.id, opts.metaId);
+  };
+  right.appendChild(rv);
+  hd.appendChild(right);
+  card.appendChild(hd);
+
+  if (opts.note) card.appendChild(el("div","sub", opts.note)).style.margin = "0 0 10px";
+
+  var ta = el("textarea","post");
+  ta.id = opts.id;
+  ta.rows = opts.rows || 8;
+  ta.value = opts.value;
+  ta.spellcheck = false;
+  card.appendChild(ta);
+
+  if (opts.metaId){
+    var m = el("div","meta"); m.id = opts.metaId;
+    card.appendChild(m);
+    ta.addEventListener("input", function(){ updateMeta(opts.id, opts.metaId); });
+  }
+  return card;
+}
+
+function copyText(text, btn){
+  var done = function(){
+    var old = btn.textContent;
+    btn.textContent = "Copied ✓"; btn.classList.add("btn-copied");
+    setTimeout(function(){ btn.textContent = old; btn.classList.remove("btn-copied"); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text); done(); });
+  } else { fallbackCopy(text); done(); }
+}
+function fallbackCopy(text){
+  var ta = document.createElement("textarea");
+  ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+function buildTable(cols, rows, cellFns, emptyMsg, tblId){
+  var wrap = el("div","scroll");
+  if (!rows.length){ wrap.appendChild(el("div","empty", emptyMsg)); return wrap; }
+  var t = el("table","tbl");
+  if (tblId) t.id = tblId;
+  var thead = el("thead"), tr = el("tr");
+  cols.forEach(function(c){ tr.appendChild(el("th",null,c)); });
+  thead.appendChild(tr); t.appendChild(thead);
+  var tb = el("tbody");
+  rows.forEach(function(r){
+    var row = el("tr");
+    cellFns.forEach(function(fn){ row.appendChild(fn(r)); });
+    tb.appendChild(row);
+  });
+  t.appendChild(tb); wrap.appendChild(t);
+  return wrap;
+}
+
+function renderReview(){
+  var R = S.review, root = $("review");
+  root.innerHTML = "";
+  var stack = el("div","stack");
+
+  /* ---- drafts banner ---- */
+  var ban = el("div","banner banner-info");
+  ban.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ba0da" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>'
+    + '<div><strong>Drafts only.</strong> Nothing has been sent to any buyer. Every message below is editable — what you see is exactly what goes out.</div>';
+  stack.appendChild(ban);
+
+  /* ---- deal header ---- */
+  var hd = el("div","deal-hd");
+  hd.appendChild(el("div","addr", R.address));
+  var upd = R.recordAction === "updated";
+  hd.appendChild(el("span","pill " + (upd ? "pill-wrn" : "pill-ok"), upd ? "Record updated" : "Record created"));
+  var back = el("button","btn push","Edit deal");
+  back.type = "button";
+  back.onclick = function(){ $("review").hidden = true; $("intake").hidden = false; safeTop(); };
+  hd.appendChild(back);
+  stack.appendChild(hd);
+
+  /* ---- segment tiles ---- */
+  var tiles = el("div","tiles");
+  R.segments.forEach(function(s){
+    var t = el("div","tile" + (s.hot ? " hot" : "") + (S.enabled[s.key] ? "" : " tile-off"));
+    t.id = "tile-" + s.n;
+    var th = el("div","tile-hd");
+    th.appendChild(el("span","tile-n", s.n));
+    th.appendChild(el("span","tile-k", s.key));
+    if (s.hot) th.appendChild(el("span","pill pill-wrn","HOTTEST"));
+    t.appendChild(th);
+    t.appendChild(el("div","tile-c", nfmt(s.count)));
+    t.appendChild(el("div","sub", s.desc || ""));
+    tiles.appendChild(t);
+  });
+  stack.appendChild(tiles);
+
+  /* ---- sources ---- */
+  if (R.sources.length || R.importedLast2h != null){
+    var sb = el("div","card tight srcbar");
+    sb.appendChild(el("div","eyebrow","Sources"));
+    R.sources.forEach(function(x){
+      var d = el("div","src");
+      d.appendChild(el("span",null,x.name));
+      d.appendChild(el("b",null,nfmt(x.count)));
+      sb.appendChild(d);
+    });
+    if (R.importedLast2h != null)
+      sb.appendChild(el("div","pill pill-ok push", nfmt(R.importedLast2h) + " imported in the last 2 hours"));
+    stack.appendChild(sb);
+  }
+
+  /* ---- who gets it, by buyer type ---- */
+  if ((R.buyerTypes || []).length || (R.buyerTiers || []).length) {
+    var ycard = el("div","card");
+    var yhd = el("div","card-hd");
+    yhd.appendChild(el("div","eyebrow","Who gets this blast"));
+    yhd.appendChild(el("div","sub push","unchecked = held back for this blast only — nothing on the contact changes"));
+    ycard.appendChild(yhd);
+
+    var ybody = el("div","stack");
+
+    /* One builder for both dimensions - a second hand-rolled copy is how the
+       two drift apart and the review page starts lying about the count. */
+    function chipRow(items, store, caption){
+      if (!items.length) return null;
+      var wrap = el("div","stack-tight");
+      if (caption) wrap.appendChild(el("div","lbl", caption));
+      var row = el("div","chips");
+      items.forEach(function(t){
+        var lab = el("label","chip" + (store[t.key] ? " chip-off" : ""));
+        var cb = el("input"); cb.type = "checkbox"; cb.checked = !store[t.key];
+        cb.onchange = function(){
+          store[t.key] = !cb.checked;
+          lab.className = "chip" + (cb.checked ? "" : " chip-off");
+          renderTypeNote();
+          markHeldRows();
+          /* Segment counts and the send bar both move when anything is held. */
+          R.segments.forEach(function(sg, ix){
+            var pill = $("segcount-" + ix);
+            if (pill) pill.textContent = segLabelCount(sg);
+          });
+          updateSendBar();
+        };
+        lab.appendChild(cb);
+        lab.appendChild(el("span",null, t.key + " · " + nfmt(t.count)));
+        row.appendChild(lab);
+      });
+      wrap.appendChild(row);
+      return wrap;
+    }
+
+    /* ---- test send ---- */
+    var hasTest = (R.buyerTypes || []).some(function(t){ return t.key === "TEST"; });
+    if (hasTest) {
+      var tw = el("div","testbar");
+      var tl = el("label","sw");
+      var tcb = el("input"); tcb.type = "checkbox"; tcb.checked = S.testOnly;
+      tcb.onchange = function(){
+        S.testOnly = tcb.checked;
+        tw.className = "testbar" + (tcb.checked ? " testbar-on" : "");
+        tlab.textContent = tcb.checked
+          ? "TEST SEND — only buy_type TEST receives this. Everyone else is held."
+          : "Test send (only buy_type TEST receives this blast)";
+        /* The type and tier chips are meaningless while the whitelist is on. */
+        ybody.querySelectorAll(".chips input").forEach(function(x){ x.disabled = tcb.checked; });
+        renderTypeNote(); markHeldRows();
+        R.segments.forEach(function(sg, ix){
+          var pill = $("segcount-" + ix);
+          if (pill) pill.textContent = segLabelCount(sg);
+        });
+        updateSendBar();
+      };
+      tl.appendChild(tcb);
+      var tlab = el("span",null, S.testOnly
+        ? "TEST SEND — only buy_type TEST receives this. Everyone else is held."
+        : "Test send (only buy_type TEST receives this blast)");
+      tl.appendChild(tlab);
+      tw.appendChild(tl);
+      ybody.appendChild(tw);
+    }
+
+    var rowT = chipRow(R.buyerTypes || [], S.heldTypes, "By buyer type");
+    if (rowT) ybody.appendChild(rowT);
+    var rowR = chipRow(R.buyerTiers || [], S.heldTiers, "By tier");
+    if (rowR) ybody.appendChild(rowR);
+    var ynote = el("div","sub"); ynote.id = "typenote";
+    ybody.appendChild(ynote);
+    ycard.appendChild(ybody);
+    stack.appendChild(ycard);
+    setTimeout(renderTypeNote, 0);
+  }
+
+  /* ---- teasers, one per segment ---- */
+  var tcard = el("div","card");
+  var thd = el("div","card-hd");
+  thd.appendChild(el("div","ico")).innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2ba0da" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 21l1.9-4.6A8.4 8.4 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4z"/></svg>';
+  thd.appendChild(el("div","eyebrow","Teaser SMS — one per segment"));
+  thd.appendChild(el("div","sub push","turn a segment off to hold it back from this blast"));
+  tcard.appendChild(thd);
+
+  var tstack = el("div","stack");
+  R.segments.forEach(function(s, i){
+    var on = !!S.enabled[s.key];
+    var box = el("div","tsr " + (on ? "on" : "off"));
+    box.id = "tsrbox-" + i;
+
+    var bh = el("div","tsr-hd");
+    bh.appendChild(el("span","tile-n", s.n));
+    bh.appendChild(el("span","h2", s.key));
+    var scp = el("span","pill pill-acc", segLabelCount(s));
+    scp.id = "segcount-" + i;
+    bh.appendChild(scp);
+    if (s.hot) bh.appendChild(el("span","pill pill-wrn","HOTTEST"));
+
+    var lab = el("label","sw push");
+    var cb = el("input"); cb.type = "checkbox"; cb.checked = on;
+    cb.disabled = s.count === 0;
+    cb.onchange = function(){
+      S.enabled[s.key] = cb.checked;
+      box.className = "tsr " + (cb.checked ? "on" : "off");
+      var tl = $("tile-" + s.n);
+      if (tl) tl.className = "tile" + (s.hot ? " hot" : "") + (cb.checked ? "" : " tile-off");
+      updateSendBar();
+    };
+    lab.appendChild(cb);
+    lab.appendChild(el("span",null, on ? "Sending" : "Held back"));
+    cb.addEventListener("change", function(){ lab.lastChild.textContent = cb.checked ? "Sending" : "Held back"; });
+    bh.appendChild(lab);
+
+    var rv = el("button","btn btn-sm","Revert");
+    rv.type = "button";
+    rv.onclick = function(){ $("tsr-"+i).value = S.original.teasers[i]; updateMeta("tsr-"+i, "tsrmeta-"+i); };
+    bh.appendChild(rv);
+    box.appendChild(bh);
+
+    if (s.desc) box.appendChild(el("div","sub", s.desc)).style.margin = "0 0 8px";
+
+    var ta = el("textarea","post");
+    ta.id = "tsr-" + i; ta.rows = 4; ta.value = s.teaser; ta.spellcheck = false;
+    box.appendChild(ta);
+    var m = el("div","meta"); m.id = "tsrmeta-" + i;
+    box.appendChild(m);
+    ta.addEventListener("input", function(){ updateMeta("tsr-"+i, "tsrmeta-"+i); });
+
+    tstack.appendChild(box);
+  });
+  if (!R.segments.length) tstack.appendChild(el("div","empty","No segments came back from the workflow."));
+  tcard.appendChild(tstack);
+  stack.appendChild(tcard);
+
+  /* ---- the posts ---- */
+  var posts = el("div","cols-wide");
+  posts.appendChild(editableBlock({
+    id:"wa", title:"WhatsApp post", badge:"editable · pasted into the group",
+    badgeCls:"pill-acc", note:"Formatting is WhatsApp markup — the asterisks are intentional.",
+    value:R.whatsappPost, original:S.original.whatsappPost, rows:18, showCopy:true
+  }));
+
+  var right = el("div","stack");
+  right.appendChild(editableBlock({
+    id:"sms", title:"SMS post", badge:"editable · auto-sends after a buyer replies",
+    badgeCls:"pill-mut", note:"Same facts, plain text. This is the second touch, not the teaser.",
+    value:R.smsPost, original:S.original.smsPost, rows:12, metaId:"smsmeta", showCopy:true
+  }));
+
+  var vcard = el("div","card flush");
+  var vbtn = el("button","acc-btn");
+  vbtn.type = "button";
+  vbtn.innerHTML = '<span class="chev" id="vchev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2ba0da" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span> Voice AI brief'
+    + '<span class="sub push" id="vhint">expand</span>';
+  var vbody = el("div"); vbody.hidden = true; vbody.style.padding = "0 18px 16px";
+  var vta = el("textarea","post");
+  vta.id = "voice"; vta.rows = 12; vta.value = R.voiceBrief; vta.spellcheck = false;
+  var vrow = el("div"); vrow.style.cssText = "display:flex;justify-content:flex-end;margin-top:8px";
+  var vrv = el("button","btn btn-sm","Revert"); vrv.type="button";
+  vrv.onclick = function(){ vta.value = S.original.voiceBrief; };
+  vrow.appendChild(vrv);
+  vbody.appendChild(vta); vbody.appendChild(vrow);
+  vbtn.onclick = function(){
+    vbody.hidden = !vbody.hidden;
+    $("vchev").className = "chev" + (vbody.hidden ? "" : " open");
+    $("vhint").textContent = vbody.hidden ? "expand" : "collapse";
+  };
+  vcard.appendChild(vbtn); vcard.appendChild(vbody);
+  vcard.style.padding = "0";
+  right.appendChild(vcard);
+  posts.appendChild(right);
+  stack.appendChild(posts);
+
+  /* ---- included buyers ---- */
+  var ic = el("div","card flush");
+  var ih = el("div","blk-hd");
+  ih.appendChild(el("div","h2","Included buyers"));
+  var isub = el("div","sub2"); isub.id = "inc-sub";
+  ih.appendChild(isub);
+  ic.appendChild(ih);
+  ic.appendChild(buildTable(
+    ["Name","Tier","Segment","Source","Phone"], R.included,
+    [ function(b){ return el("td","td-name", b.name); },
+      function(b){ var td=el("td"); var t=TIER_STYLES[b.tier]||TIER_STYLES.C;
+        var s=el("span","tier", b.tier||"—"); s.style.color=t.c; s.style.background=t.bg; td.appendChild(s); return td; },
+      function(b){ return el("td","td-nw", b.segment); },
+      function(b){ return el("td","td-mut", b.source); },
+      function(b){ var td=el("td","td-mono", b.phone);
+        /* The HELD badge is the whole point: this table used to say "included"
+           about buyers the send was going to drop. */
+        var bd = el("span","pill pill-mut held-badge","HELD"); bd.style.marginLeft="10px";
+        td.appendChild(bd); return td; } ],
+    "No buyers matched this deal.", "inc-tbl"
+  ));
+  stack.appendChild(ic);
+  markHeldRows();
+
+  /* ---- excluded / worth a call ---- */
+  var pair = el("div","cols-wide");
+
+  var ex = el("div","card flush"); ex.style.borderColor = "var(--badln)";
+  var exh = el("div","blk-hd");
+  exh.appendChild(el("div","h2","Excluded")).style.color = "var(--bad2)";
+  exh.appendChild(el("div","sub2","will not receive anything"));
+  ex.appendChild(exh);
+  ex.appendChild(buildTable(
+    ["Name","Phone","Reason"], R.excluded,
+    [ function(b){ return el("td","td-name", b.name); },
+      function(b){ return el("td","td-mono", b.phone); },
+      function(b){ return el("td","td-bad", b.reason); } ],
+    "Nobody was excluded on this deal."
+  ));
+  pair.appendChild(ex);
+
+  var wc = el("div","card flush"); wc.style.borderColor = "var(--wrnln)";
+  var wch = el("div","blk-hd");
+  wch.appendChild(el("div","h2","Worth a call")).style.color = "var(--wrn)";
+  wch.appendChild(el("div","sub2","still included; confirm by phone first"));
+  wc.appendChild(wch);
+  wc.appendChild(buildTable(
+    ["Name","Phone","Why old notes disagree"], R.worthACall,
+    [ function(b){ return el("td","td-name", b.name); },
+      function(b){ return el("td","td-mono", b.phone); },
+      function(b){ return el("td","td-wrn", b.note); } ],
+    "No conflicts between this deal and anyone's notes."
+  ));
+  pair.appendChild(wc);
+  stack.appendChild(pair);
+
+  /* ---- send errors ---- */
+  var serr = el("div","banner banner-bad"); serr.id = "sendErr"; serr.hidden = true;
+  stack.appendChild(serr);
+
+  /* ---- send bar ---- */
+  var bar = el("div","sendbar"); bar.id = "sendbar";
+  stack.appendChild(bar);
+
+  root.appendChild(stack);
+
+  R.segments.forEach(function(s,i){ updateMeta("tsr-"+i, "tsrmeta-"+i); });
+  updateMeta("sms","smsmeta");
+  renderSendBar();
+}
+
+function renderSendBar(){
+  var bar = $("sendbar");
+  if (!bar) return;
+  bar.innerHTML = "";
+
+  if (S.sent){
+    /* A green tick over "0 sent, 1 failed" is worse than no message at all -
+       the dispo manager walks away believing the blast went out. The banner
+       reports what actually happened: nothing queued, or some failed, both
+       read as failure. */
+    var q = Number(S.sent.queued || 0), f = Number(S.sent.failed || 0);
+    var bad = q === 0, partial = q > 0 && f > 0;
+    var ok = el("div","sent-box" + (bad ? " sent-bad" : partial ? " sent-warn" : ""));
+    var tick = '<path d="M5 13l4 4L19 7"/>';
+    var bang = '<circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16h.01"/>';
+    var stroke = bad ? "#ef7a68" : partial ? "#f0b942" : "#3ecf8e";
+    ok.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + stroke
+      + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:2px">'
+      + (bad || partial ? bang : tick) + '</svg>'
+      + '<div>' + (bad ? '<strong>Nothing was sent.</strong> ' : partial ? '<strong>Partly sent.</strong> ' : '')
+      + esc(S.sent.message)
+      + (bad || partial ? '<div class="sub" style="margin-top:6px">Fix the cause and send again — buyers who did receive it are recorded, so a re-send will not double-text them.</div>' : '')
+      + '</div>';
+    bar.appendChild(ok);
+    return;
+  }
+
+  var none = el("div","sub2","Every segment is held back — turn at least one on.");
+  none.id = "noneOn"; none.style.color = "var(--wrn)";
+  none.hidden = enabledTotal() !== 0;
+  bar.appendChild(none);
+
+  if (!S.confirming){
+    var note = el("div","sub2","Sends the teasers above, each to its own segment. This texts real people — it cannot be recalled.");
+    bar.appendChild(note);
+    var b = el("button","btn btn-pri push"); b.type="button"; b.id="sendBtn";
+    b.onclick = function(){ S.confirming = true; renderSendBar(); };
+    bar.appendChild(b);
+  } else {
+    var lines = S.review.segments.filter(function(s){ return S.enabled[s.key] && s.count>0; })
+      .map(function(s){ return s.key + " (" + nfmt(s.count) + ")"; });
+    var note2 = el("div","sub2","Going to: " + (lines.join("  ·  ") || "nobody"));
+    note2.style.color = "var(--wrn2)";
+    bar.appendChild(note2);
+    var c = el("button","btn push","Cancel"); c.type="button";
+    c.onclick = function(){ S.confirming = false; renderSendBar(); };
+    bar.appendChild(c);
+    var y = el("button","btn btn-dgr"); y.type="button"; y.id="confirmBtn";
+    y.onclick = doSend;
+    bar.appendChild(y);
+  }
+  updateSendBar();
+}
+
+function doSend(){
+  var R = S.review;
+  $("sendErr").hidden = true;
+
+  var teasers = {}, enabled = {};
+  R.segments.forEach(function(s,i){
+    teasers[s.key] = currentText("tsr-"+i);
+    enabled[s.key] = !!S.enabled[s.key];
+  });
+
+  var payload = {
+    propertyId: R.propertyId || null,
+    address: R.address,
+    whatsappPost: currentText("wa"),
+    smsPost: currentText("sms"),
+    voiceBrief: currentText("voice"),
+    teasers: teasers,
+    segmentsEnabled: enabled,
+    /* Held for THIS blast only. W2 re-checks buy_type at send time - the list
+       is rebuilt there, so a hold chosen here has to travel with the send. */
+    testOnly: !!S.testOnly,
+    typesHeld: heldTypeList(),
+    tiersHeld: heldTierList(),
+    expectedCount: enabledTotal()
+  };
+
+  showOverlay("Sending…", "Queueing " + nfmt(enabledTotal()) + " messages and creating a Buyer Interest opportunity for each recipient. Do not close this tab.");
+
+  var work = DEMO
+    ? new Promise(function(res){ setTimeout(function(){ res({ ok:true, queued:enabledTotal(), message:"DEMO — nothing was sent. " + nfmt(enabledTotal()) + " buyers would have been texted." }); }, 900); })
+    : postJSON(CONFIG.SEND_URL, payload);
+
+  work.then(function(r){
+    hideOverlay();
+    S.sent = {
+      failed: Number(r.failed || 0),
+      queued: r.queued != null ? r.queued : payload.expectedCount,
+      message: r.message || ("Teaser queued to " + nfmt(r.queued != null ? r.queued : payload.expectedCount) + " buyers. Track replies in the Buyer Interest pipeline.")
+    };
+    S.confirming = false;
+    renderSendBar();
+    safeScroll($("sendbar"));
+  }).catch(function(err){
+    hideOverlay();
+    S.confirming = false;
+    renderSendBar();
+    var box = $("sendErr");
+    box.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef7a68" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16h.01"/></svg>'
+      + '<div><strong>The blast did not go out.</strong> ' + esc(err.message || String(err))
+      + '<br><span class="sub">Check the Buyer Interest pipeline before retrying — some messages may already have gone.</span></div>';
+    box.hidden = false;
+    safeScroll(box);
+  });
+}
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+fillSelects();
+/* =====================================================================
+   Fill test data — the sample deal, for exercising the form without
+   retyping 26 fields. Same fixture the offline tests run against
+   (fixtures/sample-deal.json), so what you see here is what smoke.js and
+   contract-test.js assert on.
+   It fills ONLY; it never submits. And it asks before clobbering a form
+   that already has something in it, because this button sits on the page
+   a dispo manager uses for real deals.
+   ===================================================================== */
+var SAMPLE_DEAL = {
+  "Address": "2165 NW 58th St. Miami, FL 33142",
+  "County": "Miami-Dade",
+  "Neighborhood": "Liberty City",
+  "Property Type": "SFR",
+  "Beds": "2",
+  "Baths": "1",
+  "Living Area Sqft": "805",
+  "Lot Size Sqft": "5400",
+  "Year Built": "1949",
+  "Headline": "New Roof plus Impact Windows and Doors",
+  "Roof Age": "3",
+  "AC Age": "",
+  "HOA": "None",
+  "Liens or Violations": "None found",
+  "Occupancy": "VACANT AT CLOSE",
+  "Key Upgrades": "Impact windows and doors 2024",
+  "Extra Highlights": "No HOA\nLarge fenced lot",
+  "Asking Price": "335000",
+  "ARV": "450000",
+  "Repair Estimate": "45000",
+  "Escrow": "10000",
+  "Close Date": "2026-09-04",
+  "Comps": "1846 NW 49 ST, Miami, FL 33142 - Sold for $480,000 on 7/10/26",
+  "Photos Videos URL": "https://drive.google.com/drive/folders/bh-2165nw58",
+  "Access Notes": "Lockbox front door 4415",
+  "Additional Details": "Seller wants a quick close"
+};
+
+function fillTestData(){
+  var form = $("intake");
+  if (!form) return;
+  var addr = form.querySelector('[name="Address"]');
+  if (addr && addr.value.trim() &&
+      !window.confirm("Replace what is in the form with the sample deal?")) return;
+  Object.keys(SAMPLE_DEAL).forEach(function(k){
+    var el = form.querySelector('[name="' + k.replace(/"/g, '\\"') + '"]');
+    if (!el) return;
+    el.value = SAMPLE_DEAL[k];
+    /* Some fields recalculate on input (the money formatters, the spread
+       readout). Fire both so the form looks the same as if it were typed. */
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  if (addr) addr.focus();
+}
+
+$("intake").addEventListener("submit", onSubmit);
+$("fillBtn").addEventListener("click", fillTestData);
+if (DEMO){
+  var p = $("envPill");
+  p.textContent = "DEMO — NOTHING SENDS";
+  p.className = "pill pill-wrn push";
+  p.style.letterSpacing = ".06em";
+}
+</script>
+</body></html>

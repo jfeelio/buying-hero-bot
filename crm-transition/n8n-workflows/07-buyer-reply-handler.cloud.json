@@ -1,0 +1,825 @@
+{
+  "name": "07 - Buyer Reply Handler (W1c)",
+  "id": "replyhandler01",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "buyer-reply",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "replyhook000001",
+      "name": "Buyer Reply",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        300
+      ],
+      "webhookId": "buyer-reply"
+    },
+    {
+      "parameters": {
+        "jsCode": "// GHL's webhook action lets the payload be shaped in the UI, so accept the\n// obvious spellings rather than depending on one exact layout.\nconst raw = $input.first().json;\nconst b = (raw && raw.body && typeof raw.body === 'object') ? raw.body : raw;\n\n// GHL sends BOTH shapes at once:\n//   customData - whatever we mapped in the workflow's Webhook action. Explicit,\n//                flat, and the thing we actually control.\n//   message    - GHL's own object, e.g. { type: 2, body: \"Okay send details\" }.\n// Read customData first. The native object is the fallback, and it must be\n// unwrapped: an earlier version stringified it whole and every reply arrived as\n// the literal text \"[object Object]\" with a type of \"2\", so every single one\n// was discarded as \"not an SMS\".\nconst asObj = (v) => {\n  if (v && typeof v === 'object') return v;\n  if (typeof v === 'string' && v.trim().startsWith('{')) {\n    try { return JSON.parse(v); } catch (e) { return {}; }\n  }\n  return {};\n};\nconst cd  = asObj(b.customData || b.custom_data);\nconst msg = asObj(b.message);\n\n// Only ever accept a primitive. This is the guard that was missing.\nconst str = (v) => (v === undefined || v === null || typeof v === 'object')\n  ? '' : String(v).trim();\n\nconst pick = (...cands) => {\n  for (const v of cands) { const s = str(v); if (s) return s; }\n  return '';\n};\n\nconst contactId = pick(cd.contactId, cd.contact_id, b.contact_id, b.contactId,\n                       (b.contact || {}).id, b.id);\n// b.message is included as a PLAIN value too - str() rejects it when it is\n// GHL's object, and accepts it when a simpler integration posts a string.\nconst text = pick(cd.message, cd.body, cd.text, msg.body,\n                  b.message, b.body, b.text, b.messageBody);\nconst direction = pick(cd.direction, msg.direction, b.direction).toLowerCase();\nconst conversationId = pick(cd.conversationId, b.conversationId, b.conversation_id,\n                            msg.conversationId);\n\n// Type arrives either as our own word (\"SMS\") or as GHL's numeric enum.\nconst TYPE_NUM = { 1: 'call', 2: 'sms', 3: 'email', 4: 'facebook', 5: 'gmb',\n                   6: 'instagram', 7: 'whatsapp' };\nconst rawType = pick(cd.type, cd.messageType, msg.type, b.type, b.messageType);\nconst type = (TYPE_NUM[rawType] || rawType).toLowerCase();\n\n// Never act on our own outbound - that is how a bot ends up talking to itself.\nconst isOutbound = direction === 'outbound';\n// Blank type means the payload did not include it; treat that as SMS rather\n// than dropping real replies, but never treat an explicit email/call as one.\nconst isSms = !type || type.indexOf('sms') !== -1 || type.indexOf('text') !== -1;\n\nlet ignore = '';\nif (!contactId) ignore = 'no contactId in the payload';\nelse if (isOutbound) ignore = 'outbound message';\nelse if (!isSms) ignore = 'not an SMS (' + type + ')';\nelse if (!text) ignore = 'empty message body';\n\n// Opt-out is decided here, on the raw text, before anything else runs. No\n// model, no scoring, no ambiguity - this path must be boring and total.\nconst STOP = ['stop', 'stopall', 'unsubscribe', 'cancel', 'end', 'quit',\n              'remove', 'removeme', 'optout', 'opt out', 'unsub', 'donotcontact'];\nconst bare = String(text).toLowerCase().replace(/[^a-z ]/g, '').trim();\nconst optOut = STOP.indexOf(bare) !== -1\n            || STOP.indexOf(bare.replace(/\\s/g, '')) !== -1\n            || /\\b(stop texting|take me off|remove me|do not contact|dont contact)\\b/.test(bare);\n\nreturn [{ json: {\n  ignore, actionable: !ignore,\n  contactId, conversationId, text, direction, type, optOut\n} }];\n"
+      },
+      "id": "replynorm00001",
+      "name": "Normalize Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "replyact000001",
+              "leftValue": "={{ $json.actionable }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "replyact000001",
+      "name": "Actionable?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://services.leadconnectorhq.com/locations/ib5jEnyqqq06FIEqlVGs/customFields?model=contact",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "replydefs00001",
+      "name": "Fetch Field Definitions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -240,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://services.leadconnectorhq.com/opportunities/pipelines?locationId=ib5jEnyqqq06FIEqlVGs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "replypipes0001",
+      "name": "Fetch Pipelines",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -20,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://services.leadconnectorhq.com/opportunities/search?location_id=ib5jEnyqqq06FIEqlVGs&contact_id={{ $('Normalize Reply').first().json.contactId }}&pipeline_id=HyOMHkNNvhRllGNwMZsP&status=open&limit=20",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "replyopps00001",
+      "name": "Fetch Open Opportunities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $('Normalize Reply').first().json.contactId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "replycontact01",
+      "name": "Fetch Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        420,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pick which deal this reply is about, and decide whether Claude is even\n// needed. An opt-out short-circuits everything.\nconst n = $('Normalize Reply').first().json;\nconst contact = ($input.first().json.contact) || $input.first().json || {};\n\nconst defs = ($('Fetch Field Definitions').first().json.customFields) || [];\nconst ID = {}, NAME = {};\nfor (const d of defs) { ID[d.name] = d.id; NAME[d.id] = d.name; }\nconst prior = {};\nfor (const f of (contact.customFields || [])) {\n  const nm = NAME[f.id];\n  if (nm) prior[nm] = (f.value !== undefined ? f.value : f.fieldValue);\n}\n\nconst arr = (v) => v == null ? [] : (Array.isArray(v) ? v : String(v).split(/[;,]/));\nconst norm = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');\nconst source = arr(prior['buy_source']).map(norm);\n\n// InvestorLift buyers never auto-send, whatever they say. They raised a hand on\n// a public listing; some of them are competing wholesalers fishing for the\n// address. A human decides what those people get.\nconst investorLift = source.indexOf('investorlift') !== -1;\n\n// Which deal? The open Buyer Interest opportunities, newest first.\nconst opps = ($('Fetch Open Opportunities').first().json.opportunities) || [];\nconst stageName = {};\ntry {\n  const pipes = ($('Fetch Pipelines').first().json.pipelines) || [];\n  const bi = pipes.find(p => (p.name || '').toLowerCase().indexOf('buyer interest') !== -1);\n  for (const s of ((bi && bi.stages) || [])) stageName[s.id] = s.name;\n  var BI = bi;\n} catch (e) { var BI = null; }\n\nconst reachedOut = opps\n  .filter(o => (stageName[o.pipelineStageId] || '').toLowerCase() === 'reached out')\n  .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));\n\nconst deal = reachedOut[0] || null;\n// Two houses open at Reached Out means we are guessing. Send the most recent,\n// but say so on the record - a wrong guess must be visible, not silent.\nconst ambiguous = reachedOut.length > 1;\n\n// Read the address from the opportunity's own field, never by parsing its\n// NAME. The name format is cosmetic and it has already changed once - it was\n// \"{address} — {buyer}\" and became \"{buyer} — {address}\", which silently made\n// this return the buyer's name as the address. opp_deal_address exists exactly\n// so this does not depend on a display string.\nconst OPP_DEAL_ADDRESS = '23Qr6cqR1IP1zFknf5Wn';\n// The SAME field comes back under three different key names depending on the\n// endpoint: `fieldValue` from GET /opportunities/{id}, `fieldValueString` from\n// GET /opportunities/search, and `value` on contacts. Accept all three.\nconst oppField = (o, id) => {\n  const hit = ((o && o.customFields) || []).find(f => f.id === id);\n  if (!hit) return '';\n  const v = hit.fieldValue !== undefined ? hit.fieldValue\n          : hit.fieldValueString !== undefined ? hit.fieldValueString\n          : hit.value;\n  return v === undefined || v === null ? '' : String(v).trim();\n};\n// buy_last_deal on the contact is the fallback: the blast stamps it at send\n// time, so it is the same address by construction.\nconst address = (deal ? oppField(deal, OPP_DEAL_ADDRESS) : '') || String(prior['buy_last_deal'] || '').trim();\n\nconst nextStage = (BI && BI.stages || []).find(s => (s.name || '').toLowerCase() === 'info sent');\n\nconst SYSTEM = [\n  'You classify a single inbound SMS from a cash buyer replying to a wholesale property blast.',\n  'Return exactly one intent.',\n  '\"interested\" means they want the property details, the address, the price, photos, or a showing - any signal they want to go further on THIS deal.',\n  '\"not_interested\" means they decline, say it is not for them, or say wrong number.',\n  '\"question\" means they are asking something unrelated to wanting the deal - who we are, how we got their number, general enquiry.',\n  '\"opt_out\" means they want to stop receiving messages.',\n  '\"unclear\" means you cannot tell.',\n  'Be conservative: if a reply could plausibly be a decline, it is NOT interested. Choose \"unclear\" over guessing.',\n  'confidence is \"high\" only when the reply is unambiguous.'\n].join(' ');\n\nconst claudeBody = {\n  model: 'claude-opus-5',\n  max_tokens: 2000,\n  system: SYSTEM,\n  messages: [{ role: 'user', content: 'Buyer reply:\\n\\n' + n.text }],\n  output_config: { format: { type: 'json_schema', schema: {\n    type: 'object',\n    properties: {\n      intent: { type: 'string', enum: ['interested', 'not_interested', 'question', 'opt_out', 'unclear'] },\n      confidence: { type: 'string', enum: ['high', 'low'] },\n      objection: { type: 'string', description: 'Their objection in a few words, or empty if none.' },\n      reason: { type: 'string', description: 'One short sentence on why you chose this intent.' }\n    },\n    required: ['intent', 'confidence', 'objection', 'reason'],\n    additionalProperties: false\n  } } }\n};\n\nreturn [{ json: {\n  ...n,\n  needsClassification: !n.optOut,\n  investorLift,\n  priorReplies: Number(prior['buy_replies'] || 0) || 0,\n  fieldIds: ID,\n  dealOppId: deal ? deal.id : null,\n  dealStageId: deal ? deal.pipelineStageId : null,\n  address, ambiguous,\n  openAtReachedOut: reachedOut.length,\n  infoSentStageId: nextStage ? nextStage.id : null,\n  pipelineId: BI ? BI.id : null,\n  claudeBody\n} }];\n"
+      },
+      "id": "replyprep00001",
+      "name": "Prepare Reply Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "replyneedai001",
+              "leftValue": "={{ $json.needsClassification }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "replyneedai001",
+      "name": "Needs Classification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        860,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.claudeBody) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "replyclaude001",
+      "name": "Claude — Read Intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1080,
+        120
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "AVF4DwvkeWM44QB5",
+          "name": "Anthropic — Buying Hero"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turn the classification into three concrete things: what to write on the\n// contact, whether to move the opportunity, and whether to text.\nconst p = $('Prepare Reply Context').first().json;\nconst ID = p.fieldIds || {};\n\nlet ai = { intent: 'unclear', confidence: 'low', objection: '', reason: '' };\nlet aiError = null;\nif (p.optOut) {\n  ai = { intent: 'opt_out', confidence: 'high', objection: '', reason: 'matched the opt-out keyword list' };\n} else {\n  try {\n    const res = $input.first().json;\n    const t = (res.content || []).find(b => b.type === 'text');\n    ai = JSON.parse(t.text);\n  } catch (e) { aiError = String(e); }\n}\n\nconst optOut = p.optOut || ai.intent === 'opt_out';\nconst nowIso = new Date().toISOString();\n\n// ---- contact update: the reply is recorded no matter what it said ----\nconst cf = [];\nconst put = (name, value) => { if (ID[name]) cf.push({ id: ID[name], value }); };\nput('buy_last_responded', nowIso);\nput('buy_replies', Number(p.priorReplies || 0) + 1);\nif (ai.objection) put('buy_objection_last', String(ai.objection).slice(0, 500));\n\nif (optOut) {\n  // Consent stays FACTUAL. They opted out; that is what the record says.\n  put('buy_status', 'DNC');\n  put('buy_consent_status', 'Opted Out');\n}\n\n// ---- should the full house post go out? every gate must pass ----\nconst gates = {\n  notOptOut: !optOut,\n  interested: ai.intent === 'interested',\n  confident: ai.confidence === 'high',\n  // Segment 1 buyers came off a public listing. Some are competing wholesalers\n  // fishing for the address, so a human decides what they get.\n  notInvestorLift: !p.investorLift,\n  haveDeal: !!p.dealOppId,\n  haveAddress: !!p.address\n};\nconst send = Object.keys(gates).every(k => gates[k]);\nconst blockedBy = Object.keys(gates).filter(k => !gates[k]);\n\nlet outcome;\nif (optOut) outcome = 'opted out - suppressed, nothing sent';\nelse if (send) outcome = 'interested - sending the full house post';\nelse if (p.investorLift && ai.intent === 'interested') outcome = 'interested, but InvestorLift - held for a human';\nelse outcome = ai.intent + ' - held for a human';\n\nreturn [{ json: {\n  ...p,\n  intent: ai.intent, confidence: ai.confidence, objection: ai.objection || '',\n  reason: ai.reason || '', aiError,\n  optOut, send, blockedBy, outcome,\n  contactBody: { customFields: cf },\n  // Opt-outs go to Passed; a confirmed send goes to Info Sent.\n  moveStageId: optOut ? null : (send ? p.infoSentStageId : null),\n  needsHuman: !send && !optOut\n} }];\n"
+      },
+      "id": "replydecide001",
+      "name": "Decide Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/contacts/{{ $json.contactId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.contactBody || {}) }}",
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true
+      },
+      "id": "replyrecord001",
+      "name": "Record the Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "replysendq0001",
+              "leftValue": "={{ $('Decide Action').first().json.send }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "replysendq0001",
+      "name": "Send Full Post?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/objects/custom_objects.property/records/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ locationId: 'ib5jEnyqqq06FIEqlVGs', page: 1, pageLimit: 5, query: $('Decide Action').first().json.address, searchAfter: [] }) }}"
+      },
+      "id": "replyprop00001",
+      "name": "Fetch Property Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1960,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pull the saved SMS post for this exact address. If it is not there, do NOT\n// improvise a message - send nothing and let a human handle it.\nconst d = $('Decide Action').first().json;\nconst recs = ($input.first().json.records) || [];\nconst norm = (s) => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');\nconst want = norm(d.address);\nconst hit = recs.find(r => norm(r.properties && r.properties.prop_address) === want);\nconst post = hit ? String(hit.properties.prop_sms_post || '') : '';\nreturn [{ json: { ...d, propertyFound: !!hit, post, canSend: !!post } }];\n"
+      },
+      "id": "replypickpost1",
+      "name": "Pick Property Post",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2180,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "replyhavepost1",
+              "leftValue": "={{ $json.canSend }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "replyhavepost1",
+      "name": "Post Available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/conversations/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ type: 'SMS', locationId: 'ib5jEnyqqq06FIEqlVGs', contactId: $json.contactId, fromNumber: '+17868414589', message: $json.post }) }}",
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true
+      },
+      "id": "replysend00001",
+      "name": "Send Full House Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2620,
+        40
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "Same 422 trap as W2's Send Teaser SMS: locationId must be in the body."
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://services.leadconnectorhq.com/opportunities/{{ $('Decide Action').first().json.dealOppId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ pipelineId: $('Decide Action').first().json.pipelineId, pipelineStageId: $('Decide Action').first().json.moveStageId }) }}",
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true
+      },
+      "id": "replymoveopp01",
+      "name": "Move to Info Sent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2840,
+        40
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZLBSI9HFJzRmmIWi",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Decide Action').first().json;\nlet sent = false;\ntry { sent = $('Send Full House Post').all().some(x => x.json && (x.json.messageId || x.json.conversationId)); } catch (e) {}\n\nreturn [{ json: {\n  ok: true,\n  contactId: d.contactId,\n  reply: d.text,\n  intent: d.intent,\n  confidence: d.confidence,\n  outcome: d.outcome,\n  fullPostSent: sent,\n  movedTo: d.send && sent ? 'Info Sent' : null,\n  needsHuman: d.needsHuman,\n  ambiguousDeal: d.ambiguous,\n  openAtReachedOut: d.openAtReachedOut,\n  address: d.address,\n  blockedBy: d.blockedBy,\n  aiError: d.aiError\n} }];\n"
+      },
+      "id": "replyresult001",
+      "name": "Build Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3060,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const n = $('Normalize Reply').first().json;\nreturn [{ json: { ok: true, ignored: true, reason: n.ignore } }];\n"
+      },
+      "id": "replyignore001",
+      "name": "Ignored",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "replyrespond01",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3280,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Buyer Reply": {
+      "main": [
+        [
+          {
+            "node": "Normalize Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Reply": {
+      "main": [
+        [
+          {
+            "node": "Actionable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actionable?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Field Definitions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignored",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Field Definitions": {
+      "main": [
+        [
+          {
+            "node": "Fetch Pipelines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Pipelines": {
+      "main": [
+        [
+          {
+            "node": "Fetch Open Opportunities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Open Opportunities": {
+      "main": [
+        [
+          {
+            "node": "Fetch Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Contact": {
+      "main": [
+        [
+          {
+            "node": "Prepare Reply Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Reply Context": {
+      "main": [
+        [
+          {
+            "node": "Needs Classification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Classification?": {
+      "main": [
+        [
+          {
+            "node": "Claude — Read Intent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decide Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude — Read Intent": {
+      "main": [
+        [
+          {
+            "node": "Decide Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Action": {
+      "main": [
+        [
+          {
+            "node": "Record the Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record the Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Full Post?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Full Post?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Property Post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Property Post": {
+      "main": [
+        [
+          {
+            "node": "Pick Property Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Property Post": {
+      "main": [
+        [
+          {
+            "node": "Post Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Available?": {
+      "main": [
+        [
+          {
+            "node": "Send Full House Post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Full House Post": {
+      "main": [
+        [
+          {
+            "node": "Move to Info Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move to Info Sent": {
+      "main": [
+        [
+          {
+            "node": "Build Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Result": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ignored": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
