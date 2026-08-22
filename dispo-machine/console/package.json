@@ -4,7 +4,7 @@
   "description": "Buying Hero Dispo Deal Console \u2014 intake + draft review + blast, served static next to n8n",
   "scripts": {
     "build": "python build.py",
-    "test": "node smoke.js && node contract-test.js && node merge-policy-test.js && node dedupe-test.js && node writeback-test.js && node reply-handler-test.js && node vetting-test.js && node type-hold-test.js && node locationid-test.js && node drive-folder-test.js && node drafts-test.js && node optout-test.js && node from-number-test.js",
+    "test": "node node-exec-test.js && node smoke.js && node contract-test.js && node merge-policy-test.js && node dedupe-test.js && node writeback-test.js && node reply-handler-test.js && node vetting-test.js && node type-hold-test.js && node locationid-test.js && node drive-folder-test.js && node drafts-test.js && node optout-test.js && node from-number-test.js && node compliance-test.js && node sms-post-test.js && node proptype-test.js",
     "deploy": "python build.py && bash deploy.sh"
   },
   "devDependencies": {
