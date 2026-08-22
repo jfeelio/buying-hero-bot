@@ -71,7 +71,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // The payload the send webhook will receive must use the same segment labels
   // W2 maps on. A rename on either side breaks the blast silently.
-  const LABELS = ['Inquired', 'Warm list', 'InvestorBase Matched', 'General cold'];
+  const LABELS = ['Warm list', 'InvestorBase Matched', 'General cold'];
   const bad = (live.segments || []).map((s) => s.key).filter((k) => LABELS.indexOf(k) === -1);
   ok(bad.length === 0, 'segment labels match what W2 maps on' + (bad.length ? ' — UNKNOWN: ' + bad.join(', ') : ''));
 

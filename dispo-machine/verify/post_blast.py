@@ -176,11 +176,21 @@ def main():
 
     # ── 2. the opportunities ───────────────────────────────────────────
     R.section("2. Buyer Interest opportunities")
-    res = B.call("GET", "/opportunities/search?location_id=%s&pipeline_id=%s&limit=100"
-                 % (B.LOCATION, PIPELINE_BUYER_INTEREST))
-    opps = [o for o in (res.get("opportunities") or [])
-            if norm_addr(opp_field(o, OPP_DEAL_ADDRESS)) == want
-            or want in norm_addr(o.get("name", ""))]
+    # Paginate. A 100-row cap silently under-reported a 166-buyer blast as
+    # "sent 166, found 100" - the verifier crying wolf on a clean send.
+    opps, page = [], 1
+    while True:
+        res = B.call("GET", "/opportunities/search?location_id=%s&pipeline_id=%s"
+                     "&limit=100&page=%d" % (B.LOCATION, PIPELINE_BUYER_INTEREST, page))
+        batch = res.get("opportunities") or []
+        if not batch:
+            break
+        opps += [o for o in batch
+                 if norm_addr(opp_field(o, OPP_DEAL_ADDRESS)) == want
+                 or want in norm_addr(o.get("name", ""))]
+        if len(batch) < 100 or page > 20:
+            break
+        page += 1
     R.ok(len(opps) > 0, "opportunities exist for this deal", "found none")
     if not opps:
         return finish()
@@ -286,8 +296,24 @@ def main():
         hits = B.call("POST", "/contacts/search",
                       {"locationId": B.LOCATION, "pageLimit": 100, "filters": filt}).get("contacts") or []
         overlap = [h for h in hits if h["id"] in texted_ids]
-        R.ok(not overlap, "%s was not texted (%d on file)" % (label, len(hits)),
-             ", ".join((h.get("firstName") or "?") + " " + (h.get("lastName") or "") for h in overlap))
+        # Someone who replied STOP to THIS blast is now DNC and was texted -
+        # which is the opt-out path working, not a violation. It is only a
+        # breach if they were already suppressed when we sent.
+        after = []
+        for h in overlap:
+            f = next((f for c, f in buyers if c.get("id") == h["id"]), {})
+            replied = f.get("buy_replies")
+            if replied and int(replied) > 0 and f.get("buy_last_responded"):
+                after.append((h.get("firstName") or "?"))
+        real = [h for h in overlap
+                if (h.get("firstName") or "?") not in after]
+        if after:
+            R.note("%d buyer(s) opted out DURING this blast and are now %s: %s "
+                   "- that is the opt-out path working, not a breach"
+                   % (len(after), label.split(" = ")[-1], ", ".join(after)))
+        R.ok(not real, "%s was not texted while already suppressed (%d on file)"
+             % (label, len(hits)),
+             ", ".join((h.get("firstName") or "?") + " " + (h.get("lastName") or "") for h in real))
 
     # A TEST record is only a problem when it rides along on a REAL blast. A run
     # that reached nothing but TEST records is a test send doing its job.

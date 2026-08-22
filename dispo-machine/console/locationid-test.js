@@ -77,8 +77,16 @@ console.log('\nBuyer Interest opportunity:\n');
 const opps = JSON.parse(fs.readFileSync(path.join(DIR, '05-send-teaser-blast.cloud.json'), 'utf8'))
   .nodes.find((n) => n.name === 'Build Buyer Interest Opps').parameters.jsCode;
 ok(/name: b\.name \+/.test(opps), 'the card leads with the buyer name, not the address');
-ok(/customFields: \[\{ id: '23Qr6cqR1IP1zFknf5Wn'/.test(opps),
-   'and carries opp_deal_address so the pipeline can be filtered by deal');
+// GHL's opportunity search cannot filter on a contact's fields, so the
+// opportunity carries its own copy of who this buyer is. Without these,
+// "show me the VIPs on this deal" is not a question the pipeline can answer.
+ok(opps.indexOf("{ id: '23Qr6cqR1IP1zFknf5Wn'") !== -1,
+   'the opportunity carries opp_deal_address, so it can be filtered by deal');
+ok(opps.indexOf("{ id: '9teeY5fWTPptnVygRVae'") !== -1, "and the buyer's tier");
+ok(opps.indexOf("{ id: 'hJ06opXeHtm3nt072Wog'") !== -1, "and their source");
+ok(opps.indexOf("{ id: 'hLc4zz9NtnpjwlCQERMV'") !== -1, 'and which script they got');
+ok(/SEG_LABEL = \{ warm: 'Warm list'/.test(opps),
+   'segment labels match what the review page showed, so filter and console agree');
 ok(/fieldValue: tally\.address/.test(opps), 'populated from the deal address on the blast');
 // Contacts take `value`, opportunities take `fieldValue`. The wrong key does
 // not error — the field just stays empty, which is how this hid for a while.

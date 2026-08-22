@@ -52,10 +52,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(!d.getElementById('review').hidden, 'review shown after submit');
   ok(d.getElementById('overlay').hidden, 'overlay dismissed');
   ok(d.querySelector('.addr').textContent === '2165 NW 58th St. Miami, FL 33142', 'deal address in header');
-  ok(d.querySelectorAll('.tile').length === 4, 'four segment tiles');
-  ok(d.querySelectorAll('.tsr').length === 4, 'four per-segment teaser boxes');
+  ok(d.querySelectorAll('.tile').length === 3, 'three segment tiles (Inquired was removed with InvestorLift)');
+  ok(d.querySelectorAll('.tsr').length === 3, 'three per-segment teaser boxes');
 
-  const editable = ['tsr-0','tsr-1','tsr-2','tsr-3','wa','sms','voice'];
+  const editable = ['tsr-0','tsr-1','tsr-2','wa','sms','voice'];
   const notEditable = editable.filter((id) => {
     const e = d.getElementById(id);
     return !e || e.tagName !== 'TEXTAREA' || e.readOnly || e.disabled;
@@ -64,8 +64,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   ok(d.getElementById('wa').value.indexOf('🏠 *2165 NW 58th') === 0, 'WhatsApp post loaded verbatim with emoji + asterisks');
   ok(d.querySelectorAll('.tbl').length === 3, 'three buyer tables (included / excluded / worth a call)');
-  ok(d.querySelectorAll('.tbl')[0].querySelectorAll('tbody tr').length === 12, '12 included buyers rendered');
-  ok(/574/.test(d.getElementById('sendBtn').textContent), 'send button counts all 574 buyers: "' + d.getElementById('sendBtn').textContent + '"');
+  ok(d.querySelectorAll('.tbl')[0].querySelectorAll('tbody tr').length === 9, '9 included buyers rendered');
+  ok(/571/.test(d.getElementById('sendBtn').textContent), 'send button counts all 571 buyers: "' + d.getElementById('sendBtn').textContent + '"');
 
   // ---- SMS segment math ----
   const m0 = d.getElementById('tsrmeta-0').textContent;
@@ -82,18 +82,19 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(d.getElementById('tsr-1').value === before, 'Revert restores the original teaser');
 
   // ---- segment toggle ----
-  const cb = d.querySelector('#tsrbox-3 .sw input');
+  // General cold is the last box now that Inquired is gone: 0, 1, 2.
+  const cb = d.querySelector('#tsrbox-2 .sw input');
   cb.checked = false;
   cb.dispatchEvent(new w.Event('change', { bubbles: true }));
-  ok(/172/.test(d.getElementById('sendBtn').textContent), 'holding back General cold (402) drops the count to 172: "' + d.getElementById('sendBtn').textContent + '"');
-  ok(d.getElementById('tsrbox-3').className.indexOf('off') !== -1, 'held-back segment dims');
-  ok(d.getElementById('tile-04').className.indexOf('tile-off') !== -1, 'matching stat tile dims too');
+  ok(/169/.test(d.getElementById('sendBtn').textContent), 'holding back General cold (402) drops the count to 169: "' + d.getElementById('sendBtn').textContent + '"');
+  ok(d.getElementById('tsrbox-2').className.indexOf('off') !== -1, 'held-back segment dims');
+  ok(d.getElementById('tile-03').className.indexOf('tile-off') !== -1, 'matching stat tile dims too');
 
   // ---- send: two-step confirm ----
   d.getElementById('sendBtn').click();
   ok(d.getElementById('confirmBtn') != null, 'first click asks for confirmation instead of sending');
   ok(/Going to:/.test(d.getElementById('sendbar').textContent), 'confirmation lists the segments being sent');
-  ok(/172/.test(d.getElementById('confirmBtn').textContent), 'confirm button repeats the count');
+  ok(/169/.test(d.getElementById('confirmBtn').textContent), 'confirm button repeats the count');
 
   d.getElementById('confirmBtn').click();
   await wait(1400);

@@ -79,9 +79,9 @@ for (const label of Object.keys(SRC)) {
      'a buyer with no phone is not in the send list (nothing to text)');
 
   // Tier decides first; segment only breaks a tier tie.
-  ok(h.betterOf({ tier: 'A', segment: 'general_cold' }, { tier: 'C', segment: 'inquired' }).tier === 'A',
+  ok(h.betterOf({ tier: 'A', segment: 'general_cold' }, { tier: 'C', segment: 'warm' }).tier === 'A',
      'better tier wins over warmer segment');
-  ok(h.betterOf({ tier: 'B', segment: 'general_cold' }, { tier: 'B', segment: 'inquired' }).segment === 'inquired',
+  ok(h.betterOf({ tier: 'B', segment: 'general_cold' }, { tier: 'B', segment: 'warm' }).segment === 'warm',
      'on equal tiers the warmer segment wins');
   ok(h.betterOf({ tier: 'VIP', segment: 'warm' }, { tier: undefined, segment: 'warm' }).tier === 'VIP',
      'a tiered record beats an untiered one');

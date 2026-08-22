@@ -76,6 +76,16 @@ body{
 .sent-bad,.sent-bad .sub{color:var(--bad2) !important}
 .sent-warn{border-color:var(--wrnln) !important;background:var(--wrnbg) !important}
 .sent-warn,.sent-warn .sub{color:var(--wrn2) !important}
+/* Releasing unscrubbed buyers is a legal-risk decision. It reads as a
+   warning when armed, not as a neutral filter. */
+.optbar{border:1px solid var(--line2);border-radius:12px;padding:12px 15px;
+  background:var(--sunk);display:flex;flex-direction:column;gap:6px}
+.optbar-off{border-color:var(--wrnln);background:var(--wrnbg)}
+.optbar-off .sw span{color:var(--wrn2);font-weight:800}
+.scrubbar{border:1px solid var(--line2);border-radius:12px;padding:12px 15px;
+  background:var(--sunk);display:flex;flex-direction:column;gap:6px}
+.scrubbar-on{border-color:var(--badln);background:var(--badbg)}
+.scrubbar-on .sw span{color:var(--bad2);font-weight:800}
 .testbar{border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;background:rgba(147,161,173,.05)}
 .testbar-on{border:1px solid var(--wrnln);background:var(--wrnbg)}
 .testbar-on .sw span{color:var(--wrn2);font-weight:800}
@@ -401,7 +411,12 @@ var CONFIG = {
   SEND_URL:   "/webhook/dispo-send",
   DRIVE_URL:  "/webhook/drive-folder",
   DRAFTS_URL: "/webhook/drafts",
-  TIMEOUT_MS: 180000   // Claude generates 4 teasers; give it room
+  /* Intake: Claude writes four teasers, ~60-90s.
+     A SEND is far longer - the first 166-buyer blast took 192s and the old
+     180s limit reported a clean send as a failure. Rate-limited to protect
+     GHL, roughly 2s per buyer, so this covers about 600. */
+  TIMEOUT_MS: 180000,
+  SEND_TIMEOUT_MS: 900000
 };
 
 /* Demo mode: append ?demo=1 to the URL to run against mock data with no
@@ -411,7 +426,10 @@ var DEMO = /[?&]demo=1/.test(location.search);
 /* ---------------------------------------------------------- pick lists */
 var COUNTIES = ["Miami-Dade","Broward","Palm Beach","St. Lucie","Martin","Indian River","Monroe","Collier","Lee","Orange","Osceola","Hillsborough","Pinellas","Polk","Other"];
 var NEIGHBORHOODS = ["Allapattah","Aventura","Belle Glade","Boca Raton","Boynton Beach","Brandon","Brownsville","Cape Coral","Carol City","Clearwater","Coconut Creek","Coconut Grove","Coral Gables","Coral Springs","Cutler Bay","Dania Beach","Davie","Deerfield Beach","Delray Beach","Doral","El Portal","Florida City","Fort Lauderdale","Fort Myers","Fort Pierce","Golden Glades","Goulds","Greenacres","Hallandale Beach","Hialeah","Hobe Sound","Hollywood","Homestead","Immokalee","Jupiter","Kendall","Key Largo","Key West","Kissimmee","Lake Worth","Lakeland","Lantana","Lauderdale Lakes","Lauderhill","Lehigh Acres","Leisure City","Liberty City","Little Haiti","Little Havana","Margate","Miami Gardens","Miami Springs","Miramar","Naples","Naranja","North Lauderdale","North Miami","North Miami Beach","Norland","Oakland Park","Opa-locka","Orlando","Overtown","Pahokee","Palm Beach Gardens","Palm Springs","Palmetto Bay","Pembroke Pines","Perrine","Pine Hills","Pinecrest","Plantation","Poinciana","Pompano Beach","Port St. Lucie","Princeton","Richmond Heights","Riviera Beach","Royal Palm Beach","Sebastian","St. Petersburg","Stuart","Sunrise","Sweetwater","Tamarac","Tampa","Vero Beach","West Little River","West Palm Beach","Westchester","Wilton Manors","Winter Haven"];
-var PROPERTY_TYPES = ["SFR","2-4 Unit","5+ Unit","Condo","Land"];
+/* Must stay identical to buy_prop_types, excl_prop_types and the Property
+   object's prop_type. The exclusion engine compares a deal's type against a
+   buyer's, so a value missing from any one of the four breaks the match. */
+var PROPERTY_TYPES = ["SFR","2-4 Unit","5+ Unit","Condo","Land","Townhome","Manufactured Home"];
 var OCCUPANCIES = ["VACANT AT CLOSE","Vacant Now","Tenant Occupied","Owner Occupied","Occupancy Unknown"];
 var LISTS = { COUNTIES:COUNTIES, NEIGHBORHOODS:NEIGHBORHOODS, PROPERTY_TYPES:PROPERTY_TYPES, OCCUPANCIES:OCCUPANCIES };
 
@@ -432,21 +450,16 @@ var MOCK_REVIEW = {
   address: "2165 NW 58th St. Miami, FL 33142",
   recordAction: "created",
   segments: [
-    { n:"01", key:"Inquired",         desc:"Asked about this property",        count:3,   hot:true,
-      teaser:"Hey {{first}} — following up on the Liberty City property you asked about. 2/1, new roof, impact windows, vacant at close. Asking $335k, ARV around $450k. Want the address and photos?" },
-    { n:"02", key:"Warm list",        desc:"Existing relationships",           count:41,  hot:false,
+    { n:"01", key:"Warm list",        desc:"Existing relationships",           count:41,  hot:false,
       teaser:"{{first}} — got another one in Liberty City. 2/1 SFR, new roof plus impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES and I'll send the address and photos." },
-    { n:"03", key:"InvestorBase Matched", desc:"InvestorBase pulled them for THIS address", count:128, hot:false,
+    { n:"02", key:"InvestorBase Matched", desc:"InvestorBase pulled them for THIS address", count:128, hot:false,
       teaser:"Hi {{first}}, this is Buying Hero — we saw you buy around Liberty City. Off-market 2/1 SFR nearby: new roof, impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES for the address. Reply STOP to opt out." },
-    { n:"04", key:"General cold",     desc:"Sourced for a different deal",      count:402, hot:false,
+    { n:"03", key:"General cold",     desc:"Sourced for a different deal",      count:402, hot:false,
       teaser:"Hi {{first}}, Buying Hero here — off-market 2/1 SFR in Miami-Dade. New roof, impact windows, vacant at close. $335k asking, ARV ~$450k. Reply YES for the address and photos. Reply STOP to opt out." }
   ],
   sources: [{name:"BH Main",count:301},{name:"InvestorBase",count:158},{name:"InvestorLift",count:97},{name:"Referral",count:18}],
   importedLast2h: 37,
   included: [
-    {name:"Marlon Pierre",tier:"VIP",segment:"Inquired",source:"BH Main",phone:"(305) 555-0141"},
-    {name:"GreenGate Capital — Dana R.",tier:"VIP",segment:"Inquired",source:"Referral",phone:"(786) 555-0117"},
-    {name:"Yosef Abramov",tier:"A",segment:"Inquired",source:"BH Main",phone:"(954) 555-0163"},
     {name:"Carmen Delgado",tier:"A",segment:"Warm list",source:"BH Main",phone:"(305) 555-0128"},
     {name:"TriCounty Buyers LLC",tier:"A",segment:"Warm list",source:"InvestorLift",phone:"(561) 555-0192"},
     {name:"Ray Osterman",tier:"B",segment:"Warm list",source:"InvestorBase",phone:"(305) 555-0104"},
@@ -463,7 +476,7 @@ var MOCK_REVIEW = {
     {name:"Sandra Kim",phone:"(786) 555-0132",reason:"Wrong number confirmed 7/26 — pending re-verify"}
   ],
   worthACall: [
-    {name:"Marlon Pierre",phone:"(305) 555-0141",note:"Notes say \"no 33142 zips\" — but he inquired on this one"},
+    {name:"Marlon Pierre",phone:"(305) 555-0141",note:"Notes say \"no 33142 zips\" — worth confirming before the next blast"},
     {name:"TriCounty Buyers LLC",phone:"(561) 555-0192",note:"Max budget on file $250k; this asks more"},
     {name:"Ray Osterman",phone:"(305) 555-0104",note:"Notes say SFR only if vacant — verify VACANT AT CLOSE is enough"}
   ],
@@ -546,9 +559,9 @@ function showIntakeError(msg){
   box.hidden = false;
 }
 
-function postJSON(url, body){
+function postJSON(url, body, ms){
   var ctl = ("AbortController" in window) ? new AbortController() : null;
-  var timer = ctl ? setTimeout(function(){ ctl.abort(); }, CONFIG.TIMEOUT_MS) : null;
+  var timer = ctl ? setTimeout(function(){ ctl.abort(); }, ms || CONFIG.TIMEOUT_MS) : null;
   return fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -566,7 +579,7 @@ function postJSON(url, body){
     });
   }, function(e){
     if (timer) clearTimeout(timer);
-    if (e && e.name === "AbortError") throw new Error("Timed out after " + Math.round(CONFIG.TIMEOUT_MS/1000) + "s. The workflow may still be running — check n8n before resubmitting.");
+    if (e && e.name === "AbortError") { var to = new Error("The browser stopped waiting after " + Math.round((ms || CONFIG.TIMEOUT_MS)/1000) + "s. The workflow is almost certainly still running and finishing normally."); to.timedOut = true; throw to; }
     throw new Error("Network error reaching " + url + " — " + (e && e.message ? e.message : e));
   });
 }
@@ -635,6 +648,12 @@ function adoptReview(r){
   /* Test send is a WHITELIST, not another hold. Getting "only me" by
      unchecking eight type chips is a footgun: miss one and 120 people get
      a text. One switch, one rule - only buy_type TEST goes out. */
+  /* Purchased-list buyers with no DNC + litigator scrub. Held by default and
+     released only by a deliberate click, because releasing them is a legal-risk
+     decision, not a filter preference. */
+  S.includeUnscrubbed = false;
+  /* Included by default. Untick to drop the line for one blast. */
+  S.includeOptOut = true;
   S.testOnly = false;
   S.heldTiers = {};
   (r.buyerTiers || []).forEach(function(t){ S.heldTiers[t.key] = !!t.heldByDefault; });
@@ -660,6 +679,9 @@ function groupHeld(g){
   /* Test send inverts the question: everyone is held EXCEPT the test records.
      Placed first so no chip or tier can re-open the gate by accident. */
   if (S.testOnly) return types.indexOf("TEST") === -1;
+  /* Unscrubbed is a hold like any other, so it shares the group key and a
+     buyer held by two rules is still only subtracted once. */
+  if (g.scrubOk === false && !S.includeUnscrubbed) return true;
   for (var i = 0; i < types.length; i++) if (S.heldTypes[types[i]]) return true;
   return !!(g.tier && S.heldTiers[g.tier]);
 }
@@ -970,6 +992,60 @@ function renderReview(){
       ybody.appendChild(tw);
     }
 
+    /* ---- unscrubbed purchased list ---- */
+    if (R.unscrubbed) {
+      var ub = el("div","scrubbar");
+      var ul = el("label","sw");
+      var ucb = el("input"); ucb.type = "checkbox"; ucb.checked = S.includeUnscrubbed;
+      var utxt = el("span",null,"");
+      var paint = function(){
+        utxt.textContent = ucb.checked
+          ? "SENDING to " + nfmt(R.unscrubbed) + " unscrubbed buyers — no DNC or litigator check on file"
+          : "Holding " + nfmt(R.unscrubbed) + " purchased-list buyers with no DNC + litigator scrub";
+        ub.className = "scrubbar" + (ucb.checked ? " scrubbar-on" : "");
+      };
+      ucb.onchange = function(){
+        S.includeUnscrubbed = ucb.checked;
+        paint(); renderTypeNote(); markHeldRows();
+        R.segments.forEach(function(sg, ix){
+          var pill = $("segcount-" + ix);
+          if (pill) pill.textContent = segLabelCount(sg);
+        });
+        updateSendBar();
+      };
+      ul.appendChild(ucb); ul.appendChild(utxt);
+      ub.appendChild(ul);
+      ub.appendChild(el("div","sub",
+        "Confirmed DNC and litigator hits are never included — this releases "
+        + "buyers who simply have not been checked yet."));
+      paint();
+      ybody.appendChild(ub);
+    }
+
+    /* ---- opt-out line ---- */
+    var ob = el("div","optbar");
+    var ol = el("label","sw");
+    var ocb = el("input"); ocb.type = "checkbox"; ocb.checked = S.includeOptOut;
+    var otxt = el("span",null,"");
+    var opaint = function(){
+      otxt.textContent = ocb.checked
+        ? 'Ending non-master-list texts with "Reply STOP to opt out."'
+        : 'NO opt-out line on this blast';
+      ob.className = "optbar" + (ocb.checked ? "" : " optbar-off");
+      var note = $("optnote");
+      if (note) note.textContent = ocb.checked
+        ? "Required for Florida's text safe harbour. Master-list buyers never get it."
+        : "STOP still works — carriers honour it and we still record the opt-out. "
+          + "You are only dropping the notice, and the safe harbour with it.";
+    };
+    ocb.onchange = function(){ S.includeOptOut = ocb.checked; opaint(); };
+    ol.appendChild(ocb); ol.appendChild(otxt);
+    ob.appendChild(ol);
+    var onote = el("div","sub"); onote.id = "optnote";
+    ob.appendChild(onote);
+    ybody.appendChild(ob);
+    opaint();
+
     var rowT = chipRow(R.buyerTypes || [], S.heldTypes, "By buyer type");
     if (rowT) ybody.appendChild(rowT);
     var rowR = chipRow(R.buyerTiers || [], S.heldTiers, "By tier");
@@ -1224,6 +1300,8 @@ function doSend(){
     /* Held for THIS blast only. W2 re-checks buy_type at send time - the list
        is rebuilt there, so a hold chosen here has to travel with the send. */
     testOnly: !!S.testOnly,
+    includeUnscrubbed: !!S.includeUnscrubbed,
+    includeOptOut: S.includeOptOut !== false,
     typesHeld: heldTypeList(),
     tiersHeld: heldTierList(),
     expectedCount: enabledTotal()
@@ -1233,7 +1311,7 @@ function doSend(){
 
   var work = DEMO
     ? new Promise(function(res){ setTimeout(function(){ res({ ok:true, queued:enabledTotal(), message:"DEMO — nothing was sent. " + nfmt(enabledTotal()) + " buyers would have been texted." }); }, 900); })
-    : postJSON(CONFIG.SEND_URL, payload);
+    : postJSON(CONFIG.SEND_URL, payload, CONFIG.SEND_TIMEOUT_MS);
 
   work.then(function(r){
     hideOverlay();
@@ -1251,7 +1329,9 @@ function doSend(){
     renderSendBar();
     var box = $("sendErr");
     box.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef7a68" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16h.01"/></svg>'
-      + '<div><strong>The blast did not go out.</strong> ' + esc(err.message || String(err))
+      + '<div><strong>' + (err && err.timedOut
+            ? 'Still running — this is NOT a failed send.'
+            : 'The blast did not go out.') + '</strong> ' + esc(err.message || String(err))
       + '<br><span class="sub">Check the Buyer Interest pipeline before retrying — some messages may already have gone.</span></div>';
     box.hidden = false;
     safeScroll(box);

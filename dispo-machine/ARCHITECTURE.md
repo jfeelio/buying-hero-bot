@@ -127,19 +127,16 @@ flowchart TD
   SUP -->|no| EXCL{"Does an excl_ rule<br/>match this deal?"}
   EXCL -->|yes| DROP2["Excluded<br/><i>with the reason</i>"]
   EXCL -->|no| SEG["Segment by source + relevance"]
-
-  SEG --> S1["<b>1 · Inquired</b><br/>InvestorLift, on THIS property<br/><i>hottest — they asked</i>"]
-  SEG --> S2["<b>2 · Warm list</b><br/>BH Main / Referral<br/><i>they know us</i>"]
-  SEG --> S3["<b>3 · InvestorBase Matched</b><br/>InvestorBase pulled for THIS address<br/><i>bought within ~2 mi</i>"]
-  SEG --> S4["<b>4 · General cold</b><br/>InvestorBase from other deals<br/><i>still a real cash buyer</i>"]
+  SEG --> S2["<b>1 · Warm list</b><br/>BH Main / Referral<br/><i>they know us</i>"]
+  SEG --> S3["<b>2 · InvestorBase Matched</b><br/>InvestorBase pulled for THIS address<br/><i>bought within ~2 mi</i>"]
+  SEG --> S4["<b>3 · General cold</b><br/>InvestorBase from other deals<br/><i>still a real cash buyer</i>"]
 ```
 
 | # | Segment | Opener | Why it differs |
 |---|---|---|---|
-| 1 | **Inquired** | references their inquiry | They already raised their hand on this exact property |
-| 2 | **Warm list** | familiar, first-name, "got another one" | Existing relationship |
-| 3 | **InvestorBase Matched** | leads with the neighborhood | They demonstrably buy on this street |
-| 4 | **General cold** | straight, credible, AI disclosure | No relationship, no geographic hook |
+| 1 | **Warm list** | familiar, first-name, "got another one" | Existing relationship |
+| 2 | **InvestorBase Matched** | leads with the neighborhood | They demonstrably buy on this street |
+| 3 | **General cold** | straight, credible, AI disclosure | No relationship, no geographic hook |
 
 Nobody is excluded for being in segment 3 or 4. **Everyone gets contacted;
 segments 3 and 4 just get a colder, more careful script.**
@@ -170,7 +167,7 @@ flowchart TD
 
   O["InvestorLift inquiry<br/>on this listing"] --> P["Zapier → n8n"]
   P --> DB
-  P --> Q["Opportunity on THIS deal<br/><i>Inquired</i>"]
+  P --> Q["Opportunity on THIS deal<br/><i>Interested</i>"]
 
   DB -.-> E
 ```

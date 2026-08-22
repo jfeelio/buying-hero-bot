@@ -57,7 +57,7 @@ separate page.
 - A clear, calm banner: **nothing has been sent yet, these are drafts**
 - Deal header: the address, and whether the record was created or updated
 - **Four segment stat tiles** with counts. These decide which script each buyer
-  gets: `1 Inquired` (asked about this property — hottest) · `2 Warm list`
+  gets: `2 Warm list`
   (existing relationships) · `3 InvestorBase Matched` (sourced within ~2 miles of
   this address) · `4 General cold` (sourced for a different deal)
 - Source breakdown (BH Main / InvestorBase / InvestorLift / Referral) and how
