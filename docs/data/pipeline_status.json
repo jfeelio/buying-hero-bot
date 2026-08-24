@@ -14,10 +14,10 @@
     "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/32736990841"
   },
   "tax_deed": {
-    "last_run": "2026-08-21T14:33:57Z",
+    "last_run": "2026-08-24T14:40:16Z",
     "status": "success",
-    "records_added": 11,
-    "run_id": "32492547932",
-    "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/32492547932"
+    "records_added": 1,
+    "run_id": "32739823725",
+    "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/32739823725"
   }
 }
