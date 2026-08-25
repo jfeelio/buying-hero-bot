@@ -40,15 +40,24 @@ function decide(ctx, aiJson, opts) {
   const $input = { first: () => ({ json: aiJson
     ? { content: [{ type: 'text', text: JSON.stringify(aiJson) }] } : {} }) };
   let code = DECIDE;
-  if (opts && opts.autoSend) {
-    code = code.replace('const AUTO_SEND = false;', 'const AUTO_SEND = true;');
-    if (code === DECIDE) throw new Error('AUTO_SEND switch not found - test is lying');
+  // Force the switch to the state this case is about, whichever way production
+  // happens to be set. The earlier version only rewrote false -> true, so the
+  // day AUTO_SEND was turned back on every 'auto-send is off' case below started
+  // silently testing the ON path instead.
+  if (opts && typeof opts.autoSend === 'boolean') {
+    const want = 'const AUTO_SEND = ' + opts.autoSend + ';';
+    const other = 'const AUTO_SEND = ' + !opts.autoSend + ';';
+    if (code.indexOf(want) === -1 && code.indexOf(other) === -1) {
+      throw new Error('AUTO_SEND switch not found - test is lying');
+    }
+    code = code.replace(other, want);
   }
   return new Function('$', '$input', code)($, $input)[0].json;
 }
-// Auto-send is currently OFF in production. ON runs the same node with the
-// switch flipped, so every gate beneath it stays under test.
+// Both states are tested explicitly, so neither depends on how production is
+// set today. ON is the live setting as of 2026-08-25.
 const ON = { autoSend: true };
+const OFF = { autoSend: false };
 const cfVal = (d, field) => {
   const hit = (d.contactBody.customFields || []).find((c) => c.id === IDS[field]);
   return hit ? hit.value : undefined;
@@ -265,13 +274,14 @@ ok(stale.dealSource === 'newest open opportunity',
 ok(stale.address === HIAL, 'and answers with the deal it actually has');
 
 // ================================================ the auto-send kill switch
-// Turned off 2026-08-22: the team answers this deal's replies by hand. The
-// workflow stays ACTIVE so opt-outs keep being honoured - deactivating it
+// Off 2026-08-22 -> back on 2026-08-25. Whichever way it is set, the point of
+// this section is that turning it OFF stops outbound text and nothing else:
+// the workflow stays ACTIVE so opt-outs keep being honoured - deactivating it
 // outright would have silently stopped processing STOP.
 console.log('');
-console.log('Auto-send is off, but nothing else is:');
+console.log('With auto-send off, nothing else is off:');
 console.log('');
-const off = decide({}, YES);
+const off = decide({}, YES, OFF);
 ok(off.send === false, 'a clearly interested buyer is NOT texted');
 ok(off.blockedBy.indexOf('autoSendEnabled') !== -1,
    'and the reason is on the record: ' + JSON.stringify(off.blockedBy));
@@ -279,12 +289,12 @@ ok(cfVal(off, 'buy_replies') === 4, 'the reply is still counted');
 ok(typeof cfVal(off, 'buy_last_responded') === 'string', 'buy_last_responded is still stamped');
 ok(off.needsHuman === true, 'and it is routed to a human');
 
-const stop = decide({ optOut: true }, null);
+const stop = decide({ optOut: true }, null, OFF);
 ok(cfVal(stop, 'buy_status') === 'DNC', 'STOP still writes DNC with auto-send off');
 ok(cfVal(stop, 'buy_consent_status') === 'Opted Out', 'and still records Opted Out');
 
 const objOff = decide({}, { intent: 'not_interested', confidence: 'high',
-                            objection: 'wrong county', reason: '' });
+                            objection: 'wrong county', reason: '' }, OFF);
 ok(cfVal(objOff, 'buy_objection_last') === 'wrong county',
    'objections are still captured with auto-send off');
 

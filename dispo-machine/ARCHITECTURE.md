@@ -271,3 +271,17 @@ board cannot show.
 for a different property were being excluded from every other deal. That throws
 away the database the imports exist to build. Replaced with segmentation:
 everyone is contacted, source only selects the script.
+
+**2026-08-25 — matching the WHOLE address was wrong.** 1125 Highview Rd reported
+**0** InvestorBase Matched against 76 buyers that had just imported cleanly.
+InvestorBase stamped `1125 Highview Rd, Lantana, FL 33462`; the deal was entered
+as `1125 Highview Rd Lake Worth FL 33462`. Both are correct — ZIP 33462 straddles
+a municipal line, so USPS says Lake Worth and the municipality is Lantana — but
+neither string contained the other, so every matched buyer was scripted as
+General cold. The matcher now compares the **street** (house number + name,
+suffix canonicalised so `Rd` == `Road`, ordinals reduced so `58 St` == `58th St`,
+directionals abbreviated) and the **ZIP when both sides carry one**. City and
+state are ignored on purpose: they are the parts the two systems disagree about.
+A pull with no parseable street falls back to the old containment test rather
+than dropping the buyer. Identical block in W1 and W2, locked byte-for-byte by
+`console/addr-match-test.js`.
