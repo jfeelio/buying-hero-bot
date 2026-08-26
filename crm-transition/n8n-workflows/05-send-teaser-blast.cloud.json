@@ -404,7 +404,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// One Buyer Interest opportunity per buyer WHO ACTUALLY RECEIVED the teaser.\n// This is the durable buyer<->deal association: open the Buyer Interest\n// pipeline, search the address, and every buyer tied to that deal is listed\n// with the stage they reached. Contact fields can't express this - a buyer\n// belongs to many deals over time.\nconst pipes = ($input.first().json.pipelines) || [];\nconst bi = pipes.find(p => (p.name || '').toLowerCase().indexOf('buyer interest') !== -1);\n\nconst tally = $('Tally Sends').first().json;\nconst recips = $('Build Recipient List').all();\n\nif (!bi || !bi.stages || !bi.stages.length) {\n  return [{ json: { _skip: true, reason: 'Buyer Interest pipeline not found' } }];\n}\n\n// Prefer a stage that honestly means \"we texted them\"; otherwise fall back to\n// the first stage. Renaming/adding a stage in GHL needs no code change.\nconst wanted = ['reached out', 'texted', 'sent', 'blasted', 'contacted'];\nlet stage = bi.stages.find(s => wanted.indexOf((s.name || '').toLowerCase()) !== -1);\nif (!stage) stage = bi.stages[0];\n\n\n// The same labels the review page shows, so the pipeline filter and the\n// console agree on what a segment is called.\nconst SEG_LABEL = { warm: 'Warm list', geo_cold: 'InvestorBase Matched',\n                    general_cold: 'General cold' };\nconst sentNames = new Set((tally.sent_rows || []).map(r => r.name));\nconst out = [];\nfor (const r of recips) {\n  const b = r.json;\n  if (!b || !b.contactId) continue;\n  if (!sentNames.has(b.name)) continue;   // only buyers who actually got it\n  out.push({ json: {\n    opp: {\n      pipelineId: bi.id,\n      locationId: 'ib5jEnyqqq06FIEqlVGs',\n      // Buyer first: the pipeline card shows the name, and with several deals\n      // running the address is what you filter on, not what you read.\n      name: b.name + ' — ' + (tally.address || 'Deal'),\n      // Opportunity custom fields use fieldValue; CONTACT custom fields use\n      // value. Same API, different key. Getting it wrong fails silently.\n      // The opportunity carries a COPY of who this buyer is, because GHL's\n      // opportunity search cannot filter on a contact's fields - only on\n      // pipeline, stage, status, assignee and a single contactId. Without\n      // these you cannot ask 'show me the VIPs on 580 SE 6th', which is the\n      // question a dispo manager actually has.\n      // Copied at send time on purpose: it records what was true when we\n      // texted them, not what is true today.\n      customFields: [\n        { id: '23Qr6cqR1IP1zFknf5Wn', fieldValue: tally.address || '' },   // opp_deal_address\n        { id: '9teeY5fWTPptnVygRVae', fieldValue: b.tier && b.tier !== '(none)' ? b.tier : '' },\n        { id: 'hJ06opXeHtm3nt072Wog', fieldValue: b.source || '' },\n        { id: 'hLc4zz9NtnpjwlCQERMV', fieldValue: SEG_LABEL[b.segment] || '' },\n      ],\n      pipelineStageId: stage.id,\n      status: 'open',\n      contactId: b.contactId\n    },\n    _stageName: stage.name\n  } });\n}\n\nif (!out.length) return [{ json: { _skip: true, reason: 'nothing sent' } }];\nreturn out;"
+        "jsCode": "// One Buyer Interest opportunity per buyer on the recipient list, created\n// BEFORE the teaser goes out.\n//\n// 2026-08-26: this used to run last, after every text and every engagement\n// write. A buyer who replied during the send had no card and no\n// buy_last_deal, so the reply handler could not tell which deal they meant\n// and held them for a human - it failed hardest on the fastest buyers.\n// The handler resolves the deal as `matched || reachedOut[0]`, so a card\n// that already exists answers the question on its own.\n//\n// The trade: the send has not happened yet, so cards can no longer be\n// filtered to buyers who actually received it. A failed send leaves a card\n// for someone never texted. The summary reports that count.\n// This is the durable buyer<->deal association: open the Buyer Interest\n// pipeline, search the address, and every buyer tied to that deal is listed\n// with the stage they reached. Contact fields can't express this - a buyer\n// belongs to many deals over time.\nconst pipes = ($input.first().json.pipelines) || [];\nconst bi = pipes.find(p => (p.name || '').toLowerCase().indexOf('buyer interest') !== -1);\n\nconst recips = $('Build Recipient List').all();\n// Same source Tally Sends used for it; every recipient row carries the deal.\nconst dealAddress = (recips[0] && recips[0].json.address) || '';\n\nif (!bi || !bi.stages || !bi.stages.length) {\n  return [{ json: { _skip: true, reason: 'Buyer Interest pipeline not found' } }];\n}\n\n// Prefer a stage that honestly means \"we texted them\"; otherwise fall back to\n// the first stage. Renaming/adding a stage in GHL needs no code change.\nconst wanted = ['reached out', 'texted', 'sent', 'blasted', 'contacted'];\nlet stage = bi.stages.find(s => wanted.indexOf((s.name || '').toLowerCase()) !== -1);\nif (!stage) stage = bi.stages[0];\n\n\n// The same labels the review page shows, so the pipeline filter and the\n// console agree on what a segment is called.\nconst SEG_LABEL = { warm: 'Warm list', geo_cold: 'InvestorBase Matched',\n                    general_cold: 'General cold' };\nconst out = [];\nfor (const r of recips) {\n  const b = r.json;\n  if (!b || !b.contactId) continue;\n  out.push({ json: {\n    opp: {\n      pipelineId: bi.id,\n      locationId: 'ib5jEnyqqq06FIEqlVGs',\n      // Buyer first: the pipeline card shows the name, and with several deals\n      // running the address is what you filter on, not what you read.\n      name: b.name + ' — ' + (dealAddress || 'Deal'),\n      // Opportunity custom fields use fieldValue; CONTACT custom fields use\n      // value. Same API, different key. Getting it wrong fails silently.\n      // The opportunity carries a COPY of who this buyer is, because GHL's\n      // opportunity search cannot filter on a contact's fields - only on\n      // pipeline, stage, status, assignee and a single contactId. Without\n      // these you cannot ask 'show me the VIPs on 580 SE 6th', which is the\n      // question a dispo manager actually has.\n      // Copied at send time on purpose: it records what was true when we\n      // texted them, not what is true today.\n      customFields: [\n        { id: '23Qr6cqR1IP1zFknf5Wn', fieldValue: dealAddress || '' },   // opp_deal_address\n        { id: '9teeY5fWTPptnVygRVae', fieldValue: b.tier && b.tier !== '(none)' ? b.tier : '' },\n        { id: 'hJ06opXeHtm3nt072Wog', fieldValue: b.source || '' },\n        { id: 'hLc4zz9NtnpjwlCQERMV', fieldValue: SEG_LABEL[b.segment] || '' },\n      ],\n      pipelineStageId: stage.id,\n      status: 'open',\n      contactId: b.contactId\n    },\n    _stageName: stage.name\n  } });\n}\n\nif (!out.length) return [{ json: { _skip: true, reason: 'no recipients' } }];\nreturn out;"
       },
       "id": "build-opps",
       "name": "Build Buyer Interest Opps",
@@ -457,7 +457,11 @@
         }
       },
       "onError": "continueRegularOutput",
-      "notes": "3 per 2s. At 5 per 1s a 166-buyer blast drew 46 rate-limit refusals from GHL - 'Try spacing your requests out' - and silently created 126 of 166 opportunities. This is the rate the SMS node survives at."
+      "notes": "3 per 2s. At 5 per 1s a 166-buyer blast drew 46 rate-limit refusals from GHL - 'Try spacing your requests out' - and silently created 126 of 166 opportunities. This is the rate the SMS node survives at.",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -679,6 +683,19 @@
         380
       ],
       "notes": "Tests for a contactId being PRESENT, not for the absence of a _skip flag. _skip is undefined on a real row and n8n's boolean operator does not accept undefined, so the old condition sent every engagement write down the false branch - reported as success, wrote nothing."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Card creation is a detour. The blast must keep sending to the recipient\n// list built earlier, not to whatever the opportunity API just returned.\nreturn $('Build Recipient List').all();\n"
+      },
+      "id": "resumerecips01",
+      "name": "Resume Recipient List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        380
+      ]
     }
   ],
   "connections": {
@@ -759,7 +776,7 @@
       "main": [
         [
           {
-            "node": "Send Teaser SMS",
+            "node": "Fetch Pipelines",
             "type": "main",
             "index": 0
           }
@@ -847,7 +864,7 @@
       "main": [
         [
           {
-            "node": "Console or Form? (sent)",
+            "node": "Resume Recipient List",
             "type": "main",
             "index": 0
           }
@@ -945,7 +962,7 @@
         ],
         [
           {
-            "node": "Fetch Pipelines",
+            "node": "Console or Form? (sent)",
             "type": "main",
             "index": 0
           }
@@ -956,7 +973,18 @@
       "main": [
         [
           {
-            "node": "Fetch Pipelines",
+            "node": "Console or Form? (sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resume Recipient List": {
+      "main": [
+        [
+          {
+            "node": "Send Teaser SMS",
             "type": "main",
             "index": 0
           }

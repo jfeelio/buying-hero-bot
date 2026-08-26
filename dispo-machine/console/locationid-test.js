@@ -87,7 +87,11 @@ ok(opps.indexOf("{ id: 'hJ06opXeHtm3nt072Wog'") !== -1, "and their source");
 ok(opps.indexOf("{ id: 'hLc4zz9NtnpjwlCQERMV'") !== -1, 'and which script they got');
 ok(/SEG_LABEL = \{ warm: 'Warm list'/.test(opps),
    'segment labels match what the review page showed, so filter and console agree');
-ok(/fieldValue: tally\.address/.test(opps), 'populated from the deal address on the blast');
+ok(/fieldValue: dealAddress/.test(opps), 'populated from the deal address on the blast');
+// 2026-08-26: cards are built BEFORE the send, so the address comes straight
+// from the recipient list rather than from Tally Sends, which has not run yet.
+ok(opps.indexOf("$('Tally Sends')") === -1,
+   'and never from Tally Sends, which does not exist yet at card time');
 // Contacts take `value`, opportunities take `fieldValue`. The wrong key does
 // not error — the field just stays empty, which is how this hid for a while.
 ok(!/value: tally\.address/.test(opps),
