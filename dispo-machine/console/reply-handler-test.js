@@ -113,8 +113,18 @@ ok(decide({}, { intent: 'unclear', confidence: 'high', objection: '', reason: ''
    'unclear holds');
 ok(decide({}, { intent: 'not_interested', confidence: 'high', objection: 'too small', reason: '' }).send === false,
    'a decline never gets the package');
-ok(decide({ dealOppId: null }, YES, ON).send === false,
-   'no open deal at Reached Out means nothing to send');
+// 2026-08-26, the Odette Martinez case. W2 texts first and creates the Buyer
+// Interest cards afterwards, so a fast reply arrives before its own card. She
+// asked for the address 22 seconds before hers existed, was classified
+// interested/high, and was held. Having no card is not a reason to leave a
+// buyer waiting - the ADDRESS is what decides what to say.
+const noCard = decide({ dealOppId: null }, YES, ON);
+ok(noCard.send === true,
+   'an interested buyer is answered even with no opportunity card yet');
+ok(noCard.moveStageId === null,
+   'and no stage move is attempted, because there is nothing to move');
+ok(noCard.blockedBy.length === 0,
+   'nothing blocks it: ' + JSON.stringify(noCard.blockedBy));
 ok(decide({ address: '' }, YES, ON).send === false, 'no address means nothing to send');
 
 // A Claude failure must never be read as consent to text someone.
