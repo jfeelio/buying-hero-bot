@@ -46,6 +46,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Every sheet call targets the mail sheet explicitly (see config.MAIL_SHEET_ID).
+MAIL = {"tab_name": config.MAIL_SHEET_TAB, "sheet_id": config.MAIL_SHEET_ID}
+
 SEEN_FILE = Path(__file__).parent / "seen_tax_deed_cases.json"
 
 
@@ -75,14 +78,14 @@ def _save_seen(case_numbers: set) -> None:
 # ---------------------------------------------------------------------------
 
 def build_row(listing: dict, owner: dict) -> list:
-    """Assemble a flat list matching SHEET_COLUMNS order (same as foreclosure tab)."""
+    """Assemble a flat list matching config.MAIL_COLUMNS order."""
     first = owner.get("owner_first", "")
     last = owner.get("owner_last", "")
     if not first and last:
         first, last = last, ""
     return [
-        "",                                         # Sent
-        "",                                         # Company
+        "",                                         # Sent (blank until mailed)
+        "Tax Deed",
         first,
         last,
         owner.get("mailing_address", ""),
@@ -94,7 +97,9 @@ def build_row(listing: dict, owner: dict) -> list:
         listing.get("property_state", "FL"),        # State
         listing.get("property_zip", ""),            # Zip
         listing.get("assessed_value", ""),          # Value (assessed value for tax deeds)
-        listing.get("case_number", ""),              # Case Number (dedup key)
+        listing.get("auction_date", ""),            # Auction Date
+        listing.get("case_number", ""),             # Case Number (dedup key)
+        date.today().strftime("%m/%d/%Y"),          # Date Added
     ]
 
 
@@ -110,14 +115,14 @@ def run():
     # Step 1: Ensure shared sheet header row
     logger.info("Step 1: Ensuring Google Sheet header row")
     try:
-        ensure_header_row()
+        ensure_header_row(**MAIL, columns=config.MAIL_COLUMNS)
     except Exception as e:
         logger.error(f"Sheet header setup failed: {e}")
         sys.exit(1)
 
     # Step 2: Load dedup state (local JSON + shared tab case numbers)
     logger.info("Step 2: Loading dedup state")
-    seen = _load_seen() | get_existing_case_numbers(col="N")
+    seen = _load_seen() | get_existing_case_numbers(**MAIL, col=config.MAIL_CASE_COL)
     logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
     with sync_playwright() as pw:
@@ -151,7 +156,7 @@ def run():
 
             # Step 5b: Filter already-seen addresses (cross-pipeline dedup)
             logger.info("Step 5b: Filtering already-seen property addresses")
-            seen_addresses = get_existing_addresses()
+            seen_addresses = get_existing_addresses(**MAIL)
             before = len(new_listings)
             new_listings = [
                 l for l in new_listings
@@ -221,9 +226,9 @@ def run():
         finally:
             browser.close()
 
-    # Step 8: Append to Google Sheet (same tab as foreclosure)
+    # Step 8: Append to the mail sheet (shared with foreclosures)
     logger.info("Step 8: Appending rows to Google Sheet")
-    success = append_rows(enriched_rows)
+    success = append_rows(enriched_rows, **MAIL)
 
     # Step 9: Update seen_tax_deed_cases.json
     if success:

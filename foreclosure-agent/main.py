@@ -46,33 +46,38 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Every sheet call targets the mail sheet explicitly (see config.MAIL_SHEET_ID).
+MAIL = {"tab_name": config.MAIL_SHEET_TAB, "sheet_id": config.MAIL_SHEET_ID}
+
 
 # ---------------------------------------------------------------------------
 # Row builder
 # ---------------------------------------------------------------------------
 
 def build_row(listing: dict, owner: dict) -> list:
-    """Assemble a flat list matching SHEET_COLUMNS order."""
+    """Assemble a flat list matching config.MAIL_COLUMNS order."""
     first = owner.get("owner_first", "")
     last = owner.get("owner_last", "")
     # If first name is blank but last name has a value, promote last -> first
     if not first and last:
         first, last = last, ""
     return [
-        "",                                        # Sent (blank until mailed)
-        "",                                        # Company
+        "",                                         # Sent (blank until mailed)
+        "Foreclosure",
         first,
         last,
         owner.get("mailing_address", ""),
         owner.get("mailing_city", ""),
         owner.get("mailing_state", ""),
         owner.get("mailing_zip", ""),
-        listing.get("property_address", ""),       # Address
-        listing.get("property_city", ""),          # City
-        listing.get("property_state", "FL"),       # State
-        listing.get("property_zip", ""),           # Zip
-        "",                                        # Value (reserved)
-        listing.get("case_number", ""),            # Case Number (dedup key)
+        listing.get("property_address", ""),        # Address
+        listing.get("property_city", ""),           # City
+        listing.get("property_state", "FL"),        # State
+        listing.get("property_zip", ""),            # Zip
+        "",                                        # Value
+        listing.get("auction_date", ""),            # Auction Date
+        listing.get("case_number", ""),             # Case Number (dedup key)
+        date.today().strftime("%m/%d/%Y"),          # Date Added
     ]
 
 
@@ -88,14 +93,14 @@ def run():
     # Step 1: Ensure sheet headers
     logger.info("Step 1: Ensuring Google Sheet header row")
     try:
-        ensure_header_row()
+        ensure_header_row(**MAIL, columns=config.MAIL_COLUMNS)
     except Exception as e:
         logger.error(f"Sheet header setup failed: {e}")
         sys.exit(1)
 
     # Step 2: Load dedup state (local JSON + sheet as fallback)
     logger.info("Step 2: Loading dedup state")
-    seen = load_seen_cases() | get_existing_case_numbers()
+    seen = load_seen_cases() | get_existing_case_numbers(**MAIL, col=config.MAIL_CASE_COL)
     logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
     with sync_playwright() as pw:
@@ -120,7 +125,7 @@ def run():
 
             # Step 4a: Filter already-seen addresses (cross-pipeline dedup)
             logger.info("Step 4a: Filtering already-seen property addresses")
-            seen_addresses = get_existing_addresses()
+            seen_addresses = get_existing_addresses(**MAIL)
             before = len(new_listings)
             new_listings = [
                 l for l in new_listings
@@ -192,7 +197,7 @@ def run():
 
     # Step 6: Append to Google Sheet
     logger.info("Step 6: Appending rows to Google Sheet")
-    success = append_rows(enriched_rows)
+    success = append_rows(enriched_rows, **MAIL)
 
     # Step 7: Update seen_cases.json (only on successful write)
     if success:
