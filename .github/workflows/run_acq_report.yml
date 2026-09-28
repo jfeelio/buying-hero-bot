@@ -1,0 +1,63 @@
+name: Weekly Acquisitions Report
+
+# Sunday 8 PM ET (00:00 UTC Monday; 7 PM during EST). Pulls REsimpli, writes the
+# report, prints it to PDF and emails it through the n8n mailer (workflow
+# acqreport0001 on automations.buyinghero.com).
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      week_start:
+        description: 'Monday of the week to report (YYYY-MM-DD). Blank = the week just ended.'
+        required: false
+
+concurrency:
+  group: acq-report
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # This repo is PUBLIC: never upload the report, metrics or raw pull as
+    # artifacts (they carry seller names and addresses). Email is the only output.
+    env:
+      TZ: America/New_York
+      RESIMPLI_KEY: ${{ secrets.RESIMPLI_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ACQ_REPORT_WEBHOOK_URL: ${{ secrets.ACQ_REPORT_WEBHOOK_URL }}
+      ACQ_REPORT_WEBHOOK_KEY: ${{ secrets.ACQ_REPORT_WEBHOOK_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: weekly-acq-report/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r weekly-acq-report/requirements.txt
+          python -m playwright install chromium --with-deps
+
+      - name: Build and send the report
+        working-directory: weekly-acq-report
+        run: |
+          if [ -n "${{ github.event.inputs.week_start }}" ]; then
+            python run.py --week-start "${{ github.event.inputs.week_start }}"
+          else
+            python run.py
+          fi
+
+      - name: Email Jorge if the run failed
+        if: failure()
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sS -X POST "$ACQ_REPORT_WEBHOOK_URL" \
+            -H "Content-Type: application/json" -H "X-Report-Key: $ACQ_REPORT_WEBHOOK_KEY" \
+            -d "{\"kind\":\"failure\",\"subject\":\"FAILED: weekly acquisitions report\",\"html\":\"<p>The weekly acquisitions report did not run. Log: <a href='$RUN_URL'>$RUN_URL</a></p><p>Re-run it from the Actions tab (Weekly Acquisitions Report, Run workflow).</p>\"}"

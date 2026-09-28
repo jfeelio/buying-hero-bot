@@ -1,0 +1,213 @@
+{
+  "id": "acqreport0001",
+  "name": "11 - Weekly Acquisitions Report Mailer",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acq-report",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "e0000000-0000-4000-8000-000000000001",
+      "name": "Report webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "e0000000-0000-4000-8000-000000000001",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "acqrpthdr0001",
+          "name": "Acq Report Webhook Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "\nconst b = $input.first().json.body || {};\nif (!['report', 'failure'].includes(b.kind)) throw new Error('unknown kind: ' + b.kind);\nif (b.kind === 'report' && !b.pdf_base64) throw new Error('report without pdf_base64');\nreturn [{ json: {\n  kind: b.kind,\n  subject: String(b.subject || 'Acquisitions report').slice(0, 200),\n  html: String(b.html || ''),\n  filename: String(b.filename || 'Acquisitions Report.pdf').replace(/[^w .()-]/g, ''),\n  pdf_base64: b.pdf_base64 || '',\n} }];"
+      },
+      "id": "e0000000-0000-4000-8000-000000000002",
+      "name": "Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.kind }}",
+              "rightValue": "report",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e0000000-0000-4000-8000-000000000003",
+      "name": "Has PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "pdf_base64",
+        "binaryPropertyName": "data",
+        "options": {
+          "fileName": "={{ $json.filename }}",
+          "mimeType": "application/pdf"
+        }
+      },
+      "id": "e0000000-0000-4000-8000-000000000004",
+      "name": "PDF to file",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "jorge@buyinghero.com",
+        "subject": "={{ $('Validate').item.json.subject }}",
+        "emailType": "html",
+        "message": "={{ $('Validate').item.json.html }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          },
+          "appendAttribution": false
+        }
+      },
+      "id": "e0000000-0000-4000-8000-000000000005",
+      "name": "Email report",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        -100
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailbh000001",
+          "name": "Gmail - Buying Hero"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "jorge@buyinghero.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e0000000-0000-4000-8000-000000000006",
+      "name": "Email failure",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        660,
+        100
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailbh000001",
+          "name": "Gmail - Buying Hero"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Report webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Has PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has PDF?": {
+      "main": [
+        [
+          {
+            "node": "PDF to file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF to file": {
+      "main": [
+        [
+          {
+            "node": "Email report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "America/New_York",
+    "executionOrder": "v1"
+  },
+  "active": false
+}
