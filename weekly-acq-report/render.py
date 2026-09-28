@@ -27,7 +27,7 @@ section:first-of-type{border-top:none;padding-top:0}
 p{margin:0 0 12px;max-width:70ch}
 strong{font-weight:600}
 .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-weight:500}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin:20px 0 0}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin:20px 0 0}
 .stat{background:var(--surface);padding:12px 14px}
 .stat .lab{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
 .stat .val{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
@@ -117,6 +117,7 @@ def page(m, narr, author):
     trend = {w["week"]: w for w in m["trend"]}
     prev = trend.get("prior", {})
     fu_pct = t["followup_touched"] / t["followup_leads"] if t["followup_leads"] else 1
+    fz = {f["week"]: f for f in m["funnel"]}
 
     def tile(lab, val, sub, cls=""):
         return '<div class="stat %s"><div class="lab">%s</div><div class="val">%s</div><div class="sub">%s</div></div>' % (cls, lab, val, sub)
@@ -128,6 +129,8 @@ def page(m, narr, author):
              "good" if t["kept"] else "flag"),
         tile("Offers made", t["offers"], "%s last week" % prev.get("offers", "–"),
              "flag" if prev.get("offers") and t["offers"] < prev["offers"] else "good"),
+        tile("Qualified", fz["this"]["qualified"], "%d last week" % fz["prior"]["qualified"],
+             "flag" if fz["this"]["qualified"] < fz["prior"]["qualified"] else "good"),
         tile("New leads", t["new_leads"], " · ".join(str(trend[k]["new_leads"]) for k in ("prior-2", "prior") if k in trend) + " prior weeks",
              "good"),
         tile("Follow-up touched", "%d<small>/%d</small>" % (t["followup_touched"], t["followup_leads"]),
@@ -144,6 +147,49 @@ def page(m, narr, author):
     trend_tbl = table(["Week", "New leads", "Appointments", "Kept", "Offers"], trend_rows, numeric=(1, 2, 3, 4))
     created_days = ", ".join("%s %d" % d for d in t["appointments_created_days"]) or "none"
     lead = "".join("<p>%s</p>" % md(p) for p in narr.get("lead_body", []))
+
+    # --- qualified funnel
+    def conv(a, b, ratio=False):
+        if not b:
+            return '<span class="dim">–</span>'
+        return '<span class="dim">%s</span>' % (("%.1f×" % (a / b)) if ratio else pct(a, b))
+    P, T = fz["prior"], fz["this"]
+    stages = [("New leads", "new_leads", None, "", False),
+              ("Qualified", "qualified", "new_leads", "of new leads", False),
+              ("Appointments set", "appointments_set", "qualified", "per qualified lead (older leads book too)", True),
+              ("Appointments held", "appointments_held", None, "", False),
+              ("Kept", "kept", "appointments_held", "of held", False),
+              ("Offers made", "offers", "kept", "per kept appointment", True)]
+    fun_rows = []
+    for label, k, base, note, ratio in stages:
+        fun_rows.append([e(label), P[k], conv(P[k], P[base], ratio) if base else "", T[k],
+                         conv(T[k], T[base], ratio) if base else "", '<span class="dim">%s</span>' % note])
+    fun_tbl = table(["Stage", P["label"], "Rate", T["label"], "Rate", ""], fun_rows, numeric=(1, 2, 3, 4))
+
+    def cohort_html(c, title):
+        if not c["n"]:
+            return "<p class='dim'>%s: none.</p>" % title
+        yes = lambda b: '<span class="up">Yes</span>' if b else '<span class="dim">No</span>'
+        rows = [[e(r["qualified"]), e(r["by"] or "?"), e(r["short"] or "no address"), e(r["status"]),
+                 yes(r["appointment"]), yes(r["kept"]), yes(r["offer"])] for r in c["leads"]]
+        head = "<p><strong>%s:</strong> %d qualified &rarr; %d got an appointment &rarr; %d kept &rarr; %d offer%s. Qualified by %s.</p>" % (
+            title, c["n"], c["appointment"], c["kept"], c["offer"], "" if c["offer"] == 1 else "s",
+            ", ".join("%s %d" % x for x in c["by"]))
+        return head + table(["Qualified", "By", "Property", "Status now", "Appt", "Kept", "Offer"], rows)
+    coh = m["qualified_cohorts"]
+    cohort_block = cohort_html(coh["prior"], "Last week’s qualified leads, followed to today") +         cohort_html(coh["this"], "This week’s qualified leads so far")
+
+    aq = m["appointment_quality"]
+    def kv(b, k):
+        return "%d <span class='dim'>(%s)</span>" % (b[k], pct(b[k], b["held"]))
+    kept_rows = [[lab, kv(aq["prior"], k), kv(aq["this"], k)] for lab, k in
+                 (("Kept", "kept"), ("Cancelled", "cancelled"), ("No-show", "no_show"), ("No outcome recorded", "no_outcome"))]
+    kept_tbl = table(["Appointments held", P["label"], T["label"]], kept_rows,
+                     total=["Total held", aq["prior"]["held"], aq["this"]["held"]], numeric=(1, 2))
+    miss_rows = [[lab, kv(aq["prior"], k), kv(aq["this"], k)] for lab, k in
+                 (("Outcome missing", "missing_outcome"), ("Format missing (phone / in person)", "missing_format"),
+                  ("Qualification missing", "missing_qualification"), ("Any key field missing", "missing_any"))]
+    miss_tbl = table(["Key field", P["label"], T["label"]], miss_rows, numeric=(1, 2))
 
     # --- appointments
     appt_rows = []
@@ -275,6 +321,10 @@ def page(m, narr, author):
   <div class="stats">%(tiles)s</div>
 </header>
 <section><p class="kicker">The headline</p><h2>%(lead_title)s</h2>%(trend)s%(lead)s</section>
+<section><p class="kicker">Qualified-lead funnel</p><h2>From qualified lead to offer</h2>
+<p class="dim">Qualified means REsimpli&rsquo;s own flag, set automatically when a lead moves from New Leads to Discovery Done.</p>%(fun)s%(coh)s
+<h3 class="sub">Kept vs not kept</h3>%(kept_tbl)s
+<h3 class="sub">Appointments missing key fields</h3>%(miss_tbl)s%(c_fun)s</section>
 <section><p class="kicker">Appointments</p><h2>%(n_appt)d appointments, %(kept)d kept, %(noout)d not recorded</h2>%(appt)s%(fmt)s%(c_appt)s</section>
 <section><p class="kicker">Offers</p><h2>%(n_off)d offer%(off_s)s made</h2>%(off)s%(c_off)s</section>
 <section><p class="kicker">Data hygiene</p><h2>The gaps, in one table</h2><p>Each row hides a different number. None takes more than a minute per record to fix.</p>%(hy)s%(c_hy)s</section>
@@ -298,7 +348,8 @@ def page(m, narr, author):
         "n_new": t["new_leads"], "src": src_tbl, "method": e(method), "ppc": ppc_line, "speed": speed_tbl,
         "miss": miss_html, "c_in": callouts(narr, "intake"), "fu_n": t["followup_leads"], "fu_t": t["followup_touched"],
         "fu": fu_tbl, "c_fu": callouts(narr, "followup"), "acts": acts, "ppl": ppl_tbl, "days": day_tbl, "lm": lm_tbl,
-        "c_calls": callouts(narr, "calls"), "gen": e(m["generated"]), "scope": e(m["scope_note"]),
+        "c_calls": callouts(narr, "calls"), "fun": fun_tbl, "coh": cohort_block, "kept_tbl": kept_tbl,
+        "miss_tbl": miss_tbl, "c_fun": callouts(narr, "funnel"), "gen": e(m["generated"]), "scope": e(m["scope_note"]),
         "author": "Claude" if author.startswith("claude") else "rule-based fallback (%s)" % e(author),
     }
 
@@ -315,10 +366,11 @@ def email_body(m, narr):
 <p style="color:#57635D">%s</p>
 <table style="border-collapse:collapse;margin:12px 0;font-size:13px">
 <tr><td style="padding:3px 14px 3px 0">Appointments</td><td><strong>%d</strong> (%d kept, %d no outcome)</td></tr>
+<tr><td style="padding:3px 14px 3px 0">Qualified leads</td><td><strong>%d</strong> (last week %d)</td></tr>
 <tr><td style="padding:3px 14px 3px 0">Offers made</td><td><strong>%d</strong></td></tr>
 <tr><td style="padding:3px 14px 3px 0">New leads</td><td><strong>%d</strong></td></tr>
 <tr><td style="padding:3px 14px 3px 0">Follow-up touched</td><td><strong>%d of %d</strong></td></tr></table>
 <p style="margin:16px 0 6px"><strong>Where to focus</strong></p><ol style="padding-left:20px;margin:0">%s</ol>
 <p style="color:#7C8781;font-size:12px;margin-top:18px">Full report attached as a PDF. Forward it to the team as-is.</p></div>""" % (
         s, e(m["week"]["label"]), md(narr.get("standfirst")), t["appointments"], t["kept"], t["no_outcome"],
-        t["offers"], t["new_leads"], t["followup_touched"], t["followup_leads"], acts)
+        m["funnel"][-1]["qualified"], m["funnel"][0]["qualified"], t["offers"], t["new_leads"], t["followup_touched"], t["followup_leads"], acts)

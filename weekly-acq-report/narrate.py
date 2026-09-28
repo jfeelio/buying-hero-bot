@@ -37,6 +37,11 @@ Rules:
   emoji. Use **bold** sparingly for the key figure in a paragraph; no other markup.
 - Never speculate about anyone's motives or imply wrongdoing. Stick to what the data
   shows and what needs confirming.
+- "Qualified" is REsimpli's own flag: an automation marks a lead qualified when someone
+  moves it from New Leads to Discovery Done. The funnel (new leads -> qualified ->
+  appointments set -> held -> kept -> offers) and last week's qualified cohort followed
+  to today are the core of the report; comment on the weakest step. Appointments set
+  can exceed qualified leads because older leads also get appointments.
 - Market: Miami-Dade and Broward are in market. Anything else is out of market. An
   offer or lead flagged likely_mailing_address comes from a Miami mail campaign but
   carries an out-of-state address, so the address on file is probably the owner's
@@ -55,7 +60,7 @@ SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "section": {"type": "string", "enum": ["appointments", "offers", "hygiene", "intake", "followup", "calls"]},
+                    "section": {"type": "string", "enum": ["funnel", "appointments", "offers", "hygiene", "intake", "followup", "calls"]},
                     "tone": {"type": "string", "enum": ["good", "warn", "bad"]},
                     "title": {"type": "string"},
                     "body": {"type": "string"},

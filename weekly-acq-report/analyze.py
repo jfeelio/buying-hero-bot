@@ -310,6 +310,77 @@ def analyze(raw, week_start, now=None):
 
     out_of_market_appts = [a for a in appts if a["lead"]["market"] == "Out of market"]
 
+    # ---------------------------------------------------------------- qualified funnel
+    # "Qualified" = REsimpli's own flag. An automation marks the lead qualified
+    # when someone moves it New Leads -> Discovery Done; the log gets a
+    # "Lead Marked Qualified" row (by the account owner) right after an
+    # 'Automation "Mark Qualified"' row carrying the person who moved it.
+    def qualified_between(a, b):
+        out = {}
+        for lid, rows in acts.items():
+            rs = sorted(rows, key=lambda r: r["createdAt"])
+            state, when, who = None, None, None
+            for r in rs:
+                c = clean(r.get("comment"))
+                if c.startswith('Automation "Mark Qualified" automatically assigned'):
+                    who = person(r.get("createdByName"))
+                elif c == "Lead Marked Qualified" and a <= r["createdAt"] < b and state != "q":
+                    state, when = "q", r["createdAt"]
+                    who = who or person(r.get("createdByName"))
+                elif c == "Lead Marked Unqualified" and state == "q" and r["createdAt"] < b:
+                    state = "u"
+            if state == "q":
+                out[lid] = {"ms": when, "by": who}
+        return out
+
+    def appt_after(lid, ms):
+        return [x for x in raw["appointments"] if x.get("subModuleId") == lid
+                and max(x.get("createdAt") or 0, x.get("startDateTimeInTimeStamp") or 0) >= ms - DAY]
+
+    def offer_after(lid, ms):
+        return any(r["createdAt"] >= ms and re.search(
+            r"offer created successfully|to (Active|Cold) Leads \(Offers? Made\)", clean(r.get("comment")), re.I)
+            for r in acts.get(lid, []))
+
+    def cohort(a, b):
+        q = qualified_between(a, b)
+        rows = []
+        for lid, v in sorted(q.items(), key=lambda x: x[1]["ms"]):
+            ap = appt_after(lid, v["ms"])
+            rows.append({"lead_id": lid, "qualified": et(v["ms"]).strftime("%a %d %b"), "by": v["by"],
+                         **lead_view(lid),
+                         "appointment": bool(ap),
+                         "kept": any(x.get("appointmentStatus") == 1 for x in ap),
+                         "offer": offer_after(lid, v["ms"])})
+        return {"n": len(rows), "appointment": sum(r["appointment"] for r in rows),
+                "kept": sum(r["kept"] for r in rows), "offer": sum(r["offer"] for r in rows),
+                "by": collections.Counter(r["by"] or "Unknown" for r in rows).most_common(), "leads": rows}
+
+    def appt_block(a, b):
+        """Kept vs not kept and key-field completeness for appointments starting in [a, b)."""
+        xs = [x for x in appts_between(a, b) if x["startDateTimeInTimeStamp"] <= now_ms]
+        st = collections.Counter(OUTCOME.get(x.get("appointmentStatus"), "No outcome") for x in xs)
+        miss_out = [x for x in xs if x.get("appointmentStatus") not in (1, 2, 3)]
+        miss_fmt = [x for x in xs if x.get("appointmentSubType") not in (0, 1)]
+        miss_q = [x for x in xs if x.get("qualification") in (-1, None)]
+        any_miss = [x for x in xs if x in miss_out or x in miss_fmt or x in miss_q]
+        return {"held": len(xs), "kept": st.get("Kept", 0), "cancelled": st.get("Cancelled", 0),
+                "no_show": st.get("No Show", 0), "no_outcome": st.get("No outcome", 0),
+                "missing_outcome": len(miss_out), "missing_format": len(miss_fmt),
+                "missing_qualification": len(miss_q), "missing_any": len(any_miss)}
+
+    def created_between(a, b):
+        return sum(1 for x in raw["appointments"] if a <= (x.get("createdAt") or 0) < b)
+
+    q_this, q_prev = cohort(ws, we), cohort(pws, ws)
+    ab_this, ab_prev = appt_block(ws, we), appt_block(pws, ws)
+    funnel = []
+    for key, a, b, q, ab, offs in (("prior", pws, ws, q_prev, ab_prev, prev_offers),
+                                   ("this", ws, we, q_this, ab_this, offers)):
+        funnel.append({"week": key, "label": _label(a), "new_leads": len(new_between(a, b)),
+                       "qualified": q["n"], "appointments_set": created_between(a, b),
+                       "appointments_held": ab["held"], "kept": ab["kept"], "offers": len(offs)})
+
     return {
         "week": {"start": et(ws).strftime("%a %d %b %Y"), "end": et(we - 1).strftime("%a %d %b %Y"),
                  "label": _label(ws) + et(we - 1).strftime(" %Y"),
@@ -351,6 +422,9 @@ def analyze(raw, week_start, now=None):
         "speed": speed, "no_call": no_call, "real_misses": real_misses, "slow": slow,
         "followup": followup, "calls": calls, "status_moves": moves.most_common(),
         "hygiene": hygiene,
+        "funnel": funnel,
+        "qualified_cohorts": {"prior": q_prev, "this": q_this},
+        "appointment_quality": {"prior": ab_prev, "this": ab_this},
         "scope_note": "Active + Cold leads only (%d leads); Dead leads excluded except appointment leads."
                       % sum(1 for l in leads.values() if l.get("mainStatusId") in scope_ids),
     }

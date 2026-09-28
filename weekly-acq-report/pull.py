@@ -1,9 +1,9 @@
 """Pull everything the weekly acquisitions report needs from REsimpli.
 
 Scope is Active + Cold pipelines only (Jorge, 27 Sep 2026: dead leads carry no
-decision value and doubled the run time). Appointment leads are always
-included, even if they have since gone Dead, because the appointment itself
-fell in the week.
+decision value and doubled the run time). Two small exceptions, even if they
+have since gone Dead: leads whose appointment fell in the window, and leads
+created in the window (so the qualified-lead funnel stays honest).
 
 REsimpli Open API facts this relies on (see memory reference_resimpli_open_api):
   * every endpoint is POST, auth is the raw key with no "Bearer"
@@ -138,8 +138,12 @@ def pull(since_ms, appt_window):
     appt_leads = {a.get("subModuleId") for a in appts
                   if a.get("subModuleId")
                   and appt_window[0] <= (a.get("startDateTimeInTimeStamp") or 0) < appt_window[1]}
-    sweep = sorted(in_scope | appt_leads)
-    log("sweeping %d leads (%d Active/Cold + appointment leads)" % (len(sweep), len(in_scope)))
+    # Leads created in the window, even if already Dead: a lead qualified on
+    # Monday and killed on Tuesday must still show in the qualified funnel.
+    # ~10 extra leads, so this barely touches the "no dead leads" run time.
+    fresh = {l["_id"] for l in leads if (l.get("createdAt") or 0) >= since_ms}
+    sweep = sorted(in_scope | appt_leads | fresh)
+    log("sweeping %d leads (%d Active/Cold + appointment + new-this-window leads)" % (len(sweep), len(in_scope)))
 
     acts = {}
     for i, lid in enumerate(sweep, 1):
