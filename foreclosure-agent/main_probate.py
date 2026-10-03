@@ -4,14 +4,13 @@ Probate Agent — Daily Pipeline
 Run order:
   1. Ensure Probate sheet tab has header row
   2. Load seen probate cases (seen_probate_cases.json)
-  3. Open Playwright browser
-  4. Scrape new Formal Administration filings from Miami-Dade OCS
-  5. Filter out already-seen case numbers
-  6. For each new case:
+  3. Pull new Formal + Summary Administration filings from the Clerk OCS API
+  4. Filter out already-seen case numbers
+  5. For each new case:
        a. Look up decedent's property via MDPA owner name search
        b. Skip if no Miami-Dade property found or no mailing address
-  7. Append enriched rows to Probate sheet tab
-  8. Persist updated seen_probate_cases.json
+  6. Append enriched rows to Probate sheet tab
+  7. Persist updated seen_probate_cases.json
 """
 
 import json
@@ -20,12 +19,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
-
 import config
 from scrapers.mdpa import get_property_by_owner_name
 from scrapers.probate import get_new_probate_cases
-from scrapers.zillow import launch_browser
 from sheets import append_rows, ensure_header_row, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
@@ -125,60 +121,55 @@ def run():
     seen = load_seen() | get_existing_case_numbers(tab_name=tab, sheet_id=sheet_id)
     logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
-    with sync_playwright() as pw:
-        browser, context, page = launch_browser(pw)
-        try:
-            # Step 3: Scrape OCS
-            logger.info("Step 3: Scraping OCS probate filings")
-            try:
-                all_cases = get_new_probate_cases(page, days_back=days_back)
-            except Exception as e:
-                logger.error(f"Probate scraper failed: {e}")
-                sys.exit(1)
-            logger.info(f"  Scraped {len(all_cases)} unique case(s)")
+    # Step 3: Pull OCS filings
+    logger.info("Step 3: Pulling OCS probate filings")
+    try:
+        all_cases = get_new_probate_cases(days_back=days_back)
+    except Exception as e:
+        logger.error(f"Probate scraper failed: {e}")
+        sys.exit(1)
+    logger.info(f"  Pulled {len(all_cases)} unique case(s)")
 
-            # Step 4: Filter already-seen
-            logger.info("Step 4: Filtering already-seen cases")
-            new_cases = [c for c in all_cases if c["case_number"] not in seen]
-            logger.info(f"  {len(new_cases)} new case(s) after dedup")
+    # Step 4: Filter already-seen
+    logger.info("Step 4: Filtering already-seen cases")
+    new_cases = [c for c in all_cases if c["case_number"] not in seen]
+    logger.info(f"  {len(new_cases)} new case(s) after dedup")
 
-            if not new_cases:
-                logger.info("No new probate cases found. Pipeline complete.")
-                return
+    if not new_cases:
+        logger.info("No new probate cases found. Pipeline complete.")
+        return
 
-            # Step 5: Enrich via MDPA owner name lookup
-            logger.info("Step 5: Enriching with MDPA property lookup")
-            enriched_rows = []
-            new_case_numbers = set()
+    # Step 5: Enrich via MDPA owner name lookup
+    logger.info("Step 5: Enriching with MDPA property lookup")
+    enriched_rows = []
+    new_case_numbers = set()
 
-            for i, case in enumerate(new_cases, start=1):
-                case_num = case["case_number"]
-                first = case["decedent_first"]
-                last = case["decedent_last"]
-                logger.info(
-                    f"  [{i}/{len(new_cases)}] {case_num}: {case['case_style']}"
-                )
+    for i, case in enumerate(new_cases, start=1):
+        case_num = case["case_number"]
+        first = case["decedent_first"]
+        last = case["decedent_last"]
+        logger.info(
+            f"  [{i}/{len(new_cases)}] {case_num} ({case['case_type']}, {case['case_status']}): "
+            f"{case['case_style']}"
+        )
 
-                mdpa = get_property_by_owner_name(last, first)
-                new_case_numbers.add(case_num)
+        mdpa = get_property_by_owner_name(last, first)
+        new_case_numbers.add(case_num)
 
-                if not mdpa.get("mailing_address", "").strip():
-                    logger.info(f"    Skipping — no mailing address found in MDPA")
-                    continue
+        if not mdpa.get("mailing_address", "").strip():
+            logger.info(f"    Skipping — no mailing address found in MDPA")
+            continue
 
-                if not mdpa.get("property_address", "").strip():
-                    logger.info(f"    Skipping — no property address found in MDPA")
-                    continue
+        if not mdpa.get("property_address", "").strip():
+            logger.info(f"    Skipping — no property address found in MDPA")
+            continue
 
-                row = build_row(case, mdpa)
-                enriched_rows.append(row)
-                logger.info(
-                    f"    -> {mdpa['property_address']}, {mdpa['property_city']} | "
-                    f"mail: {mdpa['mailing_address']}"
-                )
-
-        finally:
-            browser.close()
+        row = build_row(case, mdpa)
+        enriched_rows.append(row)
+        logger.info(
+            f"    -> {mdpa['property_address']}, {mdpa['property_city']} | "
+            f"mail: {mdpa['mailing_address']}"
+        )
 
     # Step 6: Append to sheet
     logger.info("Step 6: Appending rows to Probate sheet tab")

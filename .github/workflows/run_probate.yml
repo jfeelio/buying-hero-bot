@@ -38,9 +38,6 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r foreclosure-agent/requirements.txt
 
-      - name: Install Playwright browser
-        run: python -m playwright install chromium --with-deps
-
       - name: Write credentials & .env
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > foreclosure-agent/credentials.json
@@ -50,13 +47,15 @@ jobs:
           PROBATE_GOOGLE_SHEET_ID=${{ secrets.PROBATE_GOOGLE_SHEET_ID }}
           PROBATE_SHEET_TAB_NAME=${{ secrets.PROBATE_SHEET_TAB_NAME }}
           PROBATE_DAYS_BACK=${{ secrets.PROBATE_DAYS_BACK }}
+          CLERK_USERNAME=${{ secrets.CLERK_USERNAME }}
+          CLERK_PASSWORD=${{ secrets.CLERK_PASSWORD }}
           ENVEOF
 
       - name: Run probate pipeline
         id: pipeline
         run: |
           set +e
-          xvfb-run --auto-servernum python main_probate.py 2>&1 | tee /tmp/output.txt
+          python main_probate.py 2>&1 | tee /tmp/output.txt
           EXIT_CODE=${PIPESTATUS[0]}
           ROWS=$(grep -oP 'Probate pipeline complete\. \K\d+(?= row)' /tmp/output.txt | tail -1)
           ROWS=${ROWS:-0}

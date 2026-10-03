@@ -146,7 +146,10 @@ def get_property_by_owner_name(last_name: str, first_name: str = "") -> dict:
     if not last_name:
         return EMPTY_RESULT.copy()
 
-    search_term = f"{last_name} {first_name}".strip().upper()
+    # MDPA lists middle names as initials ("DORIS D DIMLER"), so a full middle
+    # name ("DIMLER DORIS DEETS") returns nothing. Search last + first word only.
+    first_word = first_name.split()[0] if first_name and first_name.split() else ""
+    search_term = f"{last_name} {first_word}".strip().upper()
 
     try:
         resp = requests.get(
@@ -180,27 +183,27 @@ def get_property_by_owner_name(last_name: str, first_name: str = "") -> dict:
         and "AC" in (i.get("Status") or "").upper()
     ] or infos
 
-    # Score by name match quality — require whole-word last name match
+    # Require whole-word last AND first name on the same owner line (Owner1 or
+    # Owner2, where a deceased spouse often sits). Last-name-only matches mailed
+    # living strangers who share a surname with the decedent.
     import re as _re
     ln_upper = last_name.upper()
-    fn_upper = first_name.upper() if first_name else ""
+    fn_token = _re.sub(r"[^A-Z\-']", "", (first_name or "").upper().split(" ")[0]) if first_name else ""
     ln_pattern = _re.compile(r"\b" + _re.escape(ln_upper) + r"\b")
+    fn_pattern = _re.compile(r"\b" + _re.escape(fn_token) + r"\b") if fn_token else None
 
-    def score(item):
-        owner1 = (item.get("Owner1") or "").upper()
-        s = 0
-        if ln_pattern.search(owner1):
-            s += 2
-        if fn_upper and fn_upper in owner1:
-            s += 1
-        return s
+    def matches(item):
+        for field in ("Owner1", "Owner2"):
+            owner = (item.get(field) or "").upper()
+            if ln_pattern.search(owner) and (fn_pattern is None or fn_pattern.search(owner)):
+                return True
+        return False
 
-    scored = [(score(i), i) for i in active]
-    best_score, best = max(scored, key=lambda x: x[0])
-    # Require at least a last-name word match; skip if no real match
-    if best_score == 0:
-        logger.info(f"MDPA: no word-boundary match for last name '{ln_upper}'")
+    candidates = [i for i in active if matches(i)]
+    if not candidates:
+        logger.info(f"MDPA: no owner matching first+last name '{fn_token} {ln_upper}'")
         return EMPTY_RESULT.copy()
+    best = candidates[0]
     strap = best.get("Strap", "")
     if not strap:
         return EMPTY_RESULT.copy()

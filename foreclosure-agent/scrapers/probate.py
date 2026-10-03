@@ -1,31 +1,53 @@
 """
-Scrapes new probate (Formal Administration) case filings from Miami-Dade
-County OCS (Online Case System).
+Scrapes new probate case filings (Formal + Summary Administration) from the
+Miami-Dade Clerk's OCS (Online Case System) search API.
 
 Strategy:
-  - Searches by Party Name using vowel letters as wildcards (covers ~100% of names)
-  - Filters by case type: FORMAL ADMINISTRATION
-  - Date range: last N days (configurable)
-  - Deduplicates by local case number
+  - Logs in with the Clerk account first. Anonymous searches hit reCAPTCHA and
+    come back empty or "Something Went Wrong".
+  - Party Name search matches the START of any party's last name (decedent,
+    petitioner, or attorney), so every letter a-z is searched.
+  - Case types: FORMAL ADMINISTRATION and SUMMARY ADMINISTRATION $1000 AND MORE.
+    The other summary codes (25106, 25640) had zero filings in testing.
+  - Keeps CLOSED cases. A summary case often closes within weeks, once the
+    order hands title to the heirs, and those heirs are the best leads.
+  - Date range: last N days (configurable). Deduplicates by local case number.
 
 Returns per case:
-  case_number, case_style, decedent_first, decedent_last, filing_date
+  case_number, case_style, case_type, case_status, decedent_first,
+  decedent_last, filing_date
 """
 
 import logging
+import os
 import re
+import string
 import time
 from datetime import date, timedelta
+from pathlib import Path
 
-from bs4 import BeautifulSoup
+import requests
 
 logger = logging.getLogger(__name__)
 
-OCS_URL = "https://www2.miamidadeclerk.gov/ocs/"
-FORMAL_ADMIN_CASE_TYPE = "25043"
+LOGIN_PAGE = "https://www2.miamidadeclerk.gov/UserManagementServices/?hs=ocs"
+LOGIN_POST = "https://www2.miamidadeclerk.gov/UserManagementServices/Home/LoginOrRegister"
+OCS_API = "https://www2.miamidadeclerk.gov/ocs/api"
 
-# Vowels cover virtually every name; 4 searches per run is sufficient
-SEARCH_LETTERS = ["a", "e", "i", "o"]
+CASE_TYPES = {
+    "25043": "FORMAL ADMINISTRATION",
+    "25565": "SUMMARY ADMINISTRATION $1000 AND MORE",
+}
+
+SEARCH_LETTERS = list(string.ascii_lowercase)
+
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0 Safari/537.36"
+    ),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -38,7 +60,7 @@ def _parse_decedent_name(case_style: str) -> tuple[str, str]:
 
     Formats seen:
       "IN RE: Alayon, Justina"              -> ("JUSTINA", "ALAYON")
-      "IN RE: ALMEIDA, FRANCISCO"           -> ("FRANCISCO", "ALMEIDA")
+      "In RE:DIMLER, DORIS DEETS"           -> ("DORIS DEETS", "DIMLER")
       "IN RE: Bertha Suarez, Bertha Lilia Suarez a/k/a"
                                             -> ("BERTHA", "SUAREZ")
       "IN RE: CLANCY, PETER J."             -> ("PETER J.", "CLANCY")
@@ -65,92 +87,111 @@ def _parse_decedent_name(case_style: str) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# OCS page interaction
+# Clerk session
 # ---------------------------------------------------------------------------
 
-def _navigate_and_search(playwright_page, letter: str, date_from: date, date_to: date) -> str:
-    """
-    Navigate to OCS, fill the Party Name search form, and return page HTML
-    after results have loaded.
-    """
-    playwright_page.goto(OCS_URL, timeout=30000, wait_until="networkidle")
-    time.sleep(3)
-
-    playwright_page.get_by_text("Party Name").click()
-    time.sleep(3)
-
-    playwright_page.fill("#partyLastName", letter)
-    playwright_page.select_option("#caseType", value=FORMAL_ADMIN_CASE_TYPE)
-    playwright_page.fill("#filingDateFrom", date_from.strftime("%Y-%m-%d"))
-    playwright_page.fill("#filingDateTo", date_to.strftime("%Y-%m-%d"))
-    playwright_page.click('button:has-text("SEARCH")')
-
-    # Wait for the SPA results to render
-    time.sleep(22)
-
-    return playwright_page.content()
+def _clerk_credentials() -> tuple[str, str]:
+    """CLERK_USERNAME / CLERK_PASSWORD env vars, else ~/.clerk_creds (line 1 user, line 2 password)."""
+    user = os.environ.get("CLERK_USERNAME", "")
+    pw = os.environ.get("CLERK_PASSWORD", "")
+    if user and pw:
+        return user, pw
+    creds = Path.home() / ".clerk_creds"
+    if creds.exists():
+        lines = creds.read_text(encoding="utf-8").splitlines()
+        if len(lines) >= 2:
+            return lines[0].strip(), lines[1].strip()
+    raise RuntimeError("Clerk credentials missing: set CLERK_USERNAME/CLERK_PASSWORD or ~/.clerk_creds")
 
 
-# ---------------------------------------------------------------------------
-# HTML parsing
-# ---------------------------------------------------------------------------
+def _login() -> requests.Session:
+    user, pw = _clerk_credentials()
+    s = requests.Session()
+    s.headers.update(HEADERS)
 
-def _parse_case_cards(html: str) -> list[dict]:
-    """Parse all TitleSearchTab cards from results HTML."""
-    soup = BeautifulSoup(html, "lxml")
-    cards = soup.find_all("div", class_="TitleSearchTab")
-    results = []
+    page = s.get(LOGIN_PAGE, timeout=30)
+    page.raise_for_status()
+    m = (re.search(r'name="ApplicationCallID"[^>]*value="([^"]*)"', page.text)
+         or re.search(r'value="([^"]*)"[^>]*name="ApplicationCallID"', page.text))
 
-    for card in cards:
-        style_el = card.find("p", class_="fs-5")
-        case_style = style_el.get_text(strip=True) if style_el else ""
+    s.post(LOGIN_POST, timeout=30, data={
+        "ApplicationCallID": m.group(1) if m else "",
+        "userName": user,
+        "password": pw,
+        "btnCall": "Login",
+        "ServicesType": "Individual",
+    }).raise_for_status()
 
-        def field(name):
-            el = card.find("p", attrs={"data-id": name})
-            return el.get_text(strip=True) if el else ""
+    s.get(f"{OCS_API}/home/UserLogin", timeout=30)
+    info = s.get(f"{OCS_API}/settings/loggedin", params={"requestUserInfo": "true"}, timeout=30)
+    if "true" not in info.text.lower():
+        raise RuntimeError(f"Clerk OCS login failed: {info.text[:200]}")
+    logger.info("Probate OCS: logged in to Clerk account")
+    return s
 
-        case_number = field("Local Case Number")
-        filing_date = field("Filing Date")
-        case_status = field("Case Status")
 
-        if not case_number:
-            continue
-        if case_status.upper() != "OPEN":
-            continue
+def _search(s: requests.Session, letter: str, case_type: str, date_from: date, date_to: date) -> list[dict]:
+    body = {
+        "searchBy": "personaName",
+        "compareBy": "secondPartyPersonaName",
+        "partyFirstName": "",
+        "partyLastName": letter,
+        "businessNameName": "",
+        "partyType": 0,
+        "partyFirstName2": "",
+        "partyLastName2": "",
+        "caseType": case_type,
+        "filingDateFrom": f"{date_from.isoformat()}T00:00:00.000Z",
+        "filingDateTo": f"{date_to.isoformat()}T00:00:00.000Z",
+        "secondPartyBusinessName2": "",
+        "section": 0,
+    }
+    r = s.post(f"{OCS_API}/CaseInfo/PostSearchByPartyName", json=body, timeout=60)
+    r.raise_for_status()
+    data = r.json()
+    qs = data.get("qs") if isinstance(data, dict) else None
+    if not qs:
+        raise RuntimeError(f"Unexpected OCS search response: {str(data)[:200]}")
 
-        decedent_first, decedent_last = _parse_decedent_name(case_style)
-        results.append({
-            "case_number": case_number,
-            "case_style": case_style,
-            "decedent_first": decedent_first,
-            "decedent_last": decedent_last,
-            "filing_date": filing_date,
-        })
-
-    return results
+    # qs comes back already URL-encoded; pass it through as the browser does
+    r = s.get(f"{OCS_API}/CaseInfo/GetMultipleCaseResult?qs={qs}", timeout=60)
+    r.raise_for_status()
+    return r.json().get("caseListResult") or []
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def get_new_probate_cases(playwright_page, days_back: int = 14) -> list[dict]:
+def get_new_probate_cases(days_back: int = 14) -> list[dict]:
     """
-    Return deduplicated list of new Formal Administration probate cases
+    Return deduplicated list of Formal + Summary Administration probate cases
     filed within the last `days_back` days.
     """
     today = date.today()
     date_from = today - timedelta(days=days_back)
+    s = _login()
     seen: dict[str, dict] = {}
 
-    for letter in SEARCH_LETTERS:
-        logger.info(f"Probate OCS: searching letter='{letter}' {date_from} to {today}")
-        html = _navigate_and_search(playwright_page, letter, date_from, today)
-        cases = _parse_case_cards(html)
-        new = sum(1 for c in cases if c["case_number"] not in seen)
-        logger.info(f"  {len(cases)} result(s), {new} new after dedup")
-        for c in cases:
-            seen.setdefault(c["case_number"], c)
+    for case_type, type_name in CASE_TYPES.items():
+        before = len(seen)
+        for letter in SEARCH_LETTERS:
+            for c in _search(s, letter, case_type, date_from, today):
+                case_number = c.get("caseNumber", "")
+                if not case_number or case_number in seen:
+                    continue
+                first, last = _parse_decedent_name(c.get("caseStyle", ""))
+                seen[case_number] = {
+                    "case_number": case_number,
+                    "case_style": c.get("caseStyle", ""),
+                    "case_type": c.get("caseType", type_name),
+                    "case_status": c.get("caseStatus", ""),
+                    "decedent_first": first,
+                    "decedent_last": last,
+                    "filing_date": c.get("filingDate", ""),
+                }
+            time.sleep(1)
+        logger.info(f"Probate OCS: {type_name}: {len(seen) - before} case(s) {date_from} to {today}")
 
     result = list(seen.values())
     logger.info(f"Probate OCS: {len(result)} unique case(s) total")
