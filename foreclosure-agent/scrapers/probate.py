@@ -195,4 +195,9 @@ def get_new_probate_cases(days_back: int = 14) -> list[dict]:
 
     result = list(seen.values())
     logger.info(f"Probate OCS: {len(result)} unique case(s) total")
+    # Miami-Dade files ~80 Formal + Summary cases a week. Zero across every
+    # search means the Clerk is down or blocking us, not a quiet two weeks;
+    # fail loudly so the dashboard shows it instead of "success, 0 rows".
+    if not result and days_back >= 7:
+        raise RuntimeError(f"OCS returned 0 cases for {days_back} days across all searches; Clerk site likely down")
     return result
