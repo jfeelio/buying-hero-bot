@@ -66,31 +66,57 @@ MAIL_COLUMNS = [
 ]
 MAIL_CASE_COL = "O"  # Case Number (dedup key)
 
-# Probate gets its own tab in the mail sheet (its own mail piece). Same 16-column
-# shape as MAIL_COLUMNS so one Open Letter mailer can read every tab: Case Number
-# stays in O. New env names on purpose: the old PROBATE_GOOGLE_SHEET_ID secret
-# points at the "Test Foreclosure Data" sheet.
+# Probate gets its own tab in the mail sheet (its own mail piece), one row per
+# case. The mail-to columns hold the heir the letters go to; the letter columns
+# are filled by the daily Open Letter mailer, which also appends one row per
+# piece to PROBATE_MAIL_LOG_TAB. Set Status to "Stop" to stop mailing a case.
+# New env names on purpose: the old PROBATE_GOOGLE_SHEET_ID secret points at
+# the "Test Foreclosure Data" sheet.
 PROBATE_SHEET_ID = os.environ.get("PROBATE_SHEET_ID") or MAIL_SHEET_ID
 PROBATE_TAB = os.environ.get("PROBATE_TAB") or "Probate"
 PROBATE_COLUMNS = [
-    "Sent",
+    "Status",
     "Type",
-    "Owner First Name",
-    "Owner Last Name",
-    "Mailing Address",
-    "Mailing City",
-    "Mailing State",
-    "Mailing Zip",
-    "Address",
-    "City",
-    "State",
-    "Zip",
-    "Decedent",
-    "Filing Date",
     "Case Number",
+    "Filing Date",
+    "Decedent",
+    "Property Address",
+    "Property City",
+    "Property Zip",
+    "Mail To",
+    "Relationship",
+    "Mail Address",
+    "Mail City",
+    "Mail State",
+    "Mail Zip",
+    "Address Source",
+    "Heir Phone",
+    "Heir Email",
+    "Other Heirs",
+    "Letters Sent",
+    "Letter 1 Date",
+    "Letter 2 Date",
+    "Letter 3 Date",
+    "Next Letter Due",
     "Date Added",
 ]
-PROBATE_CASE_COL = "O"
+PROBATE_CASE_COL = "C"
+
+PROBATE_MAIL_LOG_TAB = os.environ.get("PROBATE_MAIL_LOG_TAB") or "Probate Mail Log"
+PROBATE_MAIL_LOG_COLUMNS = [
+    "Date Mailed",
+    "Case Number",
+    "Letter #",
+    "Mail To",
+    "Mail Address",
+    "Mail City",
+    "Mail State",
+    "Mail Zip",
+    "Address Source",
+    "OLC Order ID",
+    "Template ID",
+    "Status",
+]
 
 SHEET_COLUMNS = [
     "Sent",

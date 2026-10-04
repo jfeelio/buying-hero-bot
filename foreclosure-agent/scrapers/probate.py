@@ -14,7 +14,7 @@ Strategy:
   - Date range: last N days (configurable). Deduplicates by local case number.
 
 Returns per case:
-  case_number, case_style, case_type, case_status, decedent_first,
+  case_number, case_id, case_style, case_type, case_status, decedent_first,
   decedent_last, filing_date
 """
 
@@ -183,6 +183,7 @@ def get_new_probate_cases(days_back: int = 14) -> list[dict]:
                 first, last = _parse_decedent_name(c.get("caseStyle", ""))
                 seen[case_number] = {
                     "case_number": case_number,
+                    "case_id": c.get("caseID"),
                     "case_style": c.get("caseStyle", ""),
                     "case_type": c.get("caseType", type_name),
                     "case_status": c.get("caseStatus", ""),

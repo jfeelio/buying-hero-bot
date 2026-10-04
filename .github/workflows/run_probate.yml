@@ -49,6 +49,7 @@ jobs:
           PROBATE_DAYS_BACK=${{ secrets.PROBATE_DAYS_BACK }}
           CLERK_USERNAME=${{ secrets.CLERK_USERNAME }}
           CLERK_PASSWORD=${{ secrets.CLERK_PASSWORD }}
+          ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
           ENVEOF
 
       - name: Run probate pipeline

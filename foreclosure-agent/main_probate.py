@@ -15,13 +15,16 @@ Run order:
 
 import json
 import logging
+import os
 import sys
 from datetime import date
 from pathlib import Path
 
+import anthropic
 import config
+from scrapers.heirs import find_recipient
 from scrapers.mdpa import get_property_by_owner_name
-from scrapers.probate import get_new_probate_cases
+from scrapers.probate import _login, get_new_probate_cases
 from sheets import append_rows, ensure_header_row, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
@@ -68,31 +71,54 @@ def save_seen(seen: set) -> None:
 # Row builder
 # ---------------------------------------------------------------------------
 
-def build_row(case: dict, mdpa: dict) -> list:
-    """Assemble a flat list matching config.PROBATE_COLUMNS order."""
-    first = mdpa.get("owner_first", "")
-    last = mdpa.get("owner_last", "")
-    if not first and last:
-        first, last = last, ""
+def _clean(value: str) -> str:
+    """Collapse runs of spaces and drop stray trailing punctuation ("DRIVE," -> "DRIVE")."""
+    return " ".join(str(value or "").split()).strip(" ,;")
+
+
+def build_row(case: dict, mdpa: dict, heir: dict) -> list:
+    """Assemble a flat list matching config.PROBATE_COLUMNS order.
+
+    Mail goes to the heir from the court filings when one was found. Otherwise
+    it goes to the property record's mailing address, addressed to the
+    petitioner by name, or to "Estate of <decedent>" when there is none.
+    """
     case_type = "Summary Admin" if "SUMMARY" in case.get("case_type", "").upper() else "Formal Admin"
-    decedent = f"{case.get('decedent_first', '')} {case.get('decedent_last', '')}".strip().title()
+    decedent = _clean(f"{case.get('decedent_first', '')} {case.get('decedent_last', '')}").title()
+    rc = heir.get("recipient") or {}
+    if rc:
+        mail_to = _clean(rc.get("name", "")).title()
+        relationship = _clean(rc.get("relationship", "")).title()
+        mail = [_clean(rc.get("street", "")).upper(), _clean(rc.get("city", "")).upper(),
+                _clean(rc.get("state", "")).upper(), _clean(rc.get("zip", ""))]
+        source = heir.get("source", "")
+    else:
+        mail_to = heir.get("petitioner") or f"Estate of {decedent}"
+        relationship = "Petitioner" if heir.get("petitioner") else ""
+        mail = [mdpa.get("mailing_address", ""), mdpa.get("mailing_city", ""),
+                mdpa.get("mailing_state", ""), mdpa.get("mailing_zip", "")]
+        source = "Property Record"
+    today = date.today().isoformat()
     return [
-        "",                                    # Sent (Open Letter step fills this)
+        "Active",                              # Status ("Stop" halts mailing)
         case_type,                             # Type
-        first,
-        last,
-        mdpa.get("mailing_address", ""),
-        mdpa.get("mailing_city", ""),
-        mdpa.get("mailing_state", ""),
-        mdpa.get("mailing_zip", ""),
+        case.get("case_number", ""),           # Case Number (dedup key)
+        case.get("filing_date", ""),           # Filing Date
+        decedent,                              # Decedent
         mdpa.get("property_address", ""),
         mdpa.get("property_city", ""),
-        mdpa.get("property_state", "FL"),
         mdpa.get("property_zip", ""),
-        decedent,                              # Decedent (name on the court case)
-        case.get("filing_date", ""),           # Filing Date
-        case.get("case_number", ""),           # Case Number (dedup key)
-        date.today().isoformat(),              # Date Added
+        mail_to,                               # Mail To
+        relationship,
+        *mail,                                 # Mail Address / City / State / Zip
+        source,                                # Address Source
+        rc.get("phone", ""),                   # Heir Phone
+        rc.get("email", ""),                   # Heir Email
+        heir.get("other_heirs", ""),           # Other Heirs
+        0,                                     # Letters Sent (mailer updates)
+        "", "", "",                            # Letter 1-3 Date (mailer fills)
+        today,                                 # Next Letter Due: letter 1 goes next run
+        today,                                 # Date Added
     ]
 
 
@@ -116,6 +142,8 @@ def run():
     logger.info("Step 1: Ensuring Probate sheet header row")
     try:
         ensure_header_row(tab_name=tab, sheet_id=sheet_id, columns=config.PROBATE_COLUMNS)
+        ensure_header_row(tab_name=config.PROBATE_MAIL_LOG_TAB, sheet_id=sheet_id,
+                          columns=config.PROBATE_MAIL_LOG_COLUMNS)
     except Exception as e:
         logger.error(f"Sheet header setup failed: {e}")
         sys.exit(1)
@@ -143,10 +171,14 @@ def run():
         logger.info("No new probate cases found. Pipeline complete.")
         return
 
-    # Step 5: Enrich via MDPA owner name lookup
-    logger.info("Step 5: Enriching with MDPA property lookup")
+    # Step 5: Enrich via MDPA owner name lookup, then find the heir to mail
+    logger.info("Step 5: Enriching with MDPA property lookup + heir documents")
     enriched_rows = []
     new_case_numbers = set()
+    clerk = _login()
+    claude = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
+    if not claude:
+        logger.warning("  ANTHROPIC_API_KEY not set: mailing property-record addresses only")
 
     for i, case in enumerate(new_cases, start=1):
         case_num = case["case_number"]
@@ -168,7 +200,17 @@ def run():
             logger.info(f"    Skipping — no property address found in MDPA")
             continue
 
-        row = build_row(case, mdpa)
+        heir = {}
+        if claude and case.get("case_id"):
+            try:
+                heir = find_recipient(clerk, claude, case["case_id"])
+            except Exception as e:
+                logger.warning(f"    Heir lookup failed, using property record: {e}")
+        rc = heir.get("recipient") or {}
+        if rc:
+            logger.info(f"    Heir: {rc.get('name')} ({rc.get('relationship')}) via {heir.get('source')}")
+
+        row = build_row(case, mdpa, heir)
         enriched_rows.append(row)
         logger.info(
             f"    -> {mdpa['property_address']}, {mdpa['property_city']} | "
