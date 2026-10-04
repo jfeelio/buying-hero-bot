@@ -69,14 +69,16 @@ def save_seen(seen: set) -> None:
 # ---------------------------------------------------------------------------
 
 def build_row(case: dict, mdpa: dict) -> list:
-    """Assemble a flat list matching SHEET_COLUMNS order."""
+    """Assemble a flat list matching config.PROBATE_COLUMNS order."""
     first = mdpa.get("owner_first", "")
     last = mdpa.get("owner_last", "")
     if not first and last:
         first, last = last, ""
+    case_type = "Summary Admin" if "SUMMARY" in case.get("case_type", "").upper() else "Formal Admin"
+    decedent = f"{case.get('decedent_first', '')} {case.get('decedent_last', '')}".strip().title()
     return [
-        "",                                    # Sent
-        "",                                    # Company
+        "",                                    # Sent (Open Letter step fills this)
+        case_type,                             # Type
         first,
         last,
         mdpa.get("mailing_address", ""),
@@ -87,8 +89,10 @@ def build_row(case: dict, mdpa: dict) -> list:
         mdpa.get("property_city", ""),
         mdpa.get("property_state", "FL"),
         mdpa.get("property_zip", ""),
-        "",                                    # Value (blank)
+        decedent,                              # Decedent (name on the court case)
+        case.get("filing_date", ""),           # Filing Date
         case.get("case_number", ""),           # Case Number (dedup key)
+        date.today().isoformat(),              # Date Added
     ]
 
 
@@ -97,7 +101,7 @@ def build_row(case: dict, mdpa: dict) -> list:
 # ---------------------------------------------------------------------------
 
 def run():
-    tab = config.PROBATE_SHEET_TAB_NAME
+    tab = config.PROBATE_TAB
     days_back = config.PROBATE_DAYS_BACK
 
     logger.info("=" * 60)
@@ -106,19 +110,19 @@ def run():
     logger.info(f"  Days back : {days_back}")
     logger.info("=" * 60)
 
-    sheet_id = config.PROBATE_GOOGLE_SHEET_ID
+    sheet_id = config.PROBATE_SHEET_ID
 
     # Step 1: Ensure sheet headers on Probate tab
     logger.info("Step 1: Ensuring Probate sheet header row")
     try:
-        ensure_header_row(tab_name=tab, sheet_id=sheet_id)
+        ensure_header_row(tab_name=tab, sheet_id=sheet_id, columns=config.PROBATE_COLUMNS)
     except Exception as e:
         logger.error(f"Sheet header setup failed: {e}")
         sys.exit(1)
 
     # Step 2: Load seen cases (local JSON + sheet as fallback)
     logger.info("Step 2: Loading seen probate cases")
-    seen = load_seen() | get_existing_case_numbers(tab_name=tab, sheet_id=sheet_id)
+    seen = load_seen() | get_existing_case_numbers(tab_name=tab, sheet_id=sheet_id, col=config.PROBATE_CASE_COL)
     logger.info(f"  Seen: {len(seen)} case(s) (local JSON + sheet)")
 
     # Step 3: Pull OCS filings

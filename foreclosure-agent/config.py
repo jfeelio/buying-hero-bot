@@ -66,6 +66,32 @@ MAIL_COLUMNS = [
 ]
 MAIL_CASE_COL = "O"  # Case Number (dedup key)
 
+# Probate gets its own tab in the mail sheet (its own mail piece). Same 16-column
+# shape as MAIL_COLUMNS so one Open Letter mailer can read every tab: Case Number
+# stays in O. New env names on purpose: the old PROBATE_GOOGLE_SHEET_ID secret
+# points at the "Test Foreclosure Data" sheet.
+PROBATE_SHEET_ID = os.environ.get("PROBATE_SHEET_ID") or MAIL_SHEET_ID
+PROBATE_TAB = os.environ.get("PROBATE_TAB") or "Probate"
+PROBATE_COLUMNS = [
+    "Sent",
+    "Type",
+    "Owner First Name",
+    "Owner Last Name",
+    "Mailing Address",
+    "Mailing City",
+    "Mailing State",
+    "Mailing Zip",
+    "Address",
+    "City",
+    "State",
+    "Zip",
+    "Decedent",
+    "Filing Date",
+    "Case Number",
+    "Date Added",
+]
+PROBATE_CASE_COL = "O"
+
 SHEET_COLUMNS = [
     "Sent",
     "Company",
