@@ -26,7 +26,7 @@ import clean
 import config
 from scrapers.heirs import find_recipient
 from scrapers.mdpa import get_property_by_owner_name
-from scrapers.probate import _login, get_new_probate_cases
+from scrapers.probate import IncompleteSearch, _login, get_new_probate_cases
 from sheets import append_rows, ensure_header_row, get_existing_case_numbers
 
 # ---------------------------------------------------------------------------
@@ -155,8 +155,15 @@ def run():
 
     # Step 3: Pull OCS filings
     logger.info("Step 3: Pulling OCS probate filings")
+    incomplete = None
     try:
         all_cases = get_new_probate_cases(days_back=days_back)
+    except IncompleteSearch as e:
+        # Write what was found; fail the run at the end so the dashboard shows it.
+        # The 14-day window means the next clean run picks up anything missed today.
+        incomplete = e
+        all_cases = e.cases
+        logger.error(f"Probate scraper incomplete: {e}")
     except Exception as e:
         logger.error(f"Probate scraper failed: {e}")
         sys.exit(1)
@@ -169,6 +176,8 @@ def run():
 
     if not new_cases:
         logger.info("No new probate cases found. Pipeline complete.")
+        if incomplete:
+            sys.exit(1)
         return
 
     # Step 5: Enrich via MDPA owner name lookup, then find the heir to mail
@@ -232,6 +241,8 @@ def run():
     logger.info("=" * 60)
     logger.info(f"Probate pipeline complete. {len(enriched_rows)} row(s) added.")
     logger.info("=" * 60)
+    if incomplete:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -163,6 +163,40 @@ def _search(s: requests.Session, letter: str, case_type: str, date_from: date, d
 # Public API
 # ---------------------------------------------------------------------------
 
+# The Clerk gives up on a slow search after ~30 s and answers "0 results" with
+# HTTP 200, which looks exactly like a real empty result. At busy hours a single
+# letter ("s") is too broad; two letters ("sa".."sz") come back in seconds.
+SLOW_SECS = 25
+
+
+def _search_prefix(s, prefix: str, case_type: str, date_from: date, date_to: date) -> tuple[list, list]:
+    """Search one name prefix; on a timed-out empty answer retry once, then split
+    into two-letter prefixes. Returns (cases, prefixes that still timed out)."""
+    for attempt in (1, 2):
+        t0 = time.time()
+        rows = _search(s, prefix, case_type, date_from, date_to)
+        if rows or time.time() - t0 < SLOW_SECS:
+            return rows, []
+        logger.warning(f"Probate OCS: '{prefix}' timed out (empty after {time.time() - t0:.0f}s), attempt {attempt}")
+        time.sleep(5)
+    if len(prefix) >= 2:
+        return [], [prefix]
+    rows, missed = [], []
+    for ch in string.ascii_lowercase:
+        r, m = _search_prefix(s, prefix + ch, case_type, date_from, date_to)
+        rows += r
+        missed += m
+    return rows, missed
+
+
+class IncompleteSearch(RuntimeError):
+    """Some prefixes kept timing out; the cases found are still returned on .cases."""
+
+    def __init__(self, missed: list, cases: list):
+        super().__init__(f"Clerk search timed out for {len(missed)} name prefix(es): {', '.join(missed[:20])}")
+        self.missed, self.cases = missed, cases
+
+
 def get_new_probate_cases(days_back: int = 14) -> list[dict]:
     """
     Return deduplicated list of Formal + Summary Administration probate cases
@@ -173,10 +207,13 @@ def get_new_probate_cases(days_back: int = 14) -> list[dict]:
     s = _login()
     seen: dict[str, dict] = {}
 
+    missed = []
     for case_type, type_name in CASE_TYPES.items():
         before = len(seen)
         for letter in SEARCH_LETTERS:
-            for c in _search(s, letter, case_type, date_from, today):
+            found, still_missed = _search_prefix(s, letter, case_type, date_from, today)
+            missed += [f"{type_name[:6].strip()}:{m}" for m in still_missed]
+            for c in found:
                 case_number = c.get("caseNumber", "")
                 if not case_number or case_number in seen:
                     continue
@@ -201,4 +238,7 @@ def get_new_probate_cases(days_back: int = 14) -> list[dict]:
     # fail loudly so the dashboard shows it instead of "success, 0 rows".
     if not result and days_back >= 7:
         raise RuntimeError(f"OCS returned 0 cases for {days_back} days across all searches; Clerk site likely down")
+    if missed:
+        # Hand back what was found so it still gets written; the caller fails the run after.
+        raise IncompleteSearch(missed, result)
     return result

@@ -2,7 +2,7 @@ name: Probate Pipeline
 
 on:
   schedule:
-    - cron: '30 13 * * 1-5'  # 9:30 AM ET Mon–Fri (offset to avoid overlap)
+    - cron: '23 6 * * 1-5'   # ~2:23 AM ET Mon–Fri: the Clerk times out broad searches at peak hours
   workflow_dispatch:
 
 concurrency:
@@ -100,6 +100,12 @@ jobs:
           git add docs/data/pipeline_status.json
           git add -f foreclosure-agent/seen_probate_cases.json 2>/dev/null || true
           git diff --staged --quiet && echo "Nothing new to commit." && exit 0
-          git pull --rebase --autostash origin master
           git commit -m "chore: probate $(date -u +%Y-%m-%d) — ${{ steps.pipeline.outputs.rows_added }} row(s) added"
-          git push
+          # Another job may have pushed meanwhile: replay this commit on top (our side wins a
+          # clash in pipeline_status.json) and retry. The old pull-then-commit order dropped
+          # the staged change when a concurrent push arrived and failed the run.
+          for i in 1 2 3; do
+            git pull --rebase -X theirs origin master && git push && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
