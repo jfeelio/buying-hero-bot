@@ -354,5 +354,19 @@ def run(today: date = None):
         sys.exit(1)
 
 
+def send_test_email() -> None:
+    """Email a TEST summary built from the first rows of the Probate tab. Mails nothing, writes nothing."""
+    svc = _get_service().spreadsheets()
+    _, cases = read_tab(svc, config.PROBATE_TAB)
+    _, log_rows = read_tab(svc, config.PROBATE_MAIL_LOG_TAB)
+    sample = [(1, cases[:3], {"id": "TEST", "status": "test only", "paymentStatus": "-", "cost": 0})]
+    today = datetime.now(ZoneInfo("America/New_York")).date()
+    send_summary(today, sample, ["TEST EMAIL - nothing was mailed; this checks the summary email reaches you."],
+                 {"dnm": 0, "no address": 0, "non-US": 0, "already logged": 0}, cases, log_rows)
+
+
 if __name__ == "__main__":
-    run()
+    if "--test-email" in sys.argv:
+        send_test_email()
+    else:
+        run()

@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '7 22 * * 1-5'  # ~6:07 PM ET Mon–Fri (off the hour: GitHub delays on-the-hour crons)
   workflow_dispatch:
+    inputs:
+      test_email:
+        description: 'Only send a TEST summary email (mails nothing)'
+        type: boolean
+        default: false
 
 concurrency:
   group: probate-mailer
@@ -41,9 +46,9 @@ jobs:
           OLC_DAILY_CAP=${{ vars.OLC_DAILY_CAP }}
           ENVEOF
 
-      # Dry run (logs only) until the OLC_DRY_RUN repo variable is set to 0.
+      # Live when the OLC_DRY_RUN repo variable is 0; dry run (logs only) otherwise.
       - name: Run probate mailer
-        run: python mail_probate.py
+        run: python mail_probate.py ${{ inputs.test_email && '--test-email' || '' }}
         working-directory: foreclosure-agent
         env:
           OLC_DRY_RUN: ${{ vars.OLC_DRY_RUN || '1' }}
