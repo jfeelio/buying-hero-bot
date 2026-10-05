@@ -1,0 +1,49 @@
+name: Probate Mailer
+
+on:
+  schedule:
+    - cron: '0 22 * * 1-5'  # 6 PM ET Mon–Fri, after the probate pipeline has run
+  workflow_dispatch:
+
+concurrency:
+  group: probate-mailer
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r foreclosure-agent/requirements.txt
+
+      - name: Write credentials & .env
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > foreclosure-agent/credentials.json
+          cat > foreclosure-agent/.env << 'ENVEOF'
+          GOOGLE_SHEET_ID=${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDS_PATH=credentials.json
+          OLC_API_KEY=${{ secrets.OLC_API_KEY }}
+          OLC_PROBATE_TEMPLATE_ID=${{ vars.OLC_PROBATE_TEMPLATE_ID }}
+          OLC_PROBATE_PRODUCT_ID=${{ vars.OLC_PROBATE_PRODUCT_ID }}
+          OLC_DAILY_CAP=${{ vars.OLC_DAILY_CAP }}
+          ENVEOF
+
+      # Dry run (logs only) until the OLC_DRY_RUN repo variable is set to 0.
+      - name: Run probate mailer
+        run: python mail_probate.py
+        working-directory: foreclosure-agent
+        env:
+          OLC_DRY_RUN: ${{ vars.OLC_DRY_RUN || '1' }}

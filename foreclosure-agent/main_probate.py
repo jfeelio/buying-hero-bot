@@ -17,7 +17,8 @@ import json
 import logging
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import anthropic
@@ -98,7 +99,8 @@ def build_row(case: dict, mdpa: dict, heir: dict) -> list:
         mail = [mdpa.get("mailing_address", ""), mdpa.get("mailing_city", ""),
                 mdpa.get("mailing_state", ""), mdpa.get("mailing_zip", "")]
         source = "Property Record"
-    today = date.today().isoformat()
+    # Eastern date, not the GitHub runner's UTC date, so it matches the team's calendar.
+    today = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
     return [
         "Active",                              # Status ("Stop" halts mailing)
         case_type,                             # Type
