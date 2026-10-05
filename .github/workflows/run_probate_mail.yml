@@ -2,7 +2,7 @@ name: Probate Mailer
 
 on:
   schedule:
-    - cron: '0 22 * * 1-5'  # 6 PM ET Mon–Fri, after the probate pipeline has run
+    - cron: '7 22 * * 1-5'  # ~6:07 PM ET Mon–Fri (off the hour: GitHub delays on-the-hour crons)
   workflow_dispatch:
 
 concurrency:
