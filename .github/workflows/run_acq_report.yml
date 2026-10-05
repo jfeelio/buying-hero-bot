@@ -1,11 +1,13 @@
 name: Weekly Acquisitions Report
 
-# Sunday 8 PM ET (00:00 UTC Monday; 7 PM during EST). Pulls REsimpli, writes the
+# Sunday ~8:17 PM ET (00:17 UTC Monday; 7:17 PM during EST). Off the top of the
+# hour on purpose: GitHub delays or skips scheduled runs set exactly on the hour.
+# Pulls REsimpli, writes the
 # report, prints it to PDF and emails it through the n8n mailer (workflow
 # acqreport0001 on automations.buyinghero.com).
 on:
   schedule:
-    - cron: '0 0 * * 1'
+    - cron: '17 0 * * 1'
   workflow_dispatch:
     inputs:
       week_start:
