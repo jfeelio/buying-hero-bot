@@ -47,3 +47,15 @@ jobs:
         working-directory: foreclosure-agent
         env:
           OLC_DRY_RUN: ${{ vars.OLC_DRY_RUN || '1' }}
+          MAILER_WEBHOOK_URL: ${{ secrets.ACQ_REPORT_WEBHOOK_URL }}
+          MAILER_WEBHOOK_KEY: ${{ secrets.ACQ_REPORT_WEBHOOK_KEY }}
+
+      # The mailer emails its own stats; this covers a run that crashed before it could.
+      - name: Email on failure
+        if: failure()
+        env:
+          MAILER_WEBHOOK_URL: ${{ secrets.ACQ_REPORT_WEBHOOK_URL }}
+          MAILER_WEBHOOK_KEY: ${{ secrets.ACQ_REPORT_WEBHOOK_KEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sS -X POST "$MAILER_WEBHOOK_URL"             -H "Content-Type: application/json" -H "X-Report-Key: $MAILER_WEBHOOK_KEY"             -d "{\"kind\":\"failure\",\"subject\":\"FAILED: probate mailer\",\"html\":\"<p>The probate mailer run failed. Check the Probate Mail Log before re-running. Log: <a href='$RUN_URL'>$RUN_URL</a></p>\"}"

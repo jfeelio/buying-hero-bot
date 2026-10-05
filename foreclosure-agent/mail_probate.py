@@ -144,8 +144,8 @@ def _contact(row: dict) -> dict:
     }
 
 
-def place_order(letter_no: int, rows: list) -> str:
-    """Place one OLC order for these rows. Returns the OLC order id."""
+def place_order(letter_no: int, rows: list) -> dict:
+    """Place one OLC order for these rows. Returns OLC's order data (id, status, paymentStatus, cost)."""
     body = {
         "contacts": [_contact(r) for r in rows],
         "productId": OLC_PRODUCT_ID,
@@ -165,7 +165,86 @@ def place_order(letter_no: int, rows: list) -> str:
     if not order_id:
         raise RuntimeError(f"OLC returned no order id: {r.text[:500]}")
     logger.info(f"  OLC order {order_id}: status={data.get('status')} payment={data.get('paymentStatus')} cost={data.get('cost')}")
-    return order_id
+    return data
+
+
+# ---------------------------------------------------------------------------
+# Summary email (through the n8n mailer the weekly acquisitions report uses)
+# ---------------------------------------------------------------------------
+
+SHEET_URL = f"https://docs.google.com/spreadsheets/d/{config.PROBATE_SHEET_ID}/edit"
+
+
+def _esc(s) -> str:
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def send_summary(today: date, orders: list, failures: list, skipped: dict, cases: list, log_rows: list) -> None:
+    url, key = os.environ.get("MAILER_WEBHOOK_URL", ""), os.environ.get("MAILER_WEBHOOK_KEY", "")
+    if not url:
+        logger.warning("MAILER_WEBHOOK_URL not set; no summary email")
+        return
+    mailed = sum(len(rows) for _, rows, _ in orders)
+    cost = sum(float(o.get("cost") or 0) for _, _, o in orders)
+    by_source = {}
+    for _, rows, _ in orders:
+        for r in rows:
+            by_source[r["Address Source"]] = by_source.get(r["Address Source"], 0) + 1
+    prior = {}
+    for r in log_rows:
+        prior[str(r["Letter #"])] = prior.get(str(r["Letter #"]), 0) + 1
+    for n, rows, _ in orders:
+        prior[str(n)] = prior.get(str(n), 0) + len(rows)
+    active = sum(1 for r in cases if r["Status"].strip().lower() == "active")
+    week = today + timedelta(days=7)
+    upcoming = sum(1 for r in cases if r["Status"].strip().lower() == "active"
+                   and int(r["Letters Sent"] or 0) < MAX_LETTERS
+                   and (_parse_date(r["Next Letter Due"]) or today) > today
+                   and (_parse_date(r["Next Letter Due"]) or today) <= week)
+
+    td = "style='padding:4px 10px;border-bottom:1px solid #eee'"
+    def table(head, rows):
+        h = "".join(f"<th {td} align='left'>{_esc(c)}</th>" for c in head)
+        b = "".join("<tr>" + "".join(f"<td {td}>{_esc(c)}</td>" for c in row) + "</tr>" for row in rows)
+        return f"<table style='border-collapse:collapse;font-size:13px'><tr>{h}</tr>{b}</table>"
+
+    html = [f"<h2 style='margin:0 0 8px'>Probate mail: {mailed} letters sent {today:%a %b %d}</h2>"]
+    if failures:
+        html.append("<p style='color:#b00020'><b>Failed orders (nothing logged for these, they retry next run):</b><br>"
+                    + "<br>".join(_esc(f) for f in failures) + "</p>")
+    html.append(table(["Today", ""], [
+        ["Letters mailed", mailed],
+        *[[f"Letter {n}", len(rows)] for n, rows, _ in orders],
+        ["Open Letter Connect cost", f"${cost:,.2f}" if cost else "see orders"],
+        ["Skipped: Do-Not-Mail", skipped["dnm"]],
+        ["Skipped: heir abroad (mail by hand)", skipped["non-US"]],
+        ["Skipped: no address", skipped["no address"]],
+    ]))
+    html.append("<h3 style='margin:16px 0 6px'>Orders</h3>" + table(
+        ["Letter", "Pieces", "Order ID", "Status", "Payment", "Cost"],
+        [[n, len(rows), o.get("id"), o.get("status"), o.get("paymentStatus"), o.get("cost")] for n, rows, o in orders]))
+    html.append("<h3 style='margin:16px 0 6px'>Who we mailed today, by address source</h3>" + table(
+        ["Source", "Letters"], sorted(by_source.items(), key=lambda kv: -kv[1])))
+    html.append("<h3 style='margin:16px 0 6px'>Running totals</h3>" + table(["", ""], [
+        ["Active probate cases", active],
+        ["Letter 1 sent, all time", prior.get("1", 0)],
+        ["Letter 2 sent, all time", prior.get("2", 0)],
+        ["Letter 3 sent, all time", prior.get("3", 0)],
+        ["Letters due in the next 7 days", upcoming],
+    ]))
+    rows = [[n, r["Case Number"], r["Mail To"], r["Relationship"], f"{r['Mail City']}, {r['Mail State']}", r["Property Address"]]
+            for n, rs, _ in orders for r in rs]
+    html.append("<h3 style='margin:16px 0 6px'>Recipients</h3>" + table(
+        ["Letter", "Case", "Mailed to", "Relationship", "Where", "Property"], rows[:150]))
+    html.append(f"<p style='font-size:12px;color:#666'>Full detail: <a href='{SHEET_URL}'>Probate and Probate Mail Log tabs</a>.</p>")
+
+    subject = f"Probate mail sent: {mailed} letters ({today:%b %d})" + (" - SOME ORDERS FAILED" if failures else "")
+    try:
+        r = requests.post(url, json={"kind": "failure", "subject": subject, "html": "".join(html)},
+                          headers={"X-Report-Key": key}, timeout=60)
+        logger.info(f"Summary email: HTTP {r.status_code}")
+    except Exception as e:
+        logger.warning(f"Summary email failed: {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -225,7 +304,8 @@ def run(today: date = None):
         logger.error(f"{total} pieces exceeds the daily cap of {DAILY_CAP}; nothing sent. Raise OLC_DAILY_CAP to proceed.")
         sys.exit(1)
 
-    failures = 0
+    failures = []
+    orders = []      # (letter #, rows, OLC order data)
     for letter_no, rows in sorted(due.items()):
         for r in rows:
             logger.info(f"  L{letter_no} {r['Case Number']} -> {r['Mail To']}, {r['Mail Address']}, "
@@ -233,11 +313,13 @@ def run(today: date = None):
         if DRY_RUN:
             continue
         try:
-            order_id = place_order(letter_no, rows)
+            order = place_order(letter_no, rows)
         except Exception as e:
-            failures += 1
+            failures.append(f"Letter {letter_no} ({len(rows)} pieces): {e}")
             logger.error(f"Letter {letter_no}: {e}")
             continue
+        order_id = str(order["id"])
+        orders.append((letter_no, rows, order))
 
         # Log every piece first, so a failed row update can never cause a re-mail.
         stamp = today.isoformat()
@@ -264,8 +346,10 @@ def run(today: date = None):
         logger.info(f"Letter {letter_no}: {len(rows)} piece(s) ordered ({order_id}), logged and updated")
 
     logger.info("=" * 60)
-    logger.info(f"Probate mailer complete. {total} piece(s) {'would be ' if DRY_RUN else ''}mailed, {failures} failed order(s).")
+    logger.info(f"Probate mailer complete. {total} piece(s) {'would be ' if DRY_RUN else ''}mailed, {len(failures)} failed order(s).")
     logger.info("=" * 60)
+    if not DRY_RUN and (orders or failures):
+        send_summary(today, orders, failures, skipped, cases, log_rows)
     if failures:
         sys.exit(1)
 
