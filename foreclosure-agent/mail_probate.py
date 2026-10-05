@@ -11,7 +11,7 @@ Run order:
   5. For each order that succeeds, append one Mail Log row per piece and
      update the case row: Letters Sent, Letter N Date, Next Letter Due
 
-Letter schedule, counted from letter 1: day 0, day 30, day 90.
+Letter schedule, counted from letter 1: day 0, day 30, day 60.
 
 OLC_DRY_RUN=1 (the default) logs what would be mailed and writes nothing.
 Set OLC_DRY_RUN=0 to place real orders.
@@ -50,7 +50,7 @@ US_STATES = set("""AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME M
 NH NJ NM NY NC ND OH OK OR PA PR RI SC SD TN TX UT VT VA VI WA WV WI WY GU""".split())
 
 # Days after letter 1 that each later letter is due.
-LETTER_OFFSETS = {2: 30, 3: 90}
+LETTER_OFFSETS = {2: 30, 3: 60}
 MAX_LETTERS = 3
 
 
