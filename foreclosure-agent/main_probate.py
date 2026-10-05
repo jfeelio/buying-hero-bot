@@ -22,6 +22,7 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import anthropic
+import clean
 import config
 from scrapers.heirs import find_recipient
 from scrapers.mdpa import get_property_by_owner_name
@@ -72,11 +73,6 @@ def save_seen(seen: set) -> None:
 # Row builder
 # ---------------------------------------------------------------------------
 
-def _clean(value: str) -> str:
-    """Collapse runs of spaces and drop stray trailing punctuation ("DRIVE," -> "DRIVE")."""
-    return " ".join(str(value or "").split()).strip(" ,;")
-
-
 def build_row(case: dict, mdpa: dict, heir: dict) -> list:
     """Assemble a flat list matching config.PROBATE_COLUMNS order.
 
@@ -85,20 +81,22 @@ def build_row(case: dict, mdpa: dict, heir: dict) -> list:
     petitioner by name, or to "Estate of <decedent>" when there is none.
     """
     case_type = "Summary Admin" if "SUMMARY" in case.get("case_type", "").upper() else "Formal Admin"
-    decedent = _clean(f"{case.get('decedent_first', '')} {case.get('decedent_last', '')}").title()
+    decedent = clean.person(f"{case.get('decedent_last', '')}, {case.get('decedent_first', '')}")
+    prop_zip = clean.zip5(mdpa.get("property_zip", ""))
     rc = heir.get("recipient") or {}
     if rc:
-        mail_to = _clean(rc.get("name", "")).title()
-        relationship = _clean(rc.get("relationship", "")).title()
-        mail = [_clean(rc.get("street", "")).upper(), _clean(rc.get("city", "")).upper(),
-                _clean(rc.get("state", "")).upper(), _clean(rc.get("zip", ""))]
+        mail_to = clean.person(rc.get("name", ""))
+        relationship = clean.squeeze(rc.get("relationship", "")).title()
+        mail = [rc.get("street", ""), rc.get("city", ""), rc.get("state", ""), rc.get("zip", "")]
         source = heir.get("source", "")
     else:
-        mail_to = heir.get("petitioner") or f"Estate of {decedent}"
+        mail_to = clean.person(heir.get("petitioner") or f"Estate of {decedent}")
         relationship = "Petitioner" if heir.get("petitioner") else ""
         mail = [mdpa.get("mailing_address", ""), mdpa.get("mailing_city", ""),
                 mdpa.get("mailing_state", ""), mdpa.get("mailing_zip", "")]
         source = "Property Record"
+    mail = [clean.mail_street(mail[0]), clean.mail_city(mail[1]),
+            clean.squeeze(mail[2]).upper(), clean.zip5(mail[3])]
     # Eastern date, not the GitHub runner's UTC date, so it matches the team's calendar.
     today = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
     return [
@@ -107,15 +105,15 @@ def build_row(case: dict, mdpa: dict, heir: dict) -> list:
         case.get("case_number", ""),           # Case Number (dedup key)
         case.get("filing_date", ""),           # Filing Date
         decedent,                              # Decedent
-        mdpa.get("property_address", ""),
-        mdpa.get("property_city", ""),
-        mdpa.get("property_zip", ""),
+        clean.property_street(mdpa.get("property_address", "")),
+        clean.city(mdpa.get("property_city", ""), prop_zip),
+        prop_zip,
         mail_to,                               # Mail To
         relationship,
         *mail,                                 # Mail Address / City / State / Zip
         source,                                # Address Source
-        rc.get("phone", ""),                   # Heir Phone
-        rc.get("email", ""),                   # Heir Email
+        clean.squeeze(rc.get("phone", "")),     # Heir Phone
+        clean.squeeze(rc.get("email", "")).lower(),  # Heir Email
         heir.get("other_heirs", ""),           # Other Heirs
         0,                                     # Letters Sent (mailer updates)
         "", "", "",                            # Letter 1-3 Date (mailer fills)

@@ -21,6 +21,7 @@ import logging
 
 import anthropic
 
+import clean
 from scrapers.probate import OCS_API
 
 logger = logging.getLogger(__name__)
@@ -147,7 +148,8 @@ def find_recipient(s, client: anthropic.Anthropic, case_id) -> dict:
                 or people[0])
         out["recipient"] = best
         out["other_heirs"] = "; ".join(
-            f"{p['name'].title()} ({p['relationship'].title()}) {p['street']}, {p['city']} {p['state']} {p['zip']}".strip()
+            f"{clean.person(p['name'])} ({clean.squeeze(p['relationship']).title()}) "
+            f"{clean.mail_street(p['street'])}, {clean.mail_city(p['city'])} {clean.squeeze(p['state']).upper()} {clean.zip5(p['zip'])}"
             for p in people if p is not best
         )
         out["source"] = wanted

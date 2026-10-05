@@ -71,6 +71,16 @@ def _parse_owner_name(raw: str) -> tuple[str, str]:
     return first, last
 
 
+def site_address_with_unit(site: dict) -> str:
+    """Folio SiteAddress -> '2650 Nw 28 St #901-9' (street from Address, unit from Unit)."""
+    street = (site.get("Address") or "").split(",")[0].strip()
+    unit = (site.get("Unit") or "").strip()
+    if unit and street.upper().endswith(" " + unit.upper()):
+        street = street[: -len(unit)].strip()
+    street = street.title()
+    return f"{street} #{unit}" if unit else street
+
+
 def _strap_to_folio(strap: str) -> str:
     """Convert '02-3214-018-0010' -> '0232140180010' (remove dashes)."""
     return strap.replace("-", "")
@@ -233,6 +243,20 @@ def get_property_by_owner_name(last_name: str, first_name: str = "") -> dict:
     mailing_state = (mail.get("State") or "").strip() or "FL"
     mailing_zip = (mail.get("ZipCode") or "").strip()
 
+    # The property's own zip and postal city live on the folio's SiteAddress
+    # ("33161-0000", "North Miami"). Municipality says "Unincorporated County"
+    # outside city limits, which is not a mailing city.
+    # The folio's SiteAddress also carries the condo unit, which GetOwners drops
+    # ("2650 NW 28 ST 901-9" vs "2650 Nw 28 St").
+    site = (detail.get("SiteAddress") or [{}])[0] or {}
+    site_zip = (site.get("Zip") or "").strip()[:5]
+    if site.get("City"):
+        site_city = site["City"].strip().title()
+    if site.get("Address"):
+        site_address = site_address_with_unit(site)
+    if not site_zip and mailing_address.upper() == site_address.upper():
+        site_zip = mailing_zip[:5]
+
     logger.info(
         f"MDPA GetOwners: success for '{search_term}' -> "
         f"{owner_raw} | {mailing_address}, {mailing_city}, {mailing_state} {mailing_zip}"
@@ -248,7 +272,7 @@ def get_property_by_owner_name(last_name: str, first_name: str = "") -> dict:
         "property_address": site_address,
         "property_city": site_city,
         "property_state": "FL",
-        "property_zip": mailing_zip if mailing_address.upper() == site_address.upper() else "",
+        "property_zip": site_zip,
     }
 
 
