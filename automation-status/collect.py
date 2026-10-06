@@ -111,13 +111,13 @@ def github():
             "name": w["name"],
             "state": w["state"],  # active / disabled_manually / disabled_inactivity
             "running": any(r["status"] in ("in_progress", "queued") for r in runs),
-            "last_run": last and {"at": last["run_started_at"] or last["created_at"],
+            "last_run": last and {"id": last["id"], "at": last["run_started_at"] or last["created_at"],
                                   "conclusion": last["conclusion"], "event": last["event"]},
             "last_success_at": last_ok and (last_ok["run_started_at"] or last_ok["created_at"]),
             "runs_30d": len(recent),
             "success_30d": len(ok),
-            "recent": [{"at": r["run_started_at"] or r["created_at"], "conclusion": r["conclusion"]}
-                       for r in done[:10]],
+            "recent": [{"id": r["id"], "at": r["run_started_at"] or r["created_at"], "conclusion": r["conclusion"],
+                        "event": r["event"]} for r in done[:10]],
             "stats": run_stats(file, last_ok["id"]) if last_ok else {},
         })
     log("github: %d workflows" % len(out))
@@ -171,13 +171,13 @@ def n8n_status():
             "key": "n8n:" + w["id"],
             "name": w.get("name"),
             "state": "active" if w.get("active") else "inactive",
-            "last_run": last and {"at": last.get("startedAt"), "conclusion": last.get("status"),
-                                  "event": last.get("mode")},
+            "last_run": last and {"id": last.get("id"), "at": last.get("startedAt"),
+                                  "conclusion": last.get("status"), "event": last.get("mode")},
             "last_success_at": next((e.get("startedAt") for e in ex if e.get("status") == "success"), None),
             "runs_30d": len(recent),
             "success_30d": len(good),
             "capped": len(ex) == 100,  # 100 executions returned: the 30-day count is a floor
-            "recent": [{"at": e.get("startedAt"), "conclusion": e.get("status")} for e in ex[:10]],
+            "recent": [{"id": e.get("id"), "at": e.get("startedAt"), "conclusion": e.get("status")} for e in ex[:10]],
         })
     log("n8n: %d workflows" % len(out))
     return {"ok": True, "items": out}
@@ -202,9 +202,61 @@ def save(doc):
     log("status file: %d bytes written" % len(body))
 
 
+# ---------------------------------------------------------------- problems
+
+# Hours after which a job with no new run is overdue (weekday jobs span a weekend).
+CADENCE_H = {
+    "gh:run_foreclosures.yml": 84, "gh:run_tax_deed.yml": 84, "gh:run_probate.yml": 84,
+    "gh:run_probate_mail.yml": 84, "gh:run_acq_report.yml": 204, "gh:run_levelup_sync.yml": 204,
+    "gh:run_pokemon_tracker.yml": 30, "n8n:dnmsync000001": 30, "n8n:ghscheduler0001": 30,
+}
+IGNORE = {"gh:run_automation_status.yml"}  # this job; a broken run can't report itself
+
+
+def problems(doc):
+    out = []
+    if not doc["n8n"]["ok"]:
+        out.append({"key": "n8n", "name": "n8n status check", "problem": doc["n8n"]["error"]})
+    for src in ("github", "n8n"):
+        for w in doc[src]["items"]:
+            if w["key"] in IGNORE or w["state"] != "active" or w.get("running"):
+                continue
+            last = w.get("last_run")
+            if last and last["conclusion"] not in ("success", None):
+                age = (NOW - iso(last["at"])).total_seconds() / 3600
+                if src == "github" or age < 48:  # n8n: only fresh errors; old ones were seen already
+                    out.append({"key": w["key"], "name": w["name"],
+                                "problem": "last run %s at %s" % (last["conclusion"], last["at"]),
+                                "run_id": last.get("id")})
+                    continue
+            cad = CADENCE_H.get(w["key"])
+            if cad and last and (NOW - iso(last["at"])).total_seconds() / 3600 > cad:
+                out.append({"key": w["key"], "name": w["name"],
+                            "problem": "overdue: no run since %s" % last["at"]})
+    return out
+
+
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", help="also write the status JSON here (for the fixer step)")
+    ap.add_argument("--attach-report", help="add a fixer report JSON to the saved status file")
+    args = ap.parse_args()
+    if args.attach_report:
+        doc = json.load(open(args.out))
+        try:
+            doc["fixer"] = json.load(open(args.attach_report))
+        except Exception as e:
+            doc["fixer"] = {"summary": "The fixer did not produce a report (%s)." % type(e).__name__, "items": []}
+        doc["fixer"]["at"] = NOW.isoformat(timespec="seconds")
+        save(doc)
+        return
     doc = {"generated_at": NOW.isoformat(timespec="seconds"), "window_days": WINDOW_DAYS,
            "github": github(), "n8n": n8n_status()}
+    doc["problems"] = problems(doc)
+    log("problems: %d" % len(doc["problems"]))
+    if args.out:
+        json.dump(doc, open(args.out, "w"))
     save(doc)
 
 

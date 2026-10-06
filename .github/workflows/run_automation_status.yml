@@ -1,9 +1,12 @@
 name: Automation Status
 
-# Daily ~7:07 AM ET (11:07 UTC; off the hour, GitHub delays on-the-hour crons),
-# plus "Run workflow" for a manual refresh. Checks every GitHub Actions job and
-# n8n workflow and writes the result to a private Drive file that the
-# Automations Hub artifact reads. Nothing is committed to this public repo.
+# Daily 7:00 AM ET, started on time by the n8n scheduler (ghscheduler0001); the
+# cron below is GitHub's late backup. "Run workflow" = manual refresh.
+# 1. Checks every GitHub Actions job and n8n workflow and writes a private Drive
+#    file that the Automations Hub artifact reads. Nothing is committed here.
+# 2. If anything is broken, a Claude agent diagnoses it (automation-status/FIXER.md),
+#    re-runs safe one-off failures, puts any code fix in a pull request for Jorge
+#    to approve, and emails Jorge what happened.
 on:
   schedule:
     - cron: '7 11 * * *'
@@ -14,15 +17,41 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: read
-  contents: read
+  actions: write        # re-run failed jobs
+  contents: write       # push the fixer's branch (never master)
+  pull-requests: write  # open the fix PR
 
 jobs:
+  # n8n starts this job on time with "Run workflow"; GitHub's own schedule runs
+  # hours late and is only the backup. The backup stands down when an on-time
+  # run in the last 20 hours succeeded or is still going.
+  guard:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          N=$(gh run list -R "${{ github.repository }}" --workflow "${{ github.workflow }}" -e workflow_dispatch -L 20                 --json createdAt,status,conclusion                 --jq '[.[] | select((now - (.createdAt | fromdateiso8601)) < 72000 and (.conclusion == "success" or .status != "completed"))] | length')
+          echo "on-time runs in the last 20h: $N"
+          if [ "${N:-0}" -gt 0 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+
   collect:
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ACQ_REPORT_WEBHOOK_URL: ${{ secrets.ACQ_REPORT_WEBHOOK_URL }}
+      ACQ_REPORT_WEBHOOK_KEY: ${{ secrets.ACQ_REPORT_WEBHOOK_KEY }}
       N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
       GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       AUTOMATION_STATUS_FILE_ID: ${{ secrets.AUTOMATION_STATUS_FILE_ID }}
@@ -39,5 +68,46 @@ jobs:
         run: pip install -r automation-status/requirements.txt
 
       - name: Collect status
+        id: collect
         working-directory: automation-status
-        run: python collect.py
+        run: |
+          mkdir -p /tmp/fixer
+          python collect.py --out /tmp/fixer/status.json
+          N=$(python -c "import json;print(len(json.load(open('/tmp/fixer/status.json'))['problems']))")
+          echo "problems=$N" >> "$GITHUB_OUTPUT"
+
+      - name: Fixer agent
+        if: steps.collect.outputs.problems != '0'
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          claude -p "$(cat automation-status/FIXER.md)"             --model claude-opus-5-5 --max-turns 80             --allowedTools "Read,Grep,Glob,Edit,Write,Bash(gh run view:*),Bash(gh run list:*),Bash(gh run rerun:*),Bash(python automation-status/n8n_read.py:*),Bash(python -m py_compile:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git status:*)"             > /tmp/fixer/agent.log 2>&1 || true
+          # The agent's own transcript can quote log lines with lead details: never print it.
+          test -s /tmp/fixer/report.json && echo "report written" || echo "no report written"
+
+      - name: Open a pull request with the fix
+        id: pr
+        if: steps.collect.outputs.problems != '0'
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then echo "no code changes"; exit 0; fi
+          TITLE=$(python automation-status/pr_body.py /tmp/fixer/report.json /tmp/fixer/pr_body.md)
+          BR="fixer/$(date +%Y-%m-%d-%H%M)"
+          git checkout -b "$BR"
+          git add -A
+          git commit -m "fix: $TITLE"
+          git push origin "$BR"
+          URL=$(gh pr create --base master --head "$BR" --title "$TITLE" --body-file /tmp/fixer/pr_body.md)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Email Jorge
+        if: always() && steps.collect.outputs.problems != '0' && steps.collect.outputs.problems != ''
+        working-directory: automation-status
+        run: python notify.py /tmp/fixer/status.json /tmp/fixer/report.json "${{ steps.pr.outputs.url }}"
+
+      - name: Add the fixer report to the hub
+        if: always() && steps.collect.outputs.problems != '0' && steps.collect.outputs.problems != ''
+        working-directory: automation-status
+        run: python collect.py --out /tmp/fixer/status.json --attach-report /tmp/fixer/report.json
