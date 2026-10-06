@@ -2,7 +2,11 @@ name: Probate Mailer
 
 on:
   schedule:
-    - cron: '7 22 * * 1-5'  # ~6:07 PM ET Mon–Fri (off the hour: GitHub delays on-the-hour crons)
+    # GitHub skipped the first scheduled send (Oct 5), so three tries a weekday evening.
+    # Safe to repeat: a run only mails what is still due, and the Mail Log blocks repeats.
+    - cron: '7 22 * * 1-5'   # ~6:07 PM ET
+    - cron: '37 23 * * 1-5'  # ~7:37 PM ET
+    - cron: '17 1 * * 2-6'   # ~9:17 PM ET (01:17 UTC the next day)
   workflow_dispatch:
     inputs:
       test_email:
