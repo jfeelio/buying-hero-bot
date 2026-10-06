@@ -189,19 +189,30 @@ def n8n_status():
 
 # ---------------------------------------------------------------- Drive
 
-def save(doc):
+def drive():
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
-    from googleapiclient.http import MediaInMemoryUpload
     scopes = ["https://www.googleapis.com/auth/drive"]
     raw = os.environ.get("GOOGLE_CREDENTIALS_JSON")
     creds = (service_account.Credentials.from_service_account_info(json.loads(raw), scopes=scopes) if raw else
              service_account.Credentials.from_service_account_file(
                  os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "foreclosure-agent", "credentials.json"),
                  scopes=scopes))
-    drive = build("drive", "v3", credentials=creds, cache_discovery=False)
+    return build("drive", "v3", credentials=creds, cache_discovery=False)
+
+
+def load_prev():
+    try:
+        return json.loads(drive().files().get_media(fileId=STATUS_FILE_ID, supportsAllDrives=True).execute())
+    except Exception as e:
+        log("previous status unreadable (%s)" % type(e).__name__)
+        return {}
+
+
+def save(doc):
+    from googleapiclient.http import MediaInMemoryUpload
     body = json.dumps(doc, separators=(",", ":")).encode()
-    drive.files().update(fileId=STATUS_FILE_ID, supportsAllDrives=True,
+    drive().files().update(fileId=STATUS_FILE_ID, supportsAllDrives=True,
                          media_body=MediaInMemoryUpload(body, mimetype="application/json")).execute()
     log("status file: %d bytes written" % len(body))
 
@@ -258,7 +269,16 @@ def main():
     doc = {"generated_at": NOW.isoformat(timespec="seconds"), "window_days": WINDOW_DAYS,
            "github": github(), "n8n": n8n_status()}
     doc["problems"] = problems(doc)
-    log("problems: %d" % len(doc["problems"]))
+    # Each failure is diagnosed and emailed once: a problem already handled (same
+    # automation, same failed run) is not sent to the fixer again tomorrow.
+    prev = load_prev()
+    handled = prev.get("handled") or []
+    seen = {(h.get("key"), h.get("run_id")) for h in handled}
+    doc["new_problems"] = [p for p in doc["problems"] if (p["key"], p.get("run_id")) not in seen]
+    doc["handled"] = (handled + [{"key": p["key"], "run_id": p.get("run_id")} for p in doc["new_problems"]])[-100:]
+    if prev.get("fixer"):
+        doc["fixer"] = prev["fixer"]  # keep the last report on the hub until a new one
+    log("problems: %d (%d new)" % (len(doc["problems"]), len(doc["new_problems"])))
     if args.out:
         json.dump(doc, open(args.out, "w"))
     save(doc)

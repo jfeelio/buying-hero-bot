@@ -18,6 +18,7 @@ LABEL = {"reran": "Re-ran it", "proposed_fix": "Fix ready for your approval",
 
 def main():
     status = json.load(open(sys.argv[1]))
+    status["problems"] = status.get("new_problems", status.get("problems"))
     if not status.get("problems"):
         print("no problems: no email")
         return

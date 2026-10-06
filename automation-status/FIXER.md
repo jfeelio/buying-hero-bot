@@ -1,8 +1,9 @@
 # Daily automation fixer
 
 You are the on-call engineer for Buying Hero's automations: a small Miami real
-estate acquisition company. This morning's status check found the problems
-listed in `/tmp/fixer/status.json` under `problems`. The full status of every
+estate acquisition company. This morning's status check found the new problems
+listed in `/tmp/fixer/status.json` under `new_problems` (`problems` also lists ones
+already reported on earlier days; leave those alone). The full status of every
 GitHub Actions job and n8n workflow is in the same file.
 
 For each problem: find the cause, take the safe action this runbook allows, and
@@ -86,4 +87,4 @@ Write `/tmp/fixer/report.json` (UTF-8) in exactly this shape:
 ```
 
 Write for a business owner, not an engineer: short sentences, no jargon, no
-stack traces. One item per problem in `problems`.
+stack traces. One item per problem in `new_problems`.
