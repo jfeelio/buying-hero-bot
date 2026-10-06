@@ -1,0 +1,53 @@
+name: LevelUp Lead Sheet Sync
+
+# Saturday 9 AM ET (13:00 UTC; 8 AM during EST). Pulls every LevelUp (Facebook)
+# lead from REsimpli and updates the "Meta Lead Sheet" tab shared with the
+# LevelUp team. Rows are matched on phone, so a re-run only updates them.
+on:
+  schedule:
+    - cron: '0 13 * * 6'
+  workflow_dispatch:
+
+concurrency:
+  group: levelup-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # This repo is PUBLIC: the script logs counts only, never lead details.
+    env:
+      TZ: America/New_York
+      RESIMPLI_KEY: ${{ secrets.RESIMPLI_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+      LEVELUP_SHEET_ID: ${{ secrets.LEVELUP_SHEET_ID }}
+      ACQ_REPORT_WEBHOOK_URL: ${{ secrets.ACQ_REPORT_WEBHOOK_URL }}
+      ACQ_REPORT_WEBHOOK_KEY: ${{ secrets.ACQ_REPORT_WEBHOOK_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: levelup-sync/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r levelup-sync/requirements.txt
+
+      - name: Sync LevelUp leads to the sheet
+        working-directory: levelup-sync
+        run: python sync.py
+
+      - name: Email Jorge if the run failed
+        if: failure()
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sS -X POST "$ACQ_REPORT_WEBHOOK_URL" \
+            -H "Content-Type: application/json" -H "X-Report-Key: $ACQ_REPORT_WEBHOOK_KEY" \
+            -d "{\"kind\":\"failure\",\"subject\":\"FAILED: LevelUp lead sheet sync\",\"html\":\"<p>The Saturday LevelUp sheet sync did not run. Log: <a href='$RUN_URL'>$RUN_URL</a></p><p>Re-run it from the Actions tab (LevelUp Lead Sheet Sync, Run workflow).</p>\"}"
