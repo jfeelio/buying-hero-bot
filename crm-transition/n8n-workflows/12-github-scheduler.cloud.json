@@ -349,6 +349,49 @@
   },
   {
    "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "30 6 * * *"
+      }
+     ]
+    }
+   },
+   "id": "a1000000-0000-4000-8000-000000000017",
+   "name": "Bolt sheet 6:30 AM daily",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    630
+   ]
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "w8",
+       "name": "workflow",
+       "value": "run_bolt_sync.yml",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "id": "a1000000-0000-4000-8000-000000000018",
+   "name": "Job: run_bolt_sync.yml",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    260,
+    630
+   ]
+  },
+  {
+   "parameters": {
     "method": "POST",
     "url": "=https://api.github.com/repos/jfeelio/buying-hero-bot/actions/workflows/{{ $json.workflow }}/dispatches",
     "authentication": "genericCredentialType",
@@ -557,6 +600,28 @@
    ]
   },
   "Job: run_pokemon_tracker.yml": {
+   "main": [
+    [
+     {
+      "node": "Start GitHub job",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Bolt sheet 6:30 AM daily": {
+   "main": [
+    [
+     {
+      "node": "Job: run_bolt_sync.yml",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Job: run_bolt_sync.yml": {
    "main": [
     [
      {

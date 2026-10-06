@@ -47,6 +47,7 @@ write the report. You are working in a checkout of the public repo
 | Probate Mailer (`run_probate_mail.yml`) | Never | See hard rules. A failed order needs Jorge to check Open Letter Connect. |
 | Weekly acquisitions report (`run_acq_report.yml`) | Only if the log shows the email was NOT sent (no `mailer: 200`) | A second send emails the team twice. |
 | LevelUp lead sheet sync (`run_levelup_sync.yml`) | Yes | Rows match on phone, re-runs only update. |
+| Bolt PPC sheet sync (`run_bolt_sync.yml`) | Yes | Rebuilds the vendor's sheet from REsimpli; rows match on lead ID. The sheet is shared with an outside vendor: never add columns or data to it. |
 | Pokemon tracker (`run_pokemon_tracker.yml`) | Yes | Personal job, lowest priority. |
 | n8n workflows | You can't re-run them | Diagnose with `n8n_read.py` and report. |
 

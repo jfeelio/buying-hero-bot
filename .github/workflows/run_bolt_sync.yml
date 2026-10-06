@@ -1,0 +1,65 @@
+name: Bolt PPC Sheet Sync
+
+# Daily 6:30 AM ET, started on time by the n8n scheduler (ghscheduler0001); the
+# cron is GitHub's late backup. Rebuilds the Bolt Deals Lead Performance sheet the
+# outside PPC vendor reads, from the REsimpli API. Replaced the Claude-desktop
+# CSV export + office-PC task, which stalled on Aug 31 2026.
+on:
+  schedule:
+    - cron: '41 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: bolt-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # n8n starts this job on time with "Run workflow"; GitHub's own schedule runs
+  # hours late and is only the backup. The backup stands down when an on-time
+  # run in the last 20 hours succeeded or is still going.
+  guard:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          N=$(gh run list -R "${{ github.repository }}" --workflow "${{ github.workflow }}" -e workflow_dispatch -L 20                 --json createdAt,status,conclusion                 --jq '[.[] | select((now - (.createdAt | fromdateiso8601)) < 72000 and (.conclusion == "success" or .status != "completed"))] | length')
+          echo "on-time runs in the last 20h: $N"
+          if [ "${N:-0}" -gt 0 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+  sync:
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # This repo is PUBLIC: the scripts log counts only, never lead details.
+    env:
+      TZ: America/New_York
+      RESIMPLI_KEY: ${{ secrets.RESIMPLI_KEY }}
+      BOLT_SHEET_ID: ${{ secrets.BOLT_SHEET_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: bolt-sync/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r bolt-sync/requirements.txt
+
+      - name: Write credentials
+        run: echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > foreclosure-agent/credentials.json
+
+      - name: Sync Bolt leads to the vendor sheet
+        working-directory: bolt-sync
+        run: python from_api.py

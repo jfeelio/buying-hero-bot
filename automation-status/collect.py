@@ -42,6 +42,10 @@ STAT_PATTERNS = {
         ("Failed orders", r"mailed, (\d+) failed order"),
     ],
     "run_pokemon_tracker.yml": [("Rows written", r"Pipeline complete\. (\d+) row\(s\) written")],
+    "run_bolt_sync.yml": [
+        ("Bolt leads in sheet", r"Bolt sheet sync complete\. (\d+) rows in sheet"),
+        ("New rows", r"rows in sheet \((\d+) new\)"),
+    ],
     "run_levelup_sync.yml": [
         ("LevelUp leads in REsimpli", r"LevelUp leads: (\d+)"),
         ("New sheet rows", r"sheet: (\d+) new rows"),
@@ -208,7 +212,7 @@ def save(doc):
 CADENCE_H = {
     "gh:run_foreclosures.yml": 84, "gh:run_tax_deed.yml": 84, "gh:run_probate.yml": 84,
     "gh:run_probate_mail.yml": 84, "gh:run_acq_report.yml": 204, "gh:run_levelup_sync.yml": 204,
-    "gh:run_pokemon_tracker.yml": 30, "n8n:dnmsync000001": 30, "n8n:ghscheduler0001": 30,
+    "gh:run_pokemon_tracker.yml": 30, "gh:run_bolt_sync.yml": 30, "n8n:dnmsync000001": 30, "n8n:ghscheduler0001": 30,
 }
 IGNORE = {"gh:run_automation_status.yml"}  # this job; a broken run can't report itself
 
