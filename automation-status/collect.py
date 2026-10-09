@@ -48,8 +48,10 @@ STAT_PATTERNS = {
     ],
     "run_levelup_sync.yml": [
         ("LevelUp leads in REsimpli", r"LevelUp leads: (\d+)"),
-        ("New sheet rows", r"sheet: (\d+) new rows"),
-        ("Rows updated", r"sheet: \d+ new rows, (\d+) updated"),
+        ("Rows on LevelUp's sheet", r"sheet rows: (\d+)"),
+        ("Never reached our CRM", r"not in our CRM: (\d+)"),
+        ("Ours missing from their sheet", r"ours not on the sheet: (\d+)"),
+        ("Field differences", r"field differences: (\d+)"),
     ],
 }
 
@@ -222,7 +224,7 @@ def save(doc):
 # Hours after which a job with no new run is overdue (weekday jobs span a weekend).
 CADENCE_H = {
     "gh:run_foreclosures.yml": 84, "gh:run_tax_deed.yml": 84, "gh:run_probate.yml": 84,
-    "gh:run_probate_mail.yml": 84, "gh:run_acq_report.yml": 204, "gh:run_levelup_sync.yml": 204,
+    "gh:run_probate_mail.yml": 84, "gh:run_acq_report.yml": 204, "gh:run_levelup_sync.yml": 30,
     "gh:run_pokemon_tracker.yml": 30, "gh:run_bolt_sync.yml": 30, "n8n:dnmsync000001": 30, "n8n:ghscheduler0001": 30,
 }
 IGNORE = {"gh:run_automation_status.yml"}  # this job; a broken run can't report itself
