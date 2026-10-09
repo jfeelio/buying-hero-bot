@@ -1,11 +1,13 @@
 name: LevelUp Lead Sheet Sync
 
-# Saturday 9 AM ET (13:00 UTC; 8 AM during EST). Pulls every LevelUp (Facebook)
-# lead from REsimpli and updates the "Meta Lead Sheet" tab shared with the
-# LevelUp team. Rows are matched on phone, so a re-run only updates them.
+# Daily 9 AM ET, started on time by the n8n scheduler (ghscheduler0001); the
+# cron is GitHub's late backup. Fills Buying Hero's columns (N onward) on every
+# row of the "Meta Lead Sheet" tab in LevelUp's KPI workbook, never touching
+# their A-M, and rebuilds the "BH Reconciliation" tab with every gap between
+# their list and REsimpli.
 on:
   schedule:
-    - cron: '0 13 * * 6'
+    - cron: '0 13 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -71,4 +73,4 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           curl -sS -X POST "$ACQ_REPORT_WEBHOOK_URL" \
             -H "Content-Type: application/json" -H "X-Report-Key: $ACQ_REPORT_WEBHOOK_KEY" \
-            -d "{\"kind\":\"failure\",\"subject\":\"FAILED: LevelUp lead sheet sync\",\"html\":\"<p>The Saturday LevelUp sheet sync did not run. Log: <a href='$RUN_URL'>$RUN_URL</a></p><p>Re-run it from the Actions tab (LevelUp Lead Sheet Sync, Run workflow).</p>\"}"
+            -d "{\"kind\":\"failure\",\"subject\":\"FAILED: LevelUp lead sheet sync\",\"html\":\"<p>The daily LevelUp sheet sync did not run. Log: <a href='$RUN_URL'>$RUN_URL</a></p><p>Re-run it from the Actions tab (LevelUp Lead Sheet Sync, Run workflow).</p>\"}"
