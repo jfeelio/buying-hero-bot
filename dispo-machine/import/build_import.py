@@ -22,7 +22,7 @@ import rekey
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
-CREDS = r"D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json"
+CREDS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "foreclosure-agent", "credentials.json")
 SID = "1wHg_2vIvhBYTJTIFebPzvvAbxzmuhtpt4oh62wRAYY0"
 SRC_TAB = "MAIN Dispo Tab"
 FROZEN_TAB = "GHL Import Dry Run"   # frozen snapshot: row -> identity

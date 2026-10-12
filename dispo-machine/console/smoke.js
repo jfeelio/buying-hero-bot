@@ -4,7 +4,7 @@
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
 
-const HTML = fs.readFileSync('D:/Dropbox/J Feels/Dev/dispo-machine/console/dist/index.html', 'utf8');
+const HTML = fs.readFileSync(require('path').join(__dirname, 'dist', 'index.html'), 'utf8');
 
 let fails = 0;
 function ok(cond, msg) {
