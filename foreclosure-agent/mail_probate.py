@@ -180,7 +180,15 @@ def place_order(letter_no: int, rows: list) -> dict:
     logger.info(f"  OLC order {order_id}: status={data.get('status')} payment={data.get('paymentStatus')} cost={data.get('cost')}")
     # The order is already placed, so warn rather than raise: raising here would skip the Mail Log
     # write and the next run would mail these people again.
-    if not data.get("returnContactId"):
+    # OLC embeds the address as returnContact (returnContactId stays null); the create response
+    # may not carry it yet, so re-read the order before deciding it is missing.
+    if not data.get("returnContact"):
+        try:
+            g = requests.get(f"{OLC_BASE}/orders/{order_id}", headers={"Authorization": f"Bearer {OLC_API_KEY}"}, timeout=60)
+            data["returnContact"] = (g.json().get("data") or {}).get("returnContact")
+        except Exception as e:
+            logger.warning(f"  could not re-read OLC order {order_id}: {e}")
+    if not data.get("returnContact"):
         logger.error(f"  OLC order {order_id} has NO return address attached - check it in OLC before it prints")
     return data
 
@@ -240,7 +248,7 @@ def send_summary(today: date, orders: list, failures: list, skipped: dict, cases
     html.append("<h3 style='margin:16px 0 6px'>Orders</h3>" + table(
         ["Letter", "Pieces", "Order ID", "Status", "Payment", "Cost", "Return address"],
         [[n, len(rows), o.get("id"), o.get("status"), o.get("paymentStatus"), o.get("cost"),
-          "ok" if o.get("returnContactId") else "MISSING"] for n, rows, o in orders]))
+          "ok" if o.get("returnContact") else "MISSING"] for n, rows, o in orders]))
     html.append("<h3 style='margin:16px 0 6px'>Who we mailed today, by address source</h3>" + table(
         ["Source", "Letters"], sorted(by_source.items(), key=lambda kv: -kv[1])))
     html.append("<h3 style='margin:16px 0 6px'>Running totals</h3>" + table(["", ""], [
@@ -257,7 +265,7 @@ def send_summary(today: date, orders: list, failures: list, skipped: dict, cases
     html.append(f"<p style='font-size:12px;color:#666'>Full detail: <a href='{SHEET_URL}'>Probate and Probate Mail Log tabs</a>.</p>")
 
     subject = f"Probate mail sent: {mailed} letters ({today:%b %d})" + (" - SOME ORDERS FAILED" if failures else "")
-    if any(not o.get("returnContactId") for _, _, o in orders):
+    if any(not o.get("returnContact") for _, _, o in orders):
         subject += " - RETURN ADDRESS MISSING, check OLC"
     try:
         r = requests.post(url, json={"kind": "failure", "subject": subject, "html": "".join(html)},
