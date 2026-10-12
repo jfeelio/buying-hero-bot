@@ -37,3 +37,14 @@ service-account*.json
 *.pem
 acquisition-trainer/
 yt-intel-dashboard/
+
+# Kept OUT of this public repo on purpose (live in Dropbox only):
+# team emails, seller/lead data, county owner data.
+appt_week.json
+crm-transition/n8n-workflows/mls-sweep/
+crm-transition/n8n-workflows/09-weekly-mls-sweep.cloud.json
+crm-transition/resimpli-ppc-zap/bolt_*.json
+crm-transition/resimpli-ppc-zap/logs/
+crm-transition/resimpli-ppc-zap/archive/
+list-efficiency-engine/data/
+list-efficiency-engine/output/

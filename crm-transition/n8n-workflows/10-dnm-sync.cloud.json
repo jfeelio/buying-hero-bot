@@ -1,0 +1,754 @@
+{
+  "id": "dnmsync000001",
+  "name": "10 - REsimpli Remove-from-List -> DNM Sheet",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "d0000000-0000-4000-8000-000000000001",
+      "name": "Daily 7am ET",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d0000000-0000-4000-8000-000000000002",
+      "name": "Run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resimpli.com/api/v6/openapi/lead/list",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ page: 1, limit: 1 }) }}",
+        "options": {}
+      },
+      "id": "d0000000-0000-4000-8000-000000000003",
+      "name": "Count leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "resimpliapi01",
+          "name": "REsimpli API"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Pure logic for the DNM sync. No I/O — the HTTP nodes do the fetching — so\r\n// runner.js can exercise the exact same code locally against live data.\r\n//\r\n// Pipeline: REsimpli lead -> parse its address -> Miami-Dade Property\r\n// Appraiser (MDPA) lookup -> write the COUNTY's property + mailing address.\r\n// REsimpli addresses are hand-typed and often wrong (cities appended to the\r\n// street, a Miami house filed under Cape Coral), so they are only used to find\r\n// the parcel, never written as-is.\r\n\r\nconst TAG_ID = '689e51591f1ec236f4f844b9'; // \"remove from list\"\r\n\r\nconst clean = (s) => String(s || '').toUpperCase().replace(/[.,#]/g, ' ').replace(/\\s+/g, ' ').trim();\r\n\r\nconst SUFFIXES = ['ST', 'AVE', 'CT', 'TER', 'TERR', 'PL', 'RD', 'WAY', 'DR', 'LN', 'BLVD', 'CIR', 'TRL', 'PATH', 'HWY', 'PKWY', 'CSWY', 'LOOP', 'ROW'];\r\nconst LONG = { STREET: 'ST', AVENUE: 'AVE', COURT: 'CT', TERRACE: 'TER', TERR: 'TER', PLACE: 'PL', ROAD: 'RD', DRIVE: 'DR', LANE: 'LN', BOULEVARD: 'BLVD', CIRCLE: 'CIR' };\r\n\r\n// Collect every tagged lead id from /lead/list pages. Paging is unstable, so dedupe.\r\nfunction pickTagged(pages) {\r\n  const seen = new Map();\r\n  for (const page of pages) for (const l of (page && page.data && page.data.items) || []) seen.set(l._id, l);\r\n  const tagged = [...seen.values()].filter((l) => (l.tags || []).some((t) => t._id === TAG_ID));\r\n  return { total: seen.size, ids: tagged.map((l) => l._id) };\r\n}\r\n\r\n// Flatten a /lead/details response.\r\nfunction fromDetails(leadData, leadId) {\r\n  const d = leadData || {};\r\n  const p = d.propertyInfo || {};\r\n  const c = (d.contactData || [])[0] || {};\r\n  return {\r\n    leadId: d._id || leadId || null,\r\n    raw: d.address || '',\r\n    city: clean(p.city), zip: String(p.zip || '').slice(0, 5),\r\n    name: c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || '',\r\n  };\r\n}\r\n\r\n// \"8220 SW 43 TER MIAMI\" / \"3725 Ne 169th St Apt 409, North Miami Beach, FL 33160\"\r\n// -> { street: \"8220 SW 43 TER\", unit: \"\", zip }. Everything after the street\r\n// suffix is dropped (that is where hand-typed cities end up) except a unit.\r\nfunction parseStreet(raw, fallbackZip) {\r\n  const parts = String(raw || '').split(',');\r\n  const first = clean(parts[0]).replace(/\\b(\\d+(?:ST|ND|RD|TH)?)(TERR|TER|AVE|CT|PL|WAY|DR|LN|CIR|BLVD)\\b/g, '$1 $2');\n  if (!/^\\d+\\s+\\S/.test(first)) return null; // \"5324\", \"\" - no house number + street\r\n  const words = first.split(' ');\r\n  let end = words.length;\r\n  const isSuffix = (w) => SUFFIXES.includes(w) || LONG[w];\n  for (let i = 2; i < words.length; i++) if (isSuffix(words[i])) { end = i + 1; while (end < words.length && isSuffix(words[end])) end++; break; }\n  const rest = words.slice(end).join(' ');\r\n  const unitM = rest.match(/\\b(?:APT|UNIT|STE|#)\\s*(\\w+)/);\r\n  const zipM = String(raw).match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\r\n  return { street: words.slice(0, end).join(' '), unit: unitM ? unitM[1] : '', zip: (zipM && zipM[1]) || fallbackZip || '' };\r\n}\r\n\r\n// Comparison key: drop ordinals and long-form suffixes so \"NW 23RD AVE\",\r\n// \"NW 23 AVE\" and \"NW 23RD AVENUE\" collide.\r\nfunction streetKey(street) {\r\n  return clean(street).split(' ')\r\n    .map((w) => LONG[w] || w.replace(/^(\\d+)(ST|ND|RD|TH)$/, '$1'))\r\n    .join(' ');\r\n}\r\n\r\n// MDPA writes \"NW 23 AVE\"; the DNM sheet's existing rows use \"NW 23RD AVE\".\r\nfunction ordinalize(street) {\r\n  return clean(street).replace(/\\b(N|S|E|W|NW|NE|SW|SE) (\\d+) (?=[A-Z])/g, (m, dir, n) => {\r\n    const v = Number(n) % 100, last = Number(n) % 10;\r\n    const suf = v >= 11 && v <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' }[last] || 'TH');\r\n    return `${dir} ${n}${suf} `;\r\n  }).replace(/\\bTERR\\b/g, 'TER');\r\n}\r\n\r\n// GetAddress can return several parcels (condo units, near-misses). Only\r\n// accept an exact street match, and when several remain (a condo with no unit\r\n// in REsimpli) refuse to guess — the lead goes to review instead.\r\nfunction pickParcel(getAddressResponse, parsed) {\r\n  const infos = (getAddressResponse && getAddressResponse.MinimumPropertyInfos) || [];\r\n  const want = streetKey(parsed.street);\r\n  let exact = infos.filter((i) => streetKey(i.SiteAddress) === want);\r\n  if (parsed.unit) exact = exact.filter((i) => clean(i.SiteUnit) === clean(parsed.unit));\r\n  if (exact.length !== 1) return { folio: null, reason: exact.length ? `${exact.length} county parcels at this address (condo?) - no unit in REsimpli` : 'Not found in Miami-Dade county records' };\r\n  return { folio: String(exact[0].Strap || '').replace(/-/g, ''), reason: '' };\r\n}\r\n\r\n// Turn the MDPA folio record into a sheet row's address fields.\r\nfunction countyAddress(folio, lead) {\r\n  const sa = ((folio && folio.SiteAddress) || [])[0];\r\n  const m = (folio && folio.MailingAddress) || {};\r\n  if (!sa || !sa.Address) return null;\r\n  const street = ordinalize(String(sa.Address).split(',')[0]);\r\n  const zip = String(sa.Zip || '').slice(0, 5);\r\n  const mailStreet = ordinalize([m.Address1, m.Address2].filter(Boolean).join(' '));\r\n  const mailCity = clean(m.City);\r\n  // MDPA names unincorporated parcels \"Unincorporated County\", which is not a\r\n  // mailing city. Fall back to the owner's own mailing city when they live\r\n  // there, then REsimpli's city if its ZIP agrees, then MIAMI.\r\n  let city = clean(sa.City);\r\n  if (!city || city === 'UNINCORPORATED COUNTY') {\r\n    if (streetKey(mailStreet) === streetKey(street) && mailCity) city = mailCity;\r\n    else if (lead.city && lead.zip === zip) city = lead.city;\r\n    else city = 'MIAMI';\r\n  }\r\n  city = city.replace('OPA-LOCKA', 'OPA LOCKA');\r\n  return {\r\n    street, city, state: 'FL', zip,\r\n    mailStreet, mailCity, mailState: clean(m.State) || (mailStreet ? 'FL' : ''), mailZip: String(m.ZipCode || '').slice(0, 5),\r\n  };\r\n}\r\n\r\n// sheetRows: columns C:F (street, city, state, zip), header included.\r\nfunction sheetKeys(sheetRows) {\r\n  const keys = new Set();\r\n  for (const r of (sheetRows || []).slice(1)) keys.add(streetKey(r[0]) + '|' + String(r[3] || '').slice(0, 5));\r\n  return keys;\r\n}\r\n\r\n// resolved: [{ lead, county|null, reason? }] -> rows to append + report.\r\nfunction buildRows(resolved, sheetRows, today) {\r\n  const keys = sheetKeys(sheetRows);\r\n  const streets = new Set((sheetRows || []).slice(1).map((r) => streetKey(r[0])));\r\n  const rows = [], added = [], duplicates = [], needsReview = [];\r\n  for (const { lead, county, reason } of resolved) {\r\n    if (!county) {\r\n      // Not verifiable, but if the hand-typed street is already on the sheet\r\n      // someone added it manually - nothing to review.\r\n      const p = parseStreet(lead.raw, lead.zip);\r\n      if (p && streets.has(streetKey(p.street))) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw, reason });\r\n      continue;\r\n    }\r\n    // Same street number + name exists in several cities (a Broward \"9361 SW\r\n    // 55th St\" also exists in Miami-Dade). If REsimpli's ZIP disagrees with\r\n    // the parcel we found, we may have the wrong house - a human decides.\r\n    const typedZip = (parseStreet(lead.raw, lead.zip) || {}).zip || lead.zip;\r\n    if (typedZip && typedZip !== county.zip) {\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw,\r\n        reason: `ZIP mismatch: REsimpli ${typedZip}, county parcel is ${county.street}, ${county.city} ${county.zip}` });\r\n      continue;\r\n    }\r\n    const key = streetKey(county.street) + '|' + county.zip;\r\n    if (keys.has(key)) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n    keys.add(key);\r\n    // A-B owner names stay blank on purpose (Jorge's call); K = date added.\r\n    rows.push(['', '', county.street, county.city, county.state, county.zip,\r\n      county.mailStreet, county.mailCity, county.mailState, county.mailZip, today]);\r\n    added.push({ leadId: lead.leadId, name: lead.name, address: `${county.street}, ${county.city} ${county.zip}`,\r\n      was: lead.raw, absentee: streetKey(county.mailStreet) !== streetKey(county.street) });\r\n  }\r\n  return { rows, added, duplicates, needsReview };\r\n}\n\n// Email body for the DNM sync. Inline styles only — Gmail strips <style>.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/edit';\n\nfunction table(rows, cols) {\n  if (!rows.length) return '';\n  const th = cols.map((c) => `<th style=\"text-align:left;padding:4px 10px;border-bottom:1px solid #ccc\">${esc(c[0])}</th>`).join('');\n  const tr = rows.map((r) => '<tr>' + cols.map((c) => `<td style=\"padding:4px 10px;border-bottom:1px solid #eee\">${c[1](r)}</td>`).join('') + '</tr>').join('');\n  return `<table style=\"border-collapse:collapse;font-size:13px\">${'<tr>' + th + '</tr>'}${tr}</table>`;\n}\n\nfunction render(result, error) {\n  const font = 'font-family:Arial,sans-serif;font-size:14px;color:#222';\n  if (error) {\n    return {\n      subject: 'DNM sync FAILED',\n      html: `<div style=\"${font}\"><p><b>The REsimpli → DNM sheet sync failed.</b> Nothing was written for this run; it will retry tomorrow at 7am.</p>\n<p style=\"white-space:pre-wrap;background:#f6f6f6;padding:8px\">${esc(error)}</p>\n<p><a href=\"${SHEET_URL}\">Open the DNM sheet</a></p></div>`,\n    };\n  }\n  const { added, duplicates, needsReview } = result;\n  const subject = `DNM sync: ${added.length} added` + (needsReview.length ? `, ${needsReview.length} need review` : '');\n  const who = (r) => esc(r.name || '(no name)');\n  const html = `<div style=\"${font}\">\n<p><b>${added.length}</b> propert${added.length === 1 ? 'y' : 'ies'} added to the <a href=\"${SHEET_URL}\">DNM sheet</a>, addresses verified against Miami-Dade Property Appraiser records.${duplicates.length ? ` ${duplicates.length} newly tagged lead${duplicates.length === 1 ? ' was' : 's were'} already on the sheet.` : ''}</p>\n${table(added, [['Lead', who], ['County address', (r) => esc(r.address)], ['REsimpli had', (r) => esc(r.was)]])}\n${needsReview.length ? `<p style=\"margin-top:18px\"><b>${needsReview.length}</b> tagged lead${needsReview.length === 1 ? '' : 's'} could not be verified and were NOT added. Add these by hand if they belong on the list:</p>\n${table(needsReview, [['Lead', who], ['REsimpli address', (r) => esc(r.address || '(none)')], ['Why', (r) => esc(r.reason)]])}` : ''}\n<p style=\"color:#888;font-size:12px;margin-top:18px\">Each lead is reported once. Runs daily at 7am ET.</p>\n</div>`;\n  return { subject, html };\n}\n\n// ---- n8n entry point ----\nconst count = Number($input.first().json.data.count);\nif (!count) throw new Error('REsimpli returned no lead count');\n// One spare page: leads added mid-pull shift everything by a slot.\nreturn Array.from({ length: Math.ceil(count / 100) + 1 }, (_, i) => ({ json: { page: i + 1, count } }));"
+      },
+      "id": "d0000000-0000-4000-8000-000000000004",
+      "name": "Plan pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resimpli.com/api/v6/openapi/lead/list",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ page: $json.page, limit: 100 }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 700
+            }
+          }
+        }
+      },
+      "id": "d0000000-0000-4000-8000-000000000005",
+      "name": "List leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "resimpliapi01",
+          "name": "REsimpli API"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Pure logic for the DNM sync. No I/O — the HTTP nodes do the fetching — so\r\n// runner.js can exercise the exact same code locally against live data.\r\n//\r\n// Pipeline: REsimpli lead -> parse its address -> Miami-Dade Property\r\n// Appraiser (MDPA) lookup -> write the COUNTY's property + mailing address.\r\n// REsimpli addresses are hand-typed and often wrong (cities appended to the\r\n// street, a Miami house filed under Cape Coral), so they are only used to find\r\n// the parcel, never written as-is.\r\n\r\nconst TAG_ID = '689e51591f1ec236f4f844b9'; // \"remove from list\"\r\n\r\nconst clean = (s) => String(s || '').toUpperCase().replace(/[.,#]/g, ' ').replace(/\\s+/g, ' ').trim();\r\n\r\nconst SUFFIXES = ['ST', 'AVE', 'CT', 'TER', 'TERR', 'PL', 'RD', 'WAY', 'DR', 'LN', 'BLVD', 'CIR', 'TRL', 'PATH', 'HWY', 'PKWY', 'CSWY', 'LOOP', 'ROW'];\r\nconst LONG = { STREET: 'ST', AVENUE: 'AVE', COURT: 'CT', TERRACE: 'TER', TERR: 'TER', PLACE: 'PL', ROAD: 'RD', DRIVE: 'DR', LANE: 'LN', BOULEVARD: 'BLVD', CIRCLE: 'CIR' };\r\n\r\n// Collect every tagged lead id from /lead/list pages. Paging is unstable, so dedupe.\r\nfunction pickTagged(pages) {\r\n  const seen = new Map();\r\n  for (const page of pages) for (const l of (page && page.data && page.data.items) || []) seen.set(l._id, l);\r\n  const tagged = [...seen.values()].filter((l) => (l.tags || []).some((t) => t._id === TAG_ID));\r\n  return { total: seen.size, ids: tagged.map((l) => l._id) };\r\n}\r\n\r\n// Flatten a /lead/details response.\r\nfunction fromDetails(leadData, leadId) {\r\n  const d = leadData || {};\r\n  const p = d.propertyInfo || {};\r\n  const c = (d.contactData || [])[0] || {};\r\n  return {\r\n    leadId: d._id || leadId || null,\r\n    raw: d.address || '',\r\n    city: clean(p.city), zip: String(p.zip || '').slice(0, 5),\r\n    name: c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || '',\r\n  };\r\n}\r\n\r\n// \"8220 SW 43 TER MIAMI\" / \"3725 Ne 169th St Apt 409, North Miami Beach, FL 33160\"\r\n// -> { street: \"8220 SW 43 TER\", unit: \"\", zip }. Everything after the street\r\n// suffix is dropped (that is where hand-typed cities end up) except a unit.\r\nfunction parseStreet(raw, fallbackZip) {\r\n  const parts = String(raw || '').split(',');\r\n  const first = clean(parts[0]).replace(/\\b(\\d+(?:ST|ND|RD|TH)?)(TERR|TER|AVE|CT|PL|WAY|DR|LN|CIR|BLVD)\\b/g, '$1 $2');\n  if (!/^\\d+\\s+\\S/.test(first)) return null; // \"5324\", \"\" - no house number + street\r\n  const words = first.split(' ');\r\n  let end = words.length;\r\n  const isSuffix = (w) => SUFFIXES.includes(w) || LONG[w];\n  for (let i = 2; i < words.length; i++) if (isSuffix(words[i])) { end = i + 1; while (end < words.length && isSuffix(words[end])) end++; break; }\n  const rest = words.slice(end).join(' ');\r\n  const unitM = rest.match(/\\b(?:APT|UNIT|STE|#)\\s*(\\w+)/);\r\n  const zipM = String(raw).match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\r\n  return { street: words.slice(0, end).join(' '), unit: unitM ? unitM[1] : '', zip: (zipM && zipM[1]) || fallbackZip || '' };\r\n}\r\n\r\n// Comparison key: drop ordinals and long-form suffixes so \"NW 23RD AVE\",\r\n// \"NW 23 AVE\" and \"NW 23RD AVENUE\" collide.\r\nfunction streetKey(street) {\r\n  return clean(street).split(' ')\r\n    .map((w) => LONG[w] || w.replace(/^(\\d+)(ST|ND|RD|TH)$/, '$1'))\r\n    .join(' ');\r\n}\r\n\r\n// MDPA writes \"NW 23 AVE\"; the DNM sheet's existing rows use \"NW 23RD AVE\".\r\nfunction ordinalize(street) {\r\n  return clean(street).replace(/\\b(N|S|E|W|NW|NE|SW|SE) (\\d+) (?=[A-Z])/g, (m, dir, n) => {\r\n    const v = Number(n) % 100, last = Number(n) % 10;\r\n    const suf = v >= 11 && v <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' }[last] || 'TH');\r\n    return `${dir} ${n}${suf} `;\r\n  }).replace(/\\bTERR\\b/g, 'TER');\r\n}\r\n\r\n// GetAddress can return several parcels (condo units, near-misses). Only\r\n// accept an exact street match, and when several remain (a condo with no unit\r\n// in REsimpli) refuse to guess — the lead goes to review instead.\r\nfunction pickParcel(getAddressResponse, parsed) {\r\n  const infos = (getAddressResponse && getAddressResponse.MinimumPropertyInfos) || [];\r\n  const want = streetKey(parsed.street);\r\n  let exact = infos.filter((i) => streetKey(i.SiteAddress) === want);\r\n  if (parsed.unit) exact = exact.filter((i) => clean(i.SiteUnit) === clean(parsed.unit));\r\n  if (exact.length !== 1) return { folio: null, reason: exact.length ? `${exact.length} county parcels at this address (condo?) - no unit in REsimpli` : 'Not found in Miami-Dade county records' };\r\n  return { folio: String(exact[0].Strap || '').replace(/-/g, ''), reason: '' };\r\n}\r\n\r\n// Turn the MDPA folio record into a sheet row's address fields.\r\nfunction countyAddress(folio, lead) {\r\n  const sa = ((folio && folio.SiteAddress) || [])[0];\r\n  const m = (folio && folio.MailingAddress) || {};\r\n  if (!sa || !sa.Address) return null;\r\n  const street = ordinalize(String(sa.Address).split(',')[0]);\r\n  const zip = String(sa.Zip || '').slice(0, 5);\r\n  const mailStreet = ordinalize([m.Address1, m.Address2].filter(Boolean).join(' '));\r\n  const mailCity = clean(m.City);\r\n  // MDPA names unincorporated parcels \"Unincorporated County\", which is not a\r\n  // mailing city. Fall back to the owner's own mailing city when they live\r\n  // there, then REsimpli's city if its ZIP agrees, then MIAMI.\r\n  let city = clean(sa.City);\r\n  if (!city || city === 'UNINCORPORATED COUNTY') {\r\n    if (streetKey(mailStreet) === streetKey(street) && mailCity) city = mailCity;\r\n    else if (lead.city && lead.zip === zip) city = lead.city;\r\n    else city = 'MIAMI';\r\n  }\r\n  city = city.replace('OPA-LOCKA', 'OPA LOCKA');\r\n  return {\r\n    street, city, state: 'FL', zip,\r\n    mailStreet, mailCity, mailState: clean(m.State) || (mailStreet ? 'FL' : ''), mailZip: String(m.ZipCode || '').slice(0, 5),\r\n  };\r\n}\r\n\r\n// sheetRows: columns C:F (street, city, state, zip), header included.\r\nfunction sheetKeys(sheetRows) {\r\n  const keys = new Set();\r\n  for (const r of (sheetRows || []).slice(1)) keys.add(streetKey(r[0]) + '|' + String(r[3] || '').slice(0, 5));\r\n  return keys;\r\n}\r\n\r\n// resolved: [{ lead, county|null, reason? }] -> rows to append + report.\r\nfunction buildRows(resolved, sheetRows, today) {\r\n  const keys = sheetKeys(sheetRows);\r\n  const streets = new Set((sheetRows || []).slice(1).map((r) => streetKey(r[0])));\r\n  const rows = [], added = [], duplicates = [], needsReview = [];\r\n  for (const { lead, county, reason } of resolved) {\r\n    if (!county) {\r\n      // Not verifiable, but if the hand-typed street is already on the sheet\r\n      // someone added it manually - nothing to review.\r\n      const p = parseStreet(lead.raw, lead.zip);\r\n      if (p && streets.has(streetKey(p.street))) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw, reason });\r\n      continue;\r\n    }\r\n    // Same street number + name exists in several cities (a Broward \"9361 SW\r\n    // 55th St\" also exists in Miami-Dade). If REsimpli's ZIP disagrees with\r\n    // the parcel we found, we may have the wrong house - a human decides.\r\n    const typedZip = (parseStreet(lead.raw, lead.zip) || {}).zip || lead.zip;\r\n    if (typedZip && typedZip !== county.zip) {\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw,\r\n        reason: `ZIP mismatch: REsimpli ${typedZip}, county parcel is ${county.street}, ${county.city} ${county.zip}` });\r\n      continue;\r\n    }\r\n    const key = streetKey(county.street) + '|' + county.zip;\r\n    if (keys.has(key)) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n    keys.add(key);\r\n    // A-B owner names stay blank on purpose (Jorge's call); K = date added.\r\n    rows.push(['', '', county.street, county.city, county.state, county.zip,\r\n      county.mailStreet, county.mailCity, county.mailState, county.mailZip, today]);\r\n    added.push({ leadId: lead.leadId, name: lead.name, address: `${county.street}, ${county.city} ${county.zip}`,\r\n      was: lead.raw, absentee: streetKey(county.mailStreet) !== streetKey(county.street) });\r\n  }\r\n  return { rows, added, duplicates, needsReview };\r\n}\n\n// Email body for the DNM sync. Inline styles only — Gmail strips <style>.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/edit';\n\nfunction table(rows, cols) {\n  if (!rows.length) return '';\n  const th = cols.map((c) => `<th style=\"text-align:left;padding:4px 10px;border-bottom:1px solid #ccc\">${esc(c[0])}</th>`).join('');\n  const tr = rows.map((r) => '<tr>' + cols.map((c) => `<td style=\"padding:4px 10px;border-bottom:1px solid #eee\">${c[1](r)}</td>`).join('') + '</tr>').join('');\n  return `<table style=\"border-collapse:collapse;font-size:13px\">${'<tr>' + th + '</tr>'}${tr}</table>`;\n}\n\nfunction render(result, error) {\n  const font = 'font-family:Arial,sans-serif;font-size:14px;color:#222';\n  if (error) {\n    return {\n      subject: 'DNM sync FAILED',\n      html: `<div style=\"${font}\"><p><b>The REsimpli → DNM sheet sync failed.</b> Nothing was written for this run; it will retry tomorrow at 7am.</p>\n<p style=\"white-space:pre-wrap;background:#f6f6f6;padding:8px\">${esc(error)}</p>\n<p><a href=\"${SHEET_URL}\">Open the DNM sheet</a></p></div>`,\n    };\n  }\n  const { added, duplicates, needsReview } = result;\n  const subject = `DNM sync: ${added.length} added` + (needsReview.length ? `, ${needsReview.length} need review` : '');\n  const who = (r) => esc(r.name || '(no name)');\n  const html = `<div style=\"${font}\">\n<p><b>${added.length}</b> propert${added.length === 1 ? 'y' : 'ies'} added to the <a href=\"${SHEET_URL}\">DNM sheet</a>, addresses verified against Miami-Dade Property Appraiser records.${duplicates.length ? ` ${duplicates.length} newly tagged lead${duplicates.length === 1 ? ' was' : 's were'} already on the sheet.` : ''}</p>\n${table(added, [['Lead', who], ['County address', (r) => esc(r.address)], ['REsimpli had', (r) => esc(r.was)]])}\n${needsReview.length ? `<p style=\"margin-top:18px\"><b>${needsReview.length}</b> tagged lead${needsReview.length === 1 ? '' : 's'} could not be verified and were NOT added. Add these by hand if they belong on the list:</p>\n${table(needsReview, [['Lead', who], ['REsimpli address', (r) => esc(r.address || '(none)')], ['Why', (r) => esc(r.reason)]])}` : ''}\n<p style=\"color:#888;font-size:12px;margin-top:18px\">Each lead is reported once. Runs daily at 7am ET.</p>\n</div>`;\n  return { subject, html };\n}\n\n// ---- n8n entry point ----\nconst count = $('Plan pages').first().json.count;\nconst { total, ids } = pickTagged($input.all().map((i) => i.json));\n// A short pull would silently miss tagged leads. Fail loudly instead.\nif (total < count * 0.95) throw new Error(`Only pulled ${total} of ${count} REsimpli leads - aborting`);\nconst processed = $getWorkflowStaticData('global').processed || {};\nconst fresh = ids.filter((id) => !processed[id]);\nif (!fresh.length) return [{ json: { newCount: 0, tagged: ids.length } }];\nreturn fresh.map((leadId) => ({ json: { leadId, newCount: fresh.length, tagged: ids.length } }));"
+      },
+      "id": "d0000000-0000-4000-8000-000000000006",
+      "name": "Pick new tagged",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.newCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d0000000-0000-4000-8000-000000000007",
+      "name": "Anything new?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resimpli.com/api/v6/openapi/lead/details",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ leadId: $json.leadId }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 700
+            }
+          }
+        }
+      },
+      "id": "d0000000-0000-4000-8000-000000000008",
+      "name": "Lead details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "resimpliapi01",
+          "name": "REsimpli API"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Pure logic for the DNM sync. No I/O — the HTTP nodes do the fetching — so\r\n// runner.js can exercise the exact same code locally against live data.\r\n//\r\n// Pipeline: REsimpli lead -> parse its address -> Miami-Dade Property\r\n// Appraiser (MDPA) lookup -> write the COUNTY's property + mailing address.\r\n// REsimpli addresses are hand-typed and often wrong (cities appended to the\r\n// street, a Miami house filed under Cape Coral), so they are only used to find\r\n// the parcel, never written as-is.\r\n\r\nconst TAG_ID = '689e51591f1ec236f4f844b9'; // \"remove from list\"\r\n\r\nconst clean = (s) => String(s || '').toUpperCase().replace(/[.,#]/g, ' ').replace(/\\s+/g, ' ').trim();\r\n\r\nconst SUFFIXES = ['ST', 'AVE', 'CT', 'TER', 'TERR', 'PL', 'RD', 'WAY', 'DR', 'LN', 'BLVD', 'CIR', 'TRL', 'PATH', 'HWY', 'PKWY', 'CSWY', 'LOOP', 'ROW'];\r\nconst LONG = { STREET: 'ST', AVENUE: 'AVE', COURT: 'CT', TERRACE: 'TER', TERR: 'TER', PLACE: 'PL', ROAD: 'RD', DRIVE: 'DR', LANE: 'LN', BOULEVARD: 'BLVD', CIRCLE: 'CIR' };\r\n\r\n// Collect every tagged lead id from /lead/list pages. Paging is unstable, so dedupe.\r\nfunction pickTagged(pages) {\r\n  const seen = new Map();\r\n  for (const page of pages) for (const l of (page && page.data && page.data.items) || []) seen.set(l._id, l);\r\n  const tagged = [...seen.values()].filter((l) => (l.tags || []).some((t) => t._id === TAG_ID));\r\n  return { total: seen.size, ids: tagged.map((l) => l._id) };\r\n}\r\n\r\n// Flatten a /lead/details response.\r\nfunction fromDetails(leadData, leadId) {\r\n  const d = leadData || {};\r\n  const p = d.propertyInfo || {};\r\n  const c = (d.contactData || [])[0] || {};\r\n  return {\r\n    leadId: d._id || leadId || null,\r\n    raw: d.address || '',\r\n    city: clean(p.city), zip: String(p.zip || '').slice(0, 5),\r\n    name: c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || '',\r\n  };\r\n}\r\n\r\n// \"8220 SW 43 TER MIAMI\" / \"3725 Ne 169th St Apt 409, North Miami Beach, FL 33160\"\r\n// -> { street: \"8220 SW 43 TER\", unit: \"\", zip }. Everything after the street\r\n// suffix is dropped (that is where hand-typed cities end up) except a unit.\r\nfunction parseStreet(raw, fallbackZip) {\r\n  const parts = String(raw || '').split(',');\r\n  const first = clean(parts[0]).replace(/\\b(\\d+(?:ST|ND|RD|TH)?)(TERR|TER|AVE|CT|PL|WAY|DR|LN|CIR|BLVD)\\b/g, '$1 $2');\n  if (!/^\\d+\\s+\\S/.test(first)) return null; // \"5324\", \"\" - no house number + street\r\n  const words = first.split(' ');\r\n  let end = words.length;\r\n  const isSuffix = (w) => SUFFIXES.includes(w) || LONG[w];\n  for (let i = 2; i < words.length; i++) if (isSuffix(words[i])) { end = i + 1; while (end < words.length && isSuffix(words[end])) end++; break; }\n  const rest = words.slice(end).join(' ');\r\n  const unitM = rest.match(/\\b(?:APT|UNIT|STE|#)\\s*(\\w+)/);\r\n  const zipM = String(raw).match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\r\n  return { street: words.slice(0, end).join(' '), unit: unitM ? unitM[1] : '', zip: (zipM && zipM[1]) || fallbackZip || '' };\r\n}\r\n\r\n// Comparison key: drop ordinals and long-form suffixes so \"NW 23RD AVE\",\r\n// \"NW 23 AVE\" and \"NW 23RD AVENUE\" collide.\r\nfunction streetKey(street) {\r\n  return clean(street).split(' ')\r\n    .map((w) => LONG[w] || w.replace(/^(\\d+)(ST|ND|RD|TH)$/, '$1'))\r\n    .join(' ');\r\n}\r\n\r\n// MDPA writes \"NW 23 AVE\"; the DNM sheet's existing rows use \"NW 23RD AVE\".\r\nfunction ordinalize(street) {\r\n  return clean(street).replace(/\\b(N|S|E|W|NW|NE|SW|SE) (\\d+) (?=[A-Z])/g, (m, dir, n) => {\r\n    const v = Number(n) % 100, last = Number(n) % 10;\r\n    const suf = v >= 11 && v <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' }[last] || 'TH');\r\n    return `${dir} ${n}${suf} `;\r\n  }).replace(/\\bTERR\\b/g, 'TER');\r\n}\r\n\r\n// GetAddress can return several parcels (condo units, near-misses). Only\r\n// accept an exact street match, and when several remain (a condo with no unit\r\n// in REsimpli) refuse to guess — the lead goes to review instead.\r\nfunction pickParcel(getAddressResponse, parsed) {\r\n  const infos = (getAddressResponse && getAddressResponse.MinimumPropertyInfos) || [];\r\n  const want = streetKey(parsed.street);\r\n  let exact = infos.filter((i) => streetKey(i.SiteAddress) === want);\r\n  if (parsed.unit) exact = exact.filter((i) => clean(i.SiteUnit) === clean(parsed.unit));\r\n  if (exact.length !== 1) return { folio: null, reason: exact.length ? `${exact.length} county parcels at this address (condo?) - no unit in REsimpli` : 'Not found in Miami-Dade county records' };\r\n  return { folio: String(exact[0].Strap || '').replace(/-/g, ''), reason: '' };\r\n}\r\n\r\n// Turn the MDPA folio record into a sheet row's address fields.\r\nfunction countyAddress(folio, lead) {\r\n  const sa = ((folio && folio.SiteAddress) || [])[0];\r\n  const m = (folio && folio.MailingAddress) || {};\r\n  if (!sa || !sa.Address) return null;\r\n  const street = ordinalize(String(sa.Address).split(',')[0]);\r\n  const zip = String(sa.Zip || '').slice(0, 5);\r\n  const mailStreet = ordinalize([m.Address1, m.Address2].filter(Boolean).join(' '));\r\n  const mailCity = clean(m.City);\r\n  // MDPA names unincorporated parcels \"Unincorporated County\", which is not a\r\n  // mailing city. Fall back to the owner's own mailing city when they live\r\n  // there, then REsimpli's city if its ZIP agrees, then MIAMI.\r\n  let city = clean(sa.City);\r\n  if (!city || city === 'UNINCORPORATED COUNTY') {\r\n    if (streetKey(mailStreet) === streetKey(street) && mailCity) city = mailCity;\r\n    else if (lead.city && lead.zip === zip) city = lead.city;\r\n    else city = 'MIAMI';\r\n  }\r\n  city = city.replace('OPA-LOCKA', 'OPA LOCKA');\r\n  return {\r\n    street, city, state: 'FL', zip,\r\n    mailStreet, mailCity, mailState: clean(m.State) || (mailStreet ? 'FL' : ''), mailZip: String(m.ZipCode || '').slice(0, 5),\r\n  };\r\n}\r\n\r\n// sheetRows: columns C:F (street, city, state, zip), header included.\r\nfunction sheetKeys(sheetRows) {\r\n  const keys = new Set();\r\n  for (const r of (sheetRows || []).slice(1)) keys.add(streetKey(r[0]) + '|' + String(r[3] || '').slice(0, 5));\r\n  return keys;\r\n}\r\n\r\n// resolved: [{ lead, county|null, reason? }] -> rows to append + report.\r\nfunction buildRows(resolved, sheetRows, today) {\r\n  const keys = sheetKeys(sheetRows);\r\n  const streets = new Set((sheetRows || []).slice(1).map((r) => streetKey(r[0])));\r\n  const rows = [], added = [], duplicates = [], needsReview = [];\r\n  for (const { lead, county, reason } of resolved) {\r\n    if (!county) {\r\n      // Not verifiable, but if the hand-typed street is already on the sheet\r\n      // someone added it manually - nothing to review.\r\n      const p = parseStreet(lead.raw, lead.zip);\r\n      if (p && streets.has(streetKey(p.street))) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw, reason });\r\n      continue;\r\n    }\r\n    // Same street number + name exists in several cities (a Broward \"9361 SW\r\n    // 55th St\" also exists in Miami-Dade). If REsimpli's ZIP disagrees with\r\n    // the parcel we found, we may have the wrong house - a human decides.\r\n    const typedZip = (parseStreet(lead.raw, lead.zip) || {}).zip || lead.zip;\r\n    if (typedZip && typedZip !== county.zip) {\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw,\r\n        reason: `ZIP mismatch: REsimpli ${typedZip}, county parcel is ${county.street}, ${county.city} ${county.zip}` });\r\n      continue;\r\n    }\r\n    const key = streetKey(county.street) + '|' + county.zip;\r\n    if (keys.has(key)) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n    keys.add(key);\r\n    // A-B owner names stay blank on purpose (Jorge's call); K = date added.\r\n    rows.push(['', '', county.street, county.city, county.state, county.zip,\r\n      county.mailStreet, county.mailCity, county.mailState, county.mailZip, today]);\r\n    added.push({ leadId: lead.leadId, name: lead.name, address: `${county.street}, ${county.city} ${county.zip}`,\r\n      was: lead.raw, absentee: streetKey(county.mailStreet) !== streetKey(county.street) });\r\n  }\r\n  return { rows, added, duplicates, needsReview };\r\n}\n\n// Email body for the DNM sync. Inline styles only — Gmail strips <style>.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/edit';\n\nfunction table(rows, cols) {\n  if (!rows.length) return '';\n  const th = cols.map((c) => `<th style=\"text-align:left;padding:4px 10px;border-bottom:1px solid #ccc\">${esc(c[0])}</th>`).join('');\n  const tr = rows.map((r) => '<tr>' + cols.map((c) => `<td style=\"padding:4px 10px;border-bottom:1px solid #eee\">${c[1](r)}</td>`).join('') + '</tr>').join('');\n  return `<table style=\"border-collapse:collapse;font-size:13px\">${'<tr>' + th + '</tr>'}${tr}</table>`;\n}\n\nfunction render(result, error) {\n  const font = 'font-family:Arial,sans-serif;font-size:14px;color:#222';\n  if (error) {\n    return {\n      subject: 'DNM sync FAILED',\n      html: `<div style=\"${font}\"><p><b>The REsimpli → DNM sheet sync failed.</b> Nothing was written for this run; it will retry tomorrow at 7am.</p>\n<p style=\"white-space:pre-wrap;background:#f6f6f6;padding:8px\">${esc(error)}</p>\n<p><a href=\"${SHEET_URL}\">Open the DNM sheet</a></p></div>`,\n    };\n  }\n  const { added, duplicates, needsReview } = result;\n  const subject = `DNM sync: ${added.length} added` + (needsReview.length ? `, ${needsReview.length} need review` : '');\n  const who = (r) => esc(r.name || '(no name)');\n  const html = `<div style=\"${font}\">\n<p><b>${added.length}</b> propert${added.length === 1 ? 'y' : 'ies'} added to the <a href=\"${SHEET_URL}\">DNM sheet</a>, addresses verified against Miami-Dade Property Appraiser records.${duplicates.length ? ` ${duplicates.length} newly tagged lead${duplicates.length === 1 ? ' was' : 's were'} already on the sheet.` : ''}</p>\n${table(added, [['Lead', who], ['County address', (r) => esc(r.address)], ['REsimpli had', (r) => esc(r.was)]])}\n${needsReview.length ? `<p style=\"margin-top:18px\"><b>${needsReview.length}</b> tagged lead${needsReview.length === 1 ? '' : 's'} could not be verified and were NOT added. Add these by hand if they belong on the list:</p>\n${table(needsReview, [['Lead', who], ['REsimpli address', (r) => esc(r.address || '(none)')], ['Why', (r) => esc(r.reason)]])}` : ''}\n<p style=\"color:#888;font-size:12px;margin-top:18px\">Each lead is reported once. Runs daily at 7am ET.</p>\n</div>`;\n  return { subject, html };\n}\n\n// ---- n8n entry point ----\nconst ids = $('Pick new tagged').all();\nreturn $input.all().map((it, i) => {\n  const leadData = it.json && it.json.data && it.json.data.leadData;\n  const lead = fromDetails(leadData, ids[i].json.leadId);\n  const parsed = leadData ? parseStreet(lead.raw, lead.zip) : null;\n  return { json: { lead, parsed, detailsFailed: !leadData, query: parsed ? parsed.street : 'NONE', unit: parsed ? parsed.unit : '' } };\n});"
+      },
+      "id": "d0000000-0000-4000-8000-000000000009",
+      "name": "Prep county lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://apps.miamidadepa.gov/PApublicServiceProxy/PaServicesProxy.ashx",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "clientAppName",
+              "value": "PropertySearch"
+            },
+            {
+              "name": "Operation",
+              "value": "GetAddress"
+            },
+            {
+              "name": "myAddress",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "myUnit",
+              "value": "={{ $json.unit }}"
+            },
+            {
+              "name": "from",
+              "value": "1"
+            },
+            {
+              "name": "to",
+              "value": "200"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Referer",
+              "value": "https://apps.miamidadepa.gov/PropertySearch/"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 400
+            }
+          }
+        }
+      },
+      "id": "d0000000-0000-4000-8000-000000000010",
+      "name": "County: find parcel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Pure logic for the DNM sync. No I/O — the HTTP nodes do the fetching — so\r\n// runner.js can exercise the exact same code locally against live data.\r\n//\r\n// Pipeline: REsimpli lead -> parse its address -> Miami-Dade Property\r\n// Appraiser (MDPA) lookup -> write the COUNTY's property + mailing address.\r\n// REsimpli addresses are hand-typed and often wrong (cities appended to the\r\n// street, a Miami house filed under Cape Coral), so they are only used to find\r\n// the parcel, never written as-is.\r\n\r\nconst TAG_ID = '689e51591f1ec236f4f844b9'; // \"remove from list\"\r\n\r\nconst clean = (s) => String(s || '').toUpperCase().replace(/[.,#]/g, ' ').replace(/\\s+/g, ' ').trim();\r\n\r\nconst SUFFIXES = ['ST', 'AVE', 'CT', 'TER', 'TERR', 'PL', 'RD', 'WAY', 'DR', 'LN', 'BLVD', 'CIR', 'TRL', 'PATH', 'HWY', 'PKWY', 'CSWY', 'LOOP', 'ROW'];\r\nconst LONG = { STREET: 'ST', AVENUE: 'AVE', COURT: 'CT', TERRACE: 'TER', TERR: 'TER', PLACE: 'PL', ROAD: 'RD', DRIVE: 'DR', LANE: 'LN', BOULEVARD: 'BLVD', CIRCLE: 'CIR' };\r\n\r\n// Collect every tagged lead id from /lead/list pages. Paging is unstable, so dedupe.\r\nfunction pickTagged(pages) {\r\n  const seen = new Map();\r\n  for (const page of pages) for (const l of (page && page.data && page.data.items) || []) seen.set(l._id, l);\r\n  const tagged = [...seen.values()].filter((l) => (l.tags || []).some((t) => t._id === TAG_ID));\r\n  return { total: seen.size, ids: tagged.map((l) => l._id) };\r\n}\r\n\r\n// Flatten a /lead/details response.\r\nfunction fromDetails(leadData, leadId) {\r\n  const d = leadData || {};\r\n  const p = d.propertyInfo || {};\r\n  const c = (d.contactData || [])[0] || {};\r\n  return {\r\n    leadId: d._id || leadId || null,\r\n    raw: d.address || '',\r\n    city: clean(p.city), zip: String(p.zip || '').slice(0, 5),\r\n    name: c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || '',\r\n  };\r\n}\r\n\r\n// \"8220 SW 43 TER MIAMI\" / \"3725 Ne 169th St Apt 409, North Miami Beach, FL 33160\"\r\n// -> { street: \"8220 SW 43 TER\", unit: \"\", zip }. Everything after the street\r\n// suffix is dropped (that is where hand-typed cities end up) except a unit.\r\nfunction parseStreet(raw, fallbackZip) {\r\n  const parts = String(raw || '').split(',');\r\n  const first = clean(parts[0]).replace(/\\b(\\d+(?:ST|ND|RD|TH)?)(TERR|TER|AVE|CT|PL|WAY|DR|LN|CIR|BLVD)\\b/g, '$1 $2');\n  if (!/^\\d+\\s+\\S/.test(first)) return null; // \"5324\", \"\" - no house number + street\r\n  const words = first.split(' ');\r\n  let end = words.length;\r\n  const isSuffix = (w) => SUFFIXES.includes(w) || LONG[w];\n  for (let i = 2; i < words.length; i++) if (isSuffix(words[i])) { end = i + 1; while (end < words.length && isSuffix(words[end])) end++; break; }\n  const rest = words.slice(end).join(' ');\r\n  const unitM = rest.match(/\\b(?:APT|UNIT|STE|#)\\s*(\\w+)/);\r\n  const zipM = String(raw).match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\r\n  return { street: words.slice(0, end).join(' '), unit: unitM ? unitM[1] : '', zip: (zipM && zipM[1]) || fallbackZip || '' };\r\n}\r\n\r\n// Comparison key: drop ordinals and long-form suffixes so \"NW 23RD AVE\",\r\n// \"NW 23 AVE\" and \"NW 23RD AVENUE\" collide.\r\nfunction streetKey(street) {\r\n  return clean(street).split(' ')\r\n    .map((w) => LONG[w] || w.replace(/^(\\d+)(ST|ND|RD|TH)$/, '$1'))\r\n    .join(' ');\r\n}\r\n\r\n// MDPA writes \"NW 23 AVE\"; the DNM sheet's existing rows use \"NW 23RD AVE\".\r\nfunction ordinalize(street) {\r\n  return clean(street).replace(/\\b(N|S|E|W|NW|NE|SW|SE) (\\d+) (?=[A-Z])/g, (m, dir, n) => {\r\n    const v = Number(n) % 100, last = Number(n) % 10;\r\n    const suf = v >= 11 && v <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' }[last] || 'TH');\r\n    return `${dir} ${n}${suf} `;\r\n  }).replace(/\\bTERR\\b/g, 'TER');\r\n}\r\n\r\n// GetAddress can return several parcels (condo units, near-misses). Only\r\n// accept an exact street match, and when several remain (a condo with no unit\r\n// in REsimpli) refuse to guess — the lead goes to review instead.\r\nfunction pickParcel(getAddressResponse, parsed) {\r\n  const infos = (getAddressResponse && getAddressResponse.MinimumPropertyInfos) || [];\r\n  const want = streetKey(parsed.street);\r\n  let exact = infos.filter((i) => streetKey(i.SiteAddress) === want);\r\n  if (parsed.unit) exact = exact.filter((i) => clean(i.SiteUnit) === clean(parsed.unit));\r\n  if (exact.length !== 1) return { folio: null, reason: exact.length ? `${exact.length} county parcels at this address (condo?) - no unit in REsimpli` : 'Not found in Miami-Dade county records' };\r\n  return { folio: String(exact[0].Strap || '').replace(/-/g, ''), reason: '' };\r\n}\r\n\r\n// Turn the MDPA folio record into a sheet row's address fields.\r\nfunction countyAddress(folio, lead) {\r\n  const sa = ((folio && folio.SiteAddress) || [])[0];\r\n  const m = (folio && folio.MailingAddress) || {};\r\n  if (!sa || !sa.Address) return null;\r\n  const street = ordinalize(String(sa.Address).split(',')[0]);\r\n  const zip = String(sa.Zip || '').slice(0, 5);\r\n  const mailStreet = ordinalize([m.Address1, m.Address2].filter(Boolean).join(' '));\r\n  const mailCity = clean(m.City);\r\n  // MDPA names unincorporated parcels \"Unincorporated County\", which is not a\r\n  // mailing city. Fall back to the owner's own mailing city when they live\r\n  // there, then REsimpli's city if its ZIP agrees, then MIAMI.\r\n  let city = clean(sa.City);\r\n  if (!city || city === 'UNINCORPORATED COUNTY') {\r\n    if (streetKey(mailStreet) === streetKey(street) && mailCity) city = mailCity;\r\n    else if (lead.city && lead.zip === zip) city = lead.city;\r\n    else city = 'MIAMI';\r\n  }\r\n  city = city.replace('OPA-LOCKA', 'OPA LOCKA');\r\n  return {\r\n    street, city, state: 'FL', zip,\r\n    mailStreet, mailCity, mailState: clean(m.State) || (mailStreet ? 'FL' : ''), mailZip: String(m.ZipCode || '').slice(0, 5),\r\n  };\r\n}\r\n\r\n// sheetRows: columns C:F (street, city, state, zip), header included.\r\nfunction sheetKeys(sheetRows) {\r\n  const keys = new Set();\r\n  for (const r of (sheetRows || []).slice(1)) keys.add(streetKey(r[0]) + '|' + String(r[3] || '').slice(0, 5));\r\n  return keys;\r\n}\r\n\r\n// resolved: [{ lead, county|null, reason? }] -> rows to append + report.\r\nfunction buildRows(resolved, sheetRows, today) {\r\n  const keys = sheetKeys(sheetRows);\r\n  const streets = new Set((sheetRows || []).slice(1).map((r) => streetKey(r[0])));\r\n  const rows = [], added = [], duplicates = [], needsReview = [];\r\n  for (const { lead, county, reason } of resolved) {\r\n    if (!county) {\r\n      // Not verifiable, but if the hand-typed street is already on the sheet\r\n      // someone added it manually - nothing to review.\r\n      const p = parseStreet(lead.raw, lead.zip);\r\n      if (p && streets.has(streetKey(p.street))) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw, reason });\r\n      continue;\r\n    }\r\n    // Same street number + name exists in several cities (a Broward \"9361 SW\r\n    // 55th St\" also exists in Miami-Dade). If REsimpli's ZIP disagrees with\r\n    // the parcel we found, we may have the wrong house - a human decides.\r\n    const typedZip = (parseStreet(lead.raw, lead.zip) || {}).zip || lead.zip;\r\n    if (typedZip && typedZip !== county.zip) {\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw,\r\n        reason: `ZIP mismatch: REsimpli ${typedZip}, county parcel is ${county.street}, ${county.city} ${county.zip}` });\r\n      continue;\r\n    }\r\n    const key = streetKey(county.street) + '|' + county.zip;\r\n    if (keys.has(key)) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n    keys.add(key);\r\n    // A-B owner names stay blank on purpose (Jorge's call); K = date added.\r\n    rows.push(['', '', county.street, county.city, county.state, county.zip,\r\n      county.mailStreet, county.mailCity, county.mailState, county.mailZip, today]);\r\n    added.push({ leadId: lead.leadId, name: lead.name, address: `${county.street}, ${county.city} ${county.zip}`,\r\n      was: lead.raw, absentee: streetKey(county.mailStreet) !== streetKey(county.street) });\r\n  }\r\n  return { rows, added, duplicates, needsReview };\r\n}\n\n// Email body for the DNM sync. Inline styles only — Gmail strips <style>.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/edit';\n\nfunction table(rows, cols) {\n  if (!rows.length) return '';\n  const th = cols.map((c) => `<th style=\"text-align:left;padding:4px 10px;border-bottom:1px solid #ccc\">${esc(c[0])}</th>`).join('');\n  const tr = rows.map((r) => '<tr>' + cols.map((c) => `<td style=\"padding:4px 10px;border-bottom:1px solid #eee\">${c[1](r)}</td>`).join('') + '</tr>').join('');\n  return `<table style=\"border-collapse:collapse;font-size:13px\">${'<tr>' + th + '</tr>'}${tr}</table>`;\n}\n\nfunction render(result, error) {\n  const font = 'font-family:Arial,sans-serif;font-size:14px;color:#222';\n  if (error) {\n    return {\n      subject: 'DNM sync FAILED',\n      html: `<div style=\"${font}\"><p><b>The REsimpli → DNM sheet sync failed.</b> Nothing was written for this run; it will retry tomorrow at 7am.</p>\n<p style=\"white-space:pre-wrap;background:#f6f6f6;padding:8px\">${esc(error)}</p>\n<p><a href=\"${SHEET_URL}\">Open the DNM sheet</a></p></div>`,\n    };\n  }\n  const { added, duplicates, needsReview } = result;\n  const subject = `DNM sync: ${added.length} added` + (needsReview.length ? `, ${needsReview.length} need review` : '');\n  const who = (r) => esc(r.name || '(no name)');\n  const html = `<div style=\"${font}\">\n<p><b>${added.length}</b> propert${added.length === 1 ? 'y' : 'ies'} added to the <a href=\"${SHEET_URL}\">DNM sheet</a>, addresses verified against Miami-Dade Property Appraiser records.${duplicates.length ? ` ${duplicates.length} newly tagged lead${duplicates.length === 1 ? ' was' : 's were'} already on the sheet.` : ''}</p>\n${table(added, [['Lead', who], ['County address', (r) => esc(r.address)], ['REsimpli had', (r) => esc(r.was)]])}\n${needsReview.length ? `<p style=\"margin-top:18px\"><b>${needsReview.length}</b> tagged lead${needsReview.length === 1 ? '' : 's'} could not be verified and were NOT added. Add these by hand if they belong on the list:</p>\n${table(needsReview, [['Lead', who], ['REsimpli address', (r) => esc(r.address || '(none)')], ['Why', (r) => esc(r.reason)]])}` : ''}\n<p style=\"color:#888;font-size:12px;margin-top:18px\">Each lead is reported once. Runs daily at 7am ET.</p>\n</div>`;\n  return { subject, html };\n}\n\n// ---- n8n entry point ----\nconst preps = $('Prep county lookup').all();\nreturn $input.all().map((it, i) => {\n  const p = preps[i].json;\n  let pick;\n  if (p.detailsFailed) pick = { folio: null, reason: 'REsimpli lookup failed - will retry tomorrow' };\n  else if (!p.lead.raw) pick = { folio: null, reason: 'No property address in REsimpli' };\n  else if (!p.parsed) pick = { folio: null, reason: 'Address has no house number + street' };\n  else pick = pickParcel(it.json, p.parsed);\n  return { json: { ...pick, folio: pick.folio || '0' } };\n});"
+      },
+      "id": "d0000000-0000-4000-8000-000000000011",
+      "name": "Pick parcel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://apps.miamidadepa.gov/PApublicServiceProxy/PaServicesProxy.ashx",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "clientAppName",
+              "value": "PropertySearch"
+            },
+            {
+              "name": "Operation",
+              "value": "GetPropertySearchByFolio"
+            },
+            {
+              "name": "folioNumber",
+              "value": "={{ $json.folio }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            },
+            {
+              "name": "Referer",
+              "value": "https://apps.miamidadepa.gov/PropertySearch/"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 400
+            }
+          }
+        }
+      },
+      "id": "d0000000-0000-4000-8000-000000000012",
+      "name": "County: owner + mailing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/values/Sheet1!C%3AF",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "options": {}
+      },
+      "id": "d0000000-0000-4000-8000-000000000013",
+      "name": "Read sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        0
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "HLpyDuObwROMJsg8",
+          "name": "Google Drive - Buying Hero"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Pure logic for the DNM sync. No I/O — the HTTP nodes do the fetching — so\r\n// runner.js can exercise the exact same code locally against live data.\r\n//\r\n// Pipeline: REsimpli lead -> parse its address -> Miami-Dade Property\r\n// Appraiser (MDPA) lookup -> write the COUNTY's property + mailing address.\r\n// REsimpli addresses are hand-typed and often wrong (cities appended to the\r\n// street, a Miami house filed under Cape Coral), so they are only used to find\r\n// the parcel, never written as-is.\r\n\r\nconst TAG_ID = '689e51591f1ec236f4f844b9'; // \"remove from list\"\r\n\r\nconst clean = (s) => String(s || '').toUpperCase().replace(/[.,#]/g, ' ').replace(/\\s+/g, ' ').trim();\r\n\r\nconst SUFFIXES = ['ST', 'AVE', 'CT', 'TER', 'TERR', 'PL', 'RD', 'WAY', 'DR', 'LN', 'BLVD', 'CIR', 'TRL', 'PATH', 'HWY', 'PKWY', 'CSWY', 'LOOP', 'ROW'];\r\nconst LONG = { STREET: 'ST', AVENUE: 'AVE', COURT: 'CT', TERRACE: 'TER', TERR: 'TER', PLACE: 'PL', ROAD: 'RD', DRIVE: 'DR', LANE: 'LN', BOULEVARD: 'BLVD', CIRCLE: 'CIR' };\r\n\r\n// Collect every tagged lead id from /lead/list pages. Paging is unstable, so dedupe.\r\nfunction pickTagged(pages) {\r\n  const seen = new Map();\r\n  for (const page of pages) for (const l of (page && page.data && page.data.items) || []) seen.set(l._id, l);\r\n  const tagged = [...seen.values()].filter((l) => (l.tags || []).some((t) => t._id === TAG_ID));\r\n  return { total: seen.size, ids: tagged.map((l) => l._id) };\r\n}\r\n\r\n// Flatten a /lead/details response.\r\nfunction fromDetails(leadData, leadId) {\r\n  const d = leadData || {};\r\n  const p = d.propertyInfo || {};\r\n  const c = (d.contactData || [])[0] || {};\r\n  return {\r\n    leadId: d._id || leadId || null,\r\n    raw: d.address || '',\r\n    city: clean(p.city), zip: String(p.zip || '').slice(0, 5),\r\n    name: c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || '',\r\n  };\r\n}\r\n\r\n// \"8220 SW 43 TER MIAMI\" / \"3725 Ne 169th St Apt 409, North Miami Beach, FL 33160\"\r\n// -> { street: \"8220 SW 43 TER\", unit: \"\", zip }. Everything after the street\r\n// suffix is dropped (that is where hand-typed cities end up) except a unit.\r\nfunction parseStreet(raw, fallbackZip) {\r\n  const parts = String(raw || '').split(',');\r\n  const first = clean(parts[0]).replace(/\\b(\\d+(?:ST|ND|RD|TH)?)(TERR|TER|AVE|CT|PL|WAY|DR|LN|CIR|BLVD)\\b/g, '$1 $2');\n  if (!/^\\d+\\s+\\S/.test(first)) return null; // \"5324\", \"\" - no house number + street\r\n  const words = first.split(' ');\r\n  let end = words.length;\r\n  const isSuffix = (w) => SUFFIXES.includes(w) || LONG[w];\n  for (let i = 2; i < words.length; i++) if (isSuffix(words[i])) { end = i + 1; while (end < words.length && isSuffix(words[end])) end++; break; }\n  const rest = words.slice(end).join(' ');\r\n  const unitM = rest.match(/\\b(?:APT|UNIT|STE|#)\\s*(\\w+)/);\r\n  const zipM = String(raw).match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\r\n  return { street: words.slice(0, end).join(' '), unit: unitM ? unitM[1] : '', zip: (zipM && zipM[1]) || fallbackZip || '' };\r\n}\r\n\r\n// Comparison key: drop ordinals and long-form suffixes so \"NW 23RD AVE\",\r\n// \"NW 23 AVE\" and \"NW 23RD AVENUE\" collide.\r\nfunction streetKey(street) {\r\n  return clean(street).split(' ')\r\n    .map((w) => LONG[w] || w.replace(/^(\\d+)(ST|ND|RD|TH)$/, '$1'))\r\n    .join(' ');\r\n}\r\n\r\n// MDPA writes \"NW 23 AVE\"; the DNM sheet's existing rows use \"NW 23RD AVE\".\r\nfunction ordinalize(street) {\r\n  return clean(street).replace(/\\b(N|S|E|W|NW|NE|SW|SE) (\\d+) (?=[A-Z])/g, (m, dir, n) => {\r\n    const v = Number(n) % 100, last = Number(n) % 10;\r\n    const suf = v >= 11 && v <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' }[last] || 'TH');\r\n    return `${dir} ${n}${suf} `;\r\n  }).replace(/\\bTERR\\b/g, 'TER');\r\n}\r\n\r\n// GetAddress can return several parcels (condo units, near-misses). Only\r\n// accept an exact street match, and when several remain (a condo with no unit\r\n// in REsimpli) refuse to guess — the lead goes to review instead.\r\nfunction pickParcel(getAddressResponse, parsed) {\r\n  const infos = (getAddressResponse && getAddressResponse.MinimumPropertyInfos) || [];\r\n  const want = streetKey(parsed.street);\r\n  let exact = infos.filter((i) => streetKey(i.SiteAddress) === want);\r\n  if (parsed.unit) exact = exact.filter((i) => clean(i.SiteUnit) === clean(parsed.unit));\r\n  if (exact.length !== 1) return { folio: null, reason: exact.length ? `${exact.length} county parcels at this address (condo?) - no unit in REsimpli` : 'Not found in Miami-Dade county records' };\r\n  return { folio: String(exact[0].Strap || '').replace(/-/g, ''), reason: '' };\r\n}\r\n\r\n// Turn the MDPA folio record into a sheet row's address fields.\r\nfunction countyAddress(folio, lead) {\r\n  const sa = ((folio && folio.SiteAddress) || [])[0];\r\n  const m = (folio && folio.MailingAddress) || {};\r\n  if (!sa || !sa.Address) return null;\r\n  const street = ordinalize(String(sa.Address).split(',')[0]);\r\n  const zip = String(sa.Zip || '').slice(0, 5);\r\n  const mailStreet = ordinalize([m.Address1, m.Address2].filter(Boolean).join(' '));\r\n  const mailCity = clean(m.City);\r\n  // MDPA names unincorporated parcels \"Unincorporated County\", which is not a\r\n  // mailing city. Fall back to the owner's own mailing city when they live\r\n  // there, then REsimpli's city if its ZIP agrees, then MIAMI.\r\n  let city = clean(sa.City);\r\n  if (!city || city === 'UNINCORPORATED COUNTY') {\r\n    if (streetKey(mailStreet) === streetKey(street) && mailCity) city = mailCity;\r\n    else if (lead.city && lead.zip === zip) city = lead.city;\r\n    else city = 'MIAMI';\r\n  }\r\n  city = city.replace('OPA-LOCKA', 'OPA LOCKA');\r\n  return {\r\n    street, city, state: 'FL', zip,\r\n    mailStreet, mailCity, mailState: clean(m.State) || (mailStreet ? 'FL' : ''), mailZip: String(m.ZipCode || '').slice(0, 5),\r\n  };\r\n}\r\n\r\n// sheetRows: columns C:F (street, city, state, zip), header included.\r\nfunction sheetKeys(sheetRows) {\r\n  const keys = new Set();\r\n  for (const r of (sheetRows || []).slice(1)) keys.add(streetKey(r[0]) + '|' + String(r[3] || '').slice(0, 5));\r\n  return keys;\r\n}\r\n\r\n// resolved: [{ lead, county|null, reason? }] -> rows to append + report.\r\nfunction buildRows(resolved, sheetRows, today) {\r\n  const keys = sheetKeys(sheetRows);\r\n  const streets = new Set((sheetRows || []).slice(1).map((r) => streetKey(r[0])));\r\n  const rows = [], added = [], duplicates = [], needsReview = [];\r\n  for (const { lead, county, reason } of resolved) {\r\n    if (!county) {\r\n      // Not verifiable, but if the hand-typed street is already on the sheet\r\n      // someone added it manually - nothing to review.\r\n      const p = parseStreet(lead.raw, lead.zip);\r\n      if (p && streets.has(streetKey(p.street))) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw, reason });\r\n      continue;\r\n    }\r\n    // Same street number + name exists in several cities (a Broward \"9361 SW\r\n    // 55th St\" also exists in Miami-Dade). If REsimpli's ZIP disagrees with\r\n    // the parcel we found, we may have the wrong house - a human decides.\r\n    const typedZip = (parseStreet(lead.raw, lead.zip) || {}).zip || lead.zip;\r\n    if (typedZip && typedZip !== county.zip) {\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw,\r\n        reason: `ZIP mismatch: REsimpli ${typedZip}, county parcel is ${county.street}, ${county.city} ${county.zip}` });\r\n      continue;\r\n    }\r\n    const key = streetKey(county.street) + '|' + county.zip;\r\n    if (keys.has(key)) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n    keys.add(key);\r\n    // A-B owner names stay blank on purpose (Jorge's call); K = date added.\r\n    rows.push(['', '', county.street, county.city, county.state, county.zip,\r\n      county.mailStreet, county.mailCity, county.mailState, county.mailZip, today]);\r\n    added.push({ leadId: lead.leadId, name: lead.name, address: `${county.street}, ${county.city} ${county.zip}`,\r\n      was: lead.raw, absentee: streetKey(county.mailStreet) !== streetKey(county.street) });\r\n  }\r\n  return { rows, added, duplicates, needsReview };\r\n}\n\n// Email body for the DNM sync. Inline styles only — Gmail strips <style>.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/edit';\n\nfunction table(rows, cols) {\n  if (!rows.length) return '';\n  const th = cols.map((c) => `<th style=\"text-align:left;padding:4px 10px;border-bottom:1px solid #ccc\">${esc(c[0])}</th>`).join('');\n  const tr = rows.map((r) => '<tr>' + cols.map((c) => `<td style=\"padding:4px 10px;border-bottom:1px solid #eee\">${c[1](r)}</td>`).join('') + '</tr>').join('');\n  return `<table style=\"border-collapse:collapse;font-size:13px\">${'<tr>' + th + '</tr>'}${tr}</table>`;\n}\n\nfunction render(result, error) {\n  const font = 'font-family:Arial,sans-serif;font-size:14px;color:#222';\n  if (error) {\n    return {\n      subject: 'DNM sync FAILED',\n      html: `<div style=\"${font}\"><p><b>The REsimpli → DNM sheet sync failed.</b> Nothing was written for this run; it will retry tomorrow at 7am.</p>\n<p style=\"white-space:pre-wrap;background:#f6f6f6;padding:8px\">${esc(error)}</p>\n<p><a href=\"${SHEET_URL}\">Open the DNM sheet</a></p></div>`,\n    };\n  }\n  const { added, duplicates, needsReview } = result;\n  const subject = `DNM sync: ${added.length} added` + (needsReview.length ? `, ${needsReview.length} need review` : '');\n  const who = (r) => esc(r.name || '(no name)');\n  const html = `<div style=\"${font}\">\n<p><b>${added.length}</b> propert${added.length === 1 ? 'y' : 'ies'} added to the <a href=\"${SHEET_URL}\">DNM sheet</a>, addresses verified against Miami-Dade Property Appraiser records.${duplicates.length ? ` ${duplicates.length} newly tagged lead${duplicates.length === 1 ? ' was' : 's were'} already on the sheet.` : ''}</p>\n${table(added, [['Lead', who], ['County address', (r) => esc(r.address)], ['REsimpli had', (r) => esc(r.was)]])}\n${needsReview.length ? `<p style=\"margin-top:18px\"><b>${needsReview.length}</b> tagged lead${needsReview.length === 1 ? '' : 's'} could not be verified and were NOT added. Add these by hand if they belong on the list:</p>\n${table(needsReview, [['Lead', who], ['REsimpli address', (r) => esc(r.address || '(none)')], ['Why', (r) => esc(r.reason)]])}` : ''}\n<p style=\"color:#888;font-size:12px;margin-top:18px\">Each lead is reported once. Runs daily at 7am ET.</p>\n</div>`;\n  return { subject, html };\n}\n\n// ---- n8n entry point ----\nconst preps = $('Prep county lookup').all();\nconst picks = $('Pick parcel').all();\nconst folios = $('County: owner + mailing').all();\nconst sheet = $input.first().json.values || [];\nif (!sheet.length) throw new Error('DNM sheet read returned no rows (not even the header) - refusing to write blind');\n\nconst retryIds = [];\nconst resolved = preps.map((p, i) => {\n  const { lead, detailsFailed } = p.json;\n  const pick = picks[i].json;\n  if (detailsFailed) retryIds.push(lead.leadId);\n  if (pick.folio === '0') return { lead, county: null, reason: pick.reason };\n  const county = countyAddress(folios[i].json, lead);\n  if (!county) { retryIds.push(lead.leadId); return { lead, county: null, reason: 'County record lookup failed - will retry tomorrow' }; }\n  return { lead, county };\n});\nconst today = new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', year: 'numeric' });\nconst result = buildRows(resolved, sheet, today);\n// Transient failures are retried tomorrow, so don't mark them handled.\nconst handled = preps.map((p) => p.json.lead.leadId).filter((id) => id && !retryIds.includes(id));\nreturn [{ json: { ...result, count: result.rows.length, handled } }];"
+      },
+      "id": "d0000000-0000-4000-8000-000000000014",
+      "name": "Build rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d0000000-0000-4000-8000-000000000015",
+      "name": "Rows to write?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/values/Sheet1!A%3AK:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ values: $json.rows }) }}",
+        "options": {}
+      },
+      "id": "d0000000-0000-4000-8000-000000000016",
+      "name": "Append rows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3080,
+        -100
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "HLpyDuObwROMJsg8",
+          "name": "Google Drive - Buying Hero"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Pure logic for the DNM sync. No I/O — the HTTP nodes do the fetching — so\r\n// runner.js can exercise the exact same code locally against live data.\r\n//\r\n// Pipeline: REsimpli lead -> parse its address -> Miami-Dade Property\r\n// Appraiser (MDPA) lookup -> write the COUNTY's property + mailing address.\r\n// REsimpli addresses are hand-typed and often wrong (cities appended to the\r\n// street, a Miami house filed under Cape Coral), so they are only used to find\r\n// the parcel, never written as-is.\r\n\r\nconst TAG_ID = '689e51591f1ec236f4f844b9'; // \"remove from list\"\r\n\r\nconst clean = (s) => String(s || '').toUpperCase().replace(/[.,#]/g, ' ').replace(/\\s+/g, ' ').trim();\r\n\r\nconst SUFFIXES = ['ST', 'AVE', 'CT', 'TER', 'TERR', 'PL', 'RD', 'WAY', 'DR', 'LN', 'BLVD', 'CIR', 'TRL', 'PATH', 'HWY', 'PKWY', 'CSWY', 'LOOP', 'ROW'];\r\nconst LONG = { STREET: 'ST', AVENUE: 'AVE', COURT: 'CT', TERRACE: 'TER', TERR: 'TER', PLACE: 'PL', ROAD: 'RD', DRIVE: 'DR', LANE: 'LN', BOULEVARD: 'BLVD', CIRCLE: 'CIR' };\r\n\r\n// Collect every tagged lead id from /lead/list pages. Paging is unstable, so dedupe.\r\nfunction pickTagged(pages) {\r\n  const seen = new Map();\r\n  for (const page of pages) for (const l of (page && page.data && page.data.items) || []) seen.set(l._id, l);\r\n  const tagged = [...seen.values()].filter((l) => (l.tags || []).some((t) => t._id === TAG_ID));\r\n  return { total: seen.size, ids: tagged.map((l) => l._id) };\r\n}\r\n\r\n// Flatten a /lead/details response.\r\nfunction fromDetails(leadData, leadId) {\r\n  const d = leadData || {};\r\n  const p = d.propertyInfo || {};\r\n  const c = (d.contactData || [])[0] || {};\r\n  return {\r\n    leadId: d._id || leadId || null,\r\n    raw: d.address || '',\r\n    city: clean(p.city), zip: String(p.zip || '').slice(0, 5),\r\n    name: c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || '',\r\n  };\r\n}\r\n\r\n// \"8220 SW 43 TER MIAMI\" / \"3725 Ne 169th St Apt 409, North Miami Beach, FL 33160\"\r\n// -> { street: \"8220 SW 43 TER\", unit: \"\", zip }. Everything after the street\r\n// suffix is dropped (that is where hand-typed cities end up) except a unit.\r\nfunction parseStreet(raw, fallbackZip) {\r\n  const parts = String(raw || '').split(',');\r\n  const first = clean(parts[0]).replace(/\\b(\\d+(?:ST|ND|RD|TH)?)(TERR|TER|AVE|CT|PL|WAY|DR|LN|CIR|BLVD)\\b/g, '$1 $2');\n  if (!/^\\d+\\s+\\S/.test(first)) return null; // \"5324\", \"\" - no house number + street\r\n  const words = first.split(' ');\r\n  let end = words.length;\r\n  const isSuffix = (w) => SUFFIXES.includes(w) || LONG[w];\n  for (let i = 2; i < words.length; i++) if (isSuffix(words[i])) { end = i + 1; while (end < words.length && isSuffix(words[end])) end++; break; }\n  const rest = words.slice(end).join(' ');\r\n  const unitM = rest.match(/\\b(?:APT|UNIT|STE|#)\\s*(\\w+)/);\r\n  const zipM = String(raw).match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\r\n  return { street: words.slice(0, end).join(' '), unit: unitM ? unitM[1] : '', zip: (zipM && zipM[1]) || fallbackZip || '' };\r\n}\r\n\r\n// Comparison key: drop ordinals and long-form suffixes so \"NW 23RD AVE\",\r\n// \"NW 23 AVE\" and \"NW 23RD AVENUE\" collide.\r\nfunction streetKey(street) {\r\n  return clean(street).split(' ')\r\n    .map((w) => LONG[w] || w.replace(/^(\\d+)(ST|ND|RD|TH)$/, '$1'))\r\n    .join(' ');\r\n}\r\n\r\n// MDPA writes \"NW 23 AVE\"; the DNM sheet's existing rows use \"NW 23RD AVE\".\r\nfunction ordinalize(street) {\r\n  return clean(street).replace(/\\b(N|S|E|W|NW|NE|SW|SE) (\\d+) (?=[A-Z])/g, (m, dir, n) => {\r\n    const v = Number(n) % 100, last = Number(n) % 10;\r\n    const suf = v >= 11 && v <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' }[last] || 'TH');\r\n    return `${dir} ${n}${suf} `;\r\n  }).replace(/\\bTERR\\b/g, 'TER');\r\n}\r\n\r\n// GetAddress can return several parcels (condo units, near-misses). Only\r\n// accept an exact street match, and when several remain (a condo with no unit\r\n// in REsimpli) refuse to guess — the lead goes to review instead.\r\nfunction pickParcel(getAddressResponse, parsed) {\r\n  const infos = (getAddressResponse && getAddressResponse.MinimumPropertyInfos) || [];\r\n  const want = streetKey(parsed.street);\r\n  let exact = infos.filter((i) => streetKey(i.SiteAddress) === want);\r\n  if (parsed.unit) exact = exact.filter((i) => clean(i.SiteUnit) === clean(parsed.unit));\r\n  if (exact.length !== 1) return { folio: null, reason: exact.length ? `${exact.length} county parcels at this address (condo?) - no unit in REsimpli` : 'Not found in Miami-Dade county records' };\r\n  return { folio: String(exact[0].Strap || '').replace(/-/g, ''), reason: '' };\r\n}\r\n\r\n// Turn the MDPA folio record into a sheet row's address fields.\r\nfunction countyAddress(folio, lead) {\r\n  const sa = ((folio && folio.SiteAddress) || [])[0];\r\n  const m = (folio && folio.MailingAddress) || {};\r\n  if (!sa || !sa.Address) return null;\r\n  const street = ordinalize(String(sa.Address).split(',')[0]);\r\n  const zip = String(sa.Zip || '').slice(0, 5);\r\n  const mailStreet = ordinalize([m.Address1, m.Address2].filter(Boolean).join(' '));\r\n  const mailCity = clean(m.City);\r\n  // MDPA names unincorporated parcels \"Unincorporated County\", which is not a\r\n  // mailing city. Fall back to the owner's own mailing city when they live\r\n  // there, then REsimpli's city if its ZIP agrees, then MIAMI.\r\n  let city = clean(sa.City);\r\n  if (!city || city === 'UNINCORPORATED COUNTY') {\r\n    if (streetKey(mailStreet) === streetKey(street) && mailCity) city = mailCity;\r\n    else if (lead.city && lead.zip === zip) city = lead.city;\r\n    else city = 'MIAMI';\r\n  }\r\n  city = city.replace('OPA-LOCKA', 'OPA LOCKA');\r\n  return {\r\n    street, city, state: 'FL', zip,\r\n    mailStreet, mailCity, mailState: clean(m.State) || (mailStreet ? 'FL' : ''), mailZip: String(m.ZipCode || '').slice(0, 5),\r\n  };\r\n}\r\n\r\n// sheetRows: columns C:F (street, city, state, zip), header included.\r\nfunction sheetKeys(sheetRows) {\r\n  const keys = new Set();\r\n  for (const r of (sheetRows || []).slice(1)) keys.add(streetKey(r[0]) + '|' + String(r[3] || '').slice(0, 5));\r\n  return keys;\r\n}\r\n\r\n// resolved: [{ lead, county|null, reason? }] -> rows to append + report.\r\nfunction buildRows(resolved, sheetRows, today) {\r\n  const keys = sheetKeys(sheetRows);\r\n  const streets = new Set((sheetRows || []).slice(1).map((r) => streetKey(r[0])));\r\n  const rows = [], added = [], duplicates = [], needsReview = [];\r\n  for (const { lead, county, reason } of resolved) {\r\n    if (!county) {\r\n      // Not verifiable, but if the hand-typed street is already on the sheet\r\n      // someone added it manually - nothing to review.\r\n      const p = parseStreet(lead.raw, lead.zip);\r\n      if (p && streets.has(streetKey(p.street))) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw, reason });\r\n      continue;\r\n    }\r\n    // Same street number + name exists in several cities (a Broward \"9361 SW\r\n    // 55th St\" also exists in Miami-Dade). If REsimpli's ZIP disagrees with\r\n    // the parcel we found, we may have the wrong house - a human decides.\r\n    const typedZip = (parseStreet(lead.raw, lead.zip) || {}).zip || lead.zip;\r\n    if (typedZip && typedZip !== county.zip) {\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw,\r\n        reason: `ZIP mismatch: REsimpli ${typedZip}, county parcel is ${county.street}, ${county.city} ${county.zip}` });\r\n      continue;\r\n    }\r\n    const key = streetKey(county.street) + '|' + county.zip;\r\n    if (keys.has(key)) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n    keys.add(key);\r\n    // A-B owner names stay blank on purpose (Jorge's call); K = date added.\r\n    rows.push(['', '', county.street, county.city, county.state, county.zip,\r\n      county.mailStreet, county.mailCity, county.mailState, county.mailZip, today]);\r\n    added.push({ leadId: lead.leadId, name: lead.name, address: `${county.street}, ${county.city} ${county.zip}`,\r\n      was: lead.raw, absentee: streetKey(county.mailStreet) !== streetKey(county.street) });\r\n  }\r\n  return { rows, added, duplicates, needsReview };\r\n}\n\n// Email body for the DNM sync. Inline styles only — Gmail strips <style>.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/edit';\n\nfunction table(rows, cols) {\n  if (!rows.length) return '';\n  const th = cols.map((c) => `<th style=\"text-align:left;padding:4px 10px;border-bottom:1px solid #ccc\">${esc(c[0])}</th>`).join('');\n  const tr = rows.map((r) => '<tr>' + cols.map((c) => `<td style=\"padding:4px 10px;border-bottom:1px solid #eee\">${c[1](r)}</td>`).join('') + '</tr>').join('');\n  return `<table style=\"border-collapse:collapse;font-size:13px\">${'<tr>' + th + '</tr>'}${tr}</table>`;\n}\n\nfunction render(result, error) {\n  const font = 'font-family:Arial,sans-serif;font-size:14px;color:#222';\n  if (error) {\n    return {\n      subject: 'DNM sync FAILED',\n      html: `<div style=\"${font}\"><p><b>The REsimpli → DNM sheet sync failed.</b> Nothing was written for this run; it will retry tomorrow at 7am.</p>\n<p style=\"white-space:pre-wrap;background:#f6f6f6;padding:8px\">${esc(error)}</p>\n<p><a href=\"${SHEET_URL}\">Open the DNM sheet</a></p></div>`,\n    };\n  }\n  const { added, duplicates, needsReview } = result;\n  const subject = `DNM sync: ${added.length} added` + (needsReview.length ? `, ${needsReview.length} need review` : '');\n  const who = (r) => esc(r.name || '(no name)');\n  const html = `<div style=\"${font}\">\n<p><b>${added.length}</b> propert${added.length === 1 ? 'y' : 'ies'} added to the <a href=\"${SHEET_URL}\">DNM sheet</a>, addresses verified against Miami-Dade Property Appraiser records.${duplicates.length ? ` ${duplicates.length} newly tagged lead${duplicates.length === 1 ? ' was' : 's were'} already on the sheet.` : ''}</p>\n${table(added, [['Lead', who], ['County address', (r) => esc(r.address)], ['REsimpli had', (r) => esc(r.was)]])}\n${needsReview.length ? `<p style=\"margin-top:18px\"><b>${needsReview.length}</b> tagged lead${needsReview.length === 1 ? '' : 's'} could not be verified and were NOT added. Add these by hand if they belong on the list:</p>\n${table(needsReview, [['Lead', who], ['REsimpli address', (r) => esc(r.address || '(none)')], ['Why', (r) => esc(r.reason)]])}` : ''}\n<p style=\"color:#888;font-size:12px;margin-top:18px\">Each lead is reported once. Runs daily at 7am ET.</p>\n</div>`;\n  return { subject, html };\n}\n\n// ---- n8n entry point ----\nlet result = { added: [], duplicates: [], needsReview: [], handled: [] };\ntry { result = $('Build rows').first().json; } catch (e) { /* nothing new today */ }\n// Record handled ids only now, after the sheet write succeeded.\nconst store = $getWorkflowStaticData('global');\nstore.processed = store.processed || {};\nfor (const id of result.handled || []) store.processed[id] = new Date().toISOString().slice(0, 10);\nreturn [{ json: render(result) }];"
+      },
+      "id": "d0000000-0000-4000-8000-000000000017",
+      "name": "Compose email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "jorge@buyinghero.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "d0000000-0000-4000-8000-000000000018",
+      "name": "Email Jorge",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3520,
+        100
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailbh000001",
+          "name": "Gmail - Buying Hero"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d0000000-0000-4000-8000-000000000019",
+      "name": "On failure",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        2860,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Pure logic for the DNM sync. No I/O — the HTTP nodes do the fetching — so\r\n// runner.js can exercise the exact same code locally against live data.\r\n//\r\n// Pipeline: REsimpli lead -> parse its address -> Miami-Dade Property\r\n// Appraiser (MDPA) lookup -> write the COUNTY's property + mailing address.\r\n// REsimpli addresses are hand-typed and often wrong (cities appended to the\r\n// street, a Miami house filed under Cape Coral), so they are only used to find\r\n// the parcel, never written as-is.\r\n\r\nconst TAG_ID = '689e51591f1ec236f4f844b9'; // \"remove from list\"\r\n\r\nconst clean = (s) => String(s || '').toUpperCase().replace(/[.,#]/g, ' ').replace(/\\s+/g, ' ').trim();\r\n\r\nconst SUFFIXES = ['ST', 'AVE', 'CT', 'TER', 'TERR', 'PL', 'RD', 'WAY', 'DR', 'LN', 'BLVD', 'CIR', 'TRL', 'PATH', 'HWY', 'PKWY', 'CSWY', 'LOOP', 'ROW'];\r\nconst LONG = { STREET: 'ST', AVENUE: 'AVE', COURT: 'CT', TERRACE: 'TER', TERR: 'TER', PLACE: 'PL', ROAD: 'RD', DRIVE: 'DR', LANE: 'LN', BOULEVARD: 'BLVD', CIRCLE: 'CIR' };\r\n\r\n// Collect every tagged lead id from /lead/list pages. Paging is unstable, so dedupe.\r\nfunction pickTagged(pages) {\r\n  const seen = new Map();\r\n  for (const page of pages) for (const l of (page && page.data && page.data.items) || []) seen.set(l._id, l);\r\n  const tagged = [...seen.values()].filter((l) => (l.tags || []).some((t) => t._id === TAG_ID));\r\n  return { total: seen.size, ids: tagged.map((l) => l._id) };\r\n}\r\n\r\n// Flatten a /lead/details response.\r\nfunction fromDetails(leadData, leadId) {\r\n  const d = leadData || {};\r\n  const p = d.propertyInfo || {};\r\n  const c = (d.contactData || [])[0] || {};\r\n  return {\r\n    leadId: d._id || leadId || null,\r\n    raw: d.address || '',\r\n    city: clean(p.city), zip: String(p.zip || '').slice(0, 5),\r\n    name: c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || '',\r\n  };\r\n}\r\n\r\n// \"8220 SW 43 TER MIAMI\" / \"3725 Ne 169th St Apt 409, North Miami Beach, FL 33160\"\r\n// -> { street: \"8220 SW 43 TER\", unit: \"\", zip }. Everything after the street\r\n// suffix is dropped (that is where hand-typed cities end up) except a unit.\r\nfunction parseStreet(raw, fallbackZip) {\r\n  const parts = String(raw || '').split(',');\r\n  const first = clean(parts[0]).replace(/\\b(\\d+(?:ST|ND|RD|TH)?)(TERR|TER|AVE|CT|PL|WAY|DR|LN|CIR|BLVD)\\b/g, '$1 $2');\n  if (!/^\\d+\\s+\\S/.test(first)) return null; // \"5324\", \"\" - no house number + street\r\n  const words = first.split(' ');\r\n  let end = words.length;\r\n  const isSuffix = (w) => SUFFIXES.includes(w) || LONG[w];\n  for (let i = 2; i < words.length; i++) if (isSuffix(words[i])) { end = i + 1; while (end < words.length && isSuffix(words[end])) end++; break; }\n  const rest = words.slice(end).join(' ');\r\n  const unitM = rest.match(/\\b(?:APT|UNIT|STE|#)\\s*(\\w+)/);\r\n  const zipM = String(raw).match(/\\b(\\d{5})(?:-\\d{4})?\\s*$/);\r\n  return { street: words.slice(0, end).join(' '), unit: unitM ? unitM[1] : '', zip: (zipM && zipM[1]) || fallbackZip || '' };\r\n}\r\n\r\n// Comparison key: drop ordinals and long-form suffixes so \"NW 23RD AVE\",\r\n// \"NW 23 AVE\" and \"NW 23RD AVENUE\" collide.\r\nfunction streetKey(street) {\r\n  return clean(street).split(' ')\r\n    .map((w) => LONG[w] || w.replace(/^(\\d+)(ST|ND|RD|TH)$/, '$1'))\r\n    .join(' ');\r\n}\r\n\r\n// MDPA writes \"NW 23 AVE\"; the DNM sheet's existing rows use \"NW 23RD AVE\".\r\nfunction ordinalize(street) {\r\n  return clean(street).replace(/\\b(N|S|E|W|NW|NE|SW|SE) (\\d+) (?=[A-Z])/g, (m, dir, n) => {\r\n    const v = Number(n) % 100, last = Number(n) % 10;\r\n    const suf = v >= 11 && v <= 13 ? 'TH' : ({ 1: 'ST', 2: 'ND', 3: 'RD' }[last] || 'TH');\r\n    return `${dir} ${n}${suf} `;\r\n  }).replace(/\\bTERR\\b/g, 'TER');\r\n}\r\n\r\n// GetAddress can return several parcels (condo units, near-misses). Only\r\n// accept an exact street match, and when several remain (a condo with no unit\r\n// in REsimpli) refuse to guess — the lead goes to review instead.\r\nfunction pickParcel(getAddressResponse, parsed) {\r\n  const infos = (getAddressResponse && getAddressResponse.MinimumPropertyInfos) || [];\r\n  const want = streetKey(parsed.street);\r\n  let exact = infos.filter((i) => streetKey(i.SiteAddress) === want);\r\n  if (parsed.unit) exact = exact.filter((i) => clean(i.SiteUnit) === clean(parsed.unit));\r\n  if (exact.length !== 1) return { folio: null, reason: exact.length ? `${exact.length} county parcels at this address (condo?) - no unit in REsimpli` : 'Not found in Miami-Dade county records' };\r\n  return { folio: String(exact[0].Strap || '').replace(/-/g, ''), reason: '' };\r\n}\r\n\r\n// Turn the MDPA folio record into a sheet row's address fields.\r\nfunction countyAddress(folio, lead) {\r\n  const sa = ((folio && folio.SiteAddress) || [])[0];\r\n  const m = (folio && folio.MailingAddress) || {};\r\n  if (!sa || !sa.Address) return null;\r\n  const street = ordinalize(String(sa.Address).split(',')[0]);\r\n  const zip = String(sa.Zip || '').slice(0, 5);\r\n  const mailStreet = ordinalize([m.Address1, m.Address2].filter(Boolean).join(' '));\r\n  const mailCity = clean(m.City);\r\n  // MDPA names unincorporated parcels \"Unincorporated County\", which is not a\r\n  // mailing city. Fall back to the owner's own mailing city when they live\r\n  // there, then REsimpli's city if its ZIP agrees, then MIAMI.\r\n  let city = clean(sa.City);\r\n  if (!city || city === 'UNINCORPORATED COUNTY') {\r\n    if (streetKey(mailStreet) === streetKey(street) && mailCity) city = mailCity;\r\n    else if (lead.city && lead.zip === zip) city = lead.city;\r\n    else city = 'MIAMI';\r\n  }\r\n  city = city.replace('OPA-LOCKA', 'OPA LOCKA');\r\n  return {\r\n    street, city, state: 'FL', zip,\r\n    mailStreet, mailCity, mailState: clean(m.State) || (mailStreet ? 'FL' : ''), mailZip: String(m.ZipCode || '').slice(0, 5),\r\n  };\r\n}\r\n\r\n// sheetRows: columns C:F (street, city, state, zip), header included.\r\nfunction sheetKeys(sheetRows) {\r\n  const keys = new Set();\r\n  for (const r of (sheetRows || []).slice(1)) keys.add(streetKey(r[0]) + '|' + String(r[3] || '').slice(0, 5));\r\n  return keys;\r\n}\r\n\r\n// resolved: [{ lead, county|null, reason? }] -> rows to append + report.\r\nfunction buildRows(resolved, sheetRows, today) {\r\n  const keys = sheetKeys(sheetRows);\r\n  const streets = new Set((sheetRows || []).slice(1).map((r) => streetKey(r[0])));\r\n  const rows = [], added = [], duplicates = [], needsReview = [];\r\n  for (const { lead, county, reason } of resolved) {\r\n    if (!county) {\r\n      // Not verifiable, but if the hand-typed street is already on the sheet\r\n      // someone added it manually - nothing to review.\r\n      const p = parseStreet(lead.raw, lead.zip);\r\n      if (p && streets.has(streetKey(p.street))) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw, reason });\r\n      continue;\r\n    }\r\n    // Same street number + name exists in several cities (a Broward \"9361 SW\r\n    // 55th St\" also exists in Miami-Dade). If REsimpli's ZIP disagrees with\r\n    // the parcel we found, we may have the wrong house - a human decides.\r\n    const typedZip = (parseStreet(lead.raw, lead.zip) || {}).zip || lead.zip;\r\n    if (typedZip && typedZip !== county.zip) {\r\n      needsReview.push({ leadId: lead.leadId, name: lead.name, address: lead.raw,\r\n        reason: `ZIP mismatch: REsimpli ${typedZip}, county parcel is ${county.street}, ${county.city} ${county.zip}` });\r\n      continue;\r\n    }\r\n    const key = streetKey(county.street) + '|' + county.zip;\r\n    if (keys.has(key)) { duplicates.push({ leadId: lead.leadId }); continue; }\r\n    keys.add(key);\r\n    // A-B owner names stay blank on purpose (Jorge's call); K = date added.\r\n    rows.push(['', '', county.street, county.city, county.state, county.zip,\r\n      county.mailStreet, county.mailCity, county.mailState, county.mailZip, today]);\r\n    added.push({ leadId: lead.leadId, name: lead.name, address: `${county.street}, ${county.city} ${county.zip}`,\r\n      was: lead.raw, absentee: streetKey(county.mailStreet) !== streetKey(county.street) });\r\n  }\r\n  return { rows, added, duplicates, needsReview };\r\n}\n\n// Email body for the DNM sync. Inline styles only — Gmail strips <style>.\nconst esc = (s) => String(s == null ? '' : s).replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;' }[c]));\nconst SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J3BjoQztugQnLjQiByp4cv3oEGUH1pJcrBu55kK5gV4/edit';\n\nfunction table(rows, cols) {\n  if (!rows.length) return '';\n  const th = cols.map((c) => `<th style=\"text-align:left;padding:4px 10px;border-bottom:1px solid #ccc\">${esc(c[0])}</th>`).join('');\n  const tr = rows.map((r) => '<tr>' + cols.map((c) => `<td style=\"padding:4px 10px;border-bottom:1px solid #eee\">${c[1](r)}</td>`).join('') + '</tr>').join('');\n  return `<table style=\"border-collapse:collapse;font-size:13px\">${'<tr>' + th + '</tr>'}${tr}</table>`;\n}\n\nfunction render(result, error) {\n  const font = 'font-family:Arial,sans-serif;font-size:14px;color:#222';\n  if (error) {\n    return {\n      subject: 'DNM sync FAILED',\n      html: `<div style=\"${font}\"><p><b>The REsimpli → DNM sheet sync failed.</b> Nothing was written for this run; it will retry tomorrow at 7am.</p>\n<p style=\"white-space:pre-wrap;background:#f6f6f6;padding:8px\">${esc(error)}</p>\n<p><a href=\"${SHEET_URL}\">Open the DNM sheet</a></p></div>`,\n    };\n  }\n  const { added, duplicates, needsReview } = result;\n  const subject = `DNM sync: ${added.length} added` + (needsReview.length ? `, ${needsReview.length} need review` : '');\n  const who = (r) => esc(r.name || '(no name)');\n  const html = `<div style=\"${font}\">\n<p><b>${added.length}</b> propert${added.length === 1 ? 'y' : 'ies'} added to the <a href=\"${SHEET_URL}\">DNM sheet</a>, addresses verified against Miami-Dade Property Appraiser records.${duplicates.length ? ` ${duplicates.length} newly tagged lead${duplicates.length === 1 ? ' was' : 's were'} already on the sheet.` : ''}</p>\n${table(added, [['Lead', who], ['County address', (r) => esc(r.address)], ['REsimpli had', (r) => esc(r.was)]])}\n${needsReview.length ? `<p style=\"margin-top:18px\"><b>${needsReview.length}</b> tagged lead${needsReview.length === 1 ? '' : 's'} could not be verified and were NOT added. Add these by hand if they belong on the list:</p>\n${table(needsReview, [['Lead', who], ['REsimpli address', (r) => esc(r.address || '(none)')], ['Why', (r) => esc(r.reason)]])}` : ''}\n<p style=\"color:#888;font-size:12px;margin-top:18px\">Each lead is reported once. Runs daily at 7am ET.</p>\n</div>`;\n  return { subject, html };\n}\n\n// ---- n8n entry point ----\nconst e = $json.execution || {};\nconst msg = [(e.error && e.error.message) || 'Unknown error', e.lastNodeExecuted ? 'Failed at node: ' + e.lastNodeExecuted : '', e.url || ''].filter(Boolean).join('\\n');\nreturn [{ json: render(null, msg) }];"
+      },
+      "id": "d0000000-0000-4000-8000-000000000020",
+      "name": "Compose failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Daily 7am ET": {
+      "main": [
+        [
+          {
+            "node": "Count leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run manually": {
+      "main": [
+        [
+          {
+            "node": "Count leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count leads": {
+      "main": [
+        [
+          {
+            "node": "Plan pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan pages": {
+      "main": [
+        [
+          {
+            "node": "List leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List leads": {
+      "main": [
+        [
+          {
+            "node": "Pick new tagged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick new tagged": {
+      "main": [
+        [
+          {
+            "node": "Anything new?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything new?": {
+      "main": [
+        [
+          {
+            "node": "Lead details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compose email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead details": {
+      "main": [
+        [
+          {
+            "node": "Prep county lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep county lookup": {
+      "main": [
+        [
+          {
+            "node": "County: find parcel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "County: find parcel": {
+      "main": [
+        [
+          {
+            "node": "Pick parcel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick parcel": {
+      "main": [
+        [
+          {
+            "node": "County: owner + mailing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "County: owner + mailing": {
+      "main": [
+        [
+          {
+            "node": "Read sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read sheet": {
+      "main": [
+        [
+          {
+            "node": "Build rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build rows": {
+      "main": [
+        [
+          {
+            "node": "Rows to write?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rows to write?": {
+      "main": [
+        [
+          {
+            "node": "Append rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compose email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append rows": {
+      "main": [
+        [
+          {
+            "node": "Compose email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose email": {
+      "main": [
+        [
+          {
+            "node": "Email Jorge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On failure": {
+      "main": [
+        [
+          {
+            "node": "Compose failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose failure": {
+      "main": [
+        [
+          {
+            "node": "Email Jorge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/New_York",
+    "executionOrder": "v1",
+    "errorWorkflow": "dnmsync000001"
+  }
+}
