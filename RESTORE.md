@@ -17,7 +17,7 @@ This file lives in Dropbox and survives the wipe.
 
 ## 2. Restore the Dev Folder
 
-Dropbox will sync `D:\Dropbox\J Feels\Dev\` automatically once Dropbox is installed.
+Dropbox will sync `C:\Users\jsive\Dropbox\J Feels\Dev\` automatically once Dropbox is installed.
 Wait for full sync before proceeding.
 
 ---
@@ -26,13 +26,13 @@ Wait for full sync before proceeding.
 
 ### Install Python dependencies
 ```bat
-cd "D:\Dropbox\J Feels\Dev\foreclosure-agent"
+cd "C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent"
 pip install -r requirements.txt
 playwright install chromium
 ```
 
 ### Restore .env
-Create `D:\Dropbox\J Feels\Dev\foreclosure-agent\.env` with this content:
+Create `C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent\.env` with this content:
 ```
 GOOGLE_SHEET_ID=1d2Wffl7gGIGikKi5QVPtJfFWCGupWysukZnzhmYBDZ4
 GOOGLE_CREDS_PATH=credentials.json
@@ -46,7 +46,7 @@ Already synced via Dropbox — no action needed.
 
 ### Test the agent manually
 ```bat
-cd "D:\Dropbox\J Feels\Dev\foreclosure-agent"
+cd "C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent"
 python main.py
 python main_probate.py
 ```
@@ -58,11 +58,11 @@ python main_probate.py
 **Ask Claude Code to run this setup**, or do it manually:
 
 ```bat
-schtasks /create /tn "Buying Hero - Foreclosure Daily" /tr "\"D:\Dropbox\J Feels\Dev\foreclosure-agent\run_daily.bat\"" /sc daily /st 07:00 /ru "%USERNAME%" /rl HIGHEST /f
+schtasks /create /tn "Buying Hero - Foreclosure Daily" /tr "\"C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent\run_daily.bat\"" /sc daily /st 07:00 /ru "%USERNAME%" /rl HIGHEST /f
 ```
 
 - **Task name:** Buying Hero - Foreclosure Daily
-- **Script:** `D:\Dropbox\J Feels\Dev\foreclosure-agent\run_daily.bat`
+- **Script:** `C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent\run_daily.bat`
 - **Schedule:** Daily at 7:00 AM
 - **Run as:** current user, highest privileges
 
@@ -71,11 +71,11 @@ schtasks /create /tn "Buying Hero - Foreclosure Daily" /tr "\"D:\Dropbox\J Feels
 ## 5. Windows Task Scheduler — Probate Agent
 
 ```bat
-schtasks /create /tn "Buying Hero - Probate" /tr "\"D:\Dropbox\J Feels\Dev\foreclosure-agent\run_probate.bat\"" /sc weekly /d MON /st 07:30 /ru "%USERNAME%" /rl HIGHEST /f
+schtasks /create /tn "Buying Hero - Probate" /tr "\"C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent\run_probate.bat\"" /sc weekly /d MON /st 07:30 /ru "%USERNAME%" /rl HIGHEST /f
 ```
 
 - **Task name:** Buying Hero - Probate
-- **Script:** `D:\Dropbox\J Feels\Dev\foreclosure-agent\run_probate.bat`
+- **Script:** `C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent\run_probate.bat`
 - **Schedule:** Weekly on Monday at 7:30 AM
 
 ---
@@ -87,7 +87,7 @@ Enriches with property data and uploads 3 CSVs to Google Drive automatically.
 
 ### Install Python dependencies
 ```bat
-cd "D:\Dropbox\J Feels\Dev\lis-pendens-agent"
+cd "C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent"
 pip install -r requirements.txt
 ```
 
@@ -100,7 +100,7 @@ Both are already synced via Dropbox — **no action needed.**
 
 If `token.json` is missing or expired, run the script once manually in a visible window — it will open a browser to re-authenticate:
 ```bat
-cd "D:\Dropbox\J Feels\Dev\lis-pendens-agent"
+cd "C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent"
 python enhanced_master_script.py
 ```
 
@@ -115,7 +115,7 @@ Files produced daily:
 
 ### Test manually
 ```bat
-cd "D:\Dropbox\J Feels\Dev\lis-pendens-agent"
+cd "C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent"
 python enhanced_master_script.py
 ```
 
@@ -124,20 +124,20 @@ python enhanced_master_script.py
 ## 7. Windows Task Scheduler — Lis Pendens Agent (Daily)
 
 ```bat
-schtasks /create /tn "Buying Hero - Lis Pendens Daily" /tr "\"D:\Dropbox\J Feels\Dev\lis-pendens-agent\run_daily.bat\"" /sc daily /st 09:00 /ru "%USERNAME%" /rl HIGHEST /f
+schtasks /create /tn "Buying Hero - Lis Pendens Daily" /tr "\"C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent\run_daily.bat\"" /sc daily /st 09:00 /ru "%USERNAME%" /rl HIGHEST /f
 ```
 
 - **Task name:** Buying Hero - Lis Pendens Daily
-- **Script:** `D:\Dropbox\J Feels\Dev\lis-pendens-agent\run_daily.bat`
+- **Script:** `C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent\run_daily.bat`
 - **Schedule:** Daily at 9:00 AM
-- **Output log:** `D:\Dropbox\J Feels\Dev\lis-pendens-agent\lis_pendens_automation.log`
+- **Output log:** `C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent\lis_pendens_automation.log`
 
 ---
 
 ## 8. Node / kiavi-arv.js Setup
 
 ```bat
-cd "D:\Dropbox\J Feels\Dev"
+cd "C:\Users\jsive\Dropbox\J Feels\Dev"
 npm install
 ```
 
@@ -147,23 +147,23 @@ npm install
 
 ```bat
 :: Check foreclosure agent logs
-dir "D:\Dropbox\J Feels\Dev\foreclosure-agent\logs\"
+dir "C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent\logs\"
 
 :: Check lis pendens log
-type "D:\Dropbox\J Feels\Dev\lis-pendens-agent\lis_pendens_automation.log"
+type "C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent\lis_pendens_automation.log"
 
 :: Manually trigger foreclosure agent
-"D:\Dropbox\J Feels\Dev\foreclosure-agent\run_daily.bat"
+"C:\Users\jsive\Dropbox\J Feels\Dev\foreclosure-agent\run_daily.bat"
 
 :: Manually trigger lis pendens scraper
-"D:\Dropbox\J Feels\Dev\lis-pendens-agent\run_daily.bat"
+"C:\Users\jsive\Dropbox\J Feels\Dev\lis-pendens-agent\run_daily.bat"
 ```
 
 ---
 
 ## Claude Code Note
 
-When you open Claude Code in `D:\Dropbox\J Feels\Dev\` after restore, tell it:
+When you open Claude Code in `C:\Users\jsive\Dropbox\J Feels\Dev\` after restore, tell it:
 > "I just restored Windows. Please re-create the Task Scheduler tasks."
 
 Claude will use this file to recreate all three scheduled tasks:

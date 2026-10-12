@@ -65,7 +65,7 @@ python main.py --blog-plan-only
 2. Go to **Scheduled** tab → **New Scheduled Task**
 3. Configure:
    - **Name:** Buying Hero SEO Audit
-   - **Working folder:** `D:\Dropbox\J Feels\Dev\seo-agent`
+   - **Working folder:** `C:\Users\jsive\Dropbox\J Feels\Dev\seo-agent`
    - **Frequency:** Monthly (or Manual for on-demand)
    - **Prompt:** (see below)
 
@@ -74,7 +74,7 @@ python main.py --blog-plan-only
 ```
 Run the Buying Hero SEO audit pipeline.
 
-Working directory: D:\Dropbox\J Feels\Dev\seo-agent
+Working directory: C:\Users\jsive\Dropbox\J Feels\Dev\seo-agent
 
 Steps:
 1. Run: python main.py
@@ -94,7 +94,7 @@ Use this prompt when you're ready to push meta changes live:
 ```
 Run the Buying Hero SEO audit and apply meta changes to Carrot.
 
-Working directory: D:\Dropbox\J Feels\Dev\seo-agent
+Working directory: C:\Users\jsive\Dropbox\J Feels\Dev\seo-agent
 
 Steps:
 1. Run: python main.py --implement
@@ -127,7 +127,7 @@ If you need the audit to run overnight without Cowork open:
 Create `run_seo.bat`:
 ```bat
 @echo off
-cd /d D:\Dropbox\J Feels\Dev\seo-agent
+cd /d C:\Users\jsive\Dropbox\J Feels\Dev\seo-agent
 python main.py >> logs\scheduler.log 2>&1
 ```
 

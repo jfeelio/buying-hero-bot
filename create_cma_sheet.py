@@ -11,11 +11,12 @@ Sections:
 Run once — outputs the sheet URL at the end.
 """
 
+import os
 import requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
 
-CREDS_PATH     = r"D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json"
+CREDS_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 SPREADSHEET_ID = "1Slci6swLejIAfu81sVAyx9NCkcPeLEOEVnvXRONdYGk"
 TAB_NAME       = "CMA Template"
 

@@ -7,7 +7,7 @@ import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-CREDS_PATH = r"D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json"
+CREDS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 SCOPES = [
     "https://www.googleapis.com/auth/documents",
     "https://www.googleapis.com/auth/drive",

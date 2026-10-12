@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Publish Google Ads Strategy to Google Doc with full formatting."""
 
+import os
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
 DOC_ID = "1p5CUcFbjeW5-huEe7rBoE6403Z9snskpU2KkVJoJjsI"
-CREDS  = "D:/Dropbox/J Feels/Dev/foreclosure-agent/credentials.json"
+CREDS  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 SCOPES = ["https://www.googleapis.com/auth/documents"]
 
 # ── Colors ───────────────────────────────────────────────────────────────────

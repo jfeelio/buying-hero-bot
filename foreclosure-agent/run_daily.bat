@@ -4,8 +4,9 @@
 
 setlocal
 
-:: Project root (update if you move the folder)
-set PROJECT_DIR=D:\Dropbox\J Feels\Dev\foreclosure-agent
+:: Project root = this script's folder (survives moving the folder)
+set PROJECT_DIR=%~dp0
+set PROJECT_DIR=%PROJECT_DIR:~0,-1%
 
 :: Optional: activate virtual environment (uncomment if using venv)
 :: call "%PROJECT_DIR%\.venv\Scripts\activate.bat"

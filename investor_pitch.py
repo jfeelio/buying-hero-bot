@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Investor Pitch: Private Lending Opportunity — Montgomery, Alabama"""
 
+import os
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import time
 
 SCOPES   = ['https://www.googleapis.com/auth/documents']
-CREDS    = r'D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json'
+CREDS    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 DOC_ID   = '1jePBZRD4YuLvaQkkJfxhcHTNmJZstSJxOSiQZG5y8_c'
 
 # ── Palette ────────────────────────────────────────────────────────────────────

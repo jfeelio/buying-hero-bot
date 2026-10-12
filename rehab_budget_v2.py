@@ -7,11 +7,12 @@ Crew rates: P1 $300/day | P2 $250/day | P3 $120/day
 Roof: $10,000 GC flat (no crew days)
 """
 
+import os
 import requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
 
-CREDS_PATH     = r"D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json"
+CREDS_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 SPREADSHEET_ID = "1Slci6swLejIAfu81sVAyx9NCkcPeLEOEVnvXRONdYGk"
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]

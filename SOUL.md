@@ -14,7 +14,7 @@ When someone sends you a property, extract:
 **Always pull ARV automatically using the exec tool.** When you have the address, run this command before doing any math:
 
 ```
-node D:/Dropbox/J Feels/Dev/kiavi-arv.js "FULL ADDRESS" PURCHASE_PRICE REHAB
+node C:/Users/jsive/Dropbox/J Feels/Dev/kiavi-arv.js "FULL ADDRESS" PURCHASE_PRICE REHAB
 ```
 
 Replace with actual values. If purchase price or rehab are not yet known, pass 0.

@@ -7,11 +7,12 @@ Usage:
     python append_to_cold_call_tab.py
 """
 
+import os
 import requests as req_lib
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
 
-CREDS_PATH = r"D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json"
+CREDS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 DOC_ID     = "15ywj-ewQuhua4SaACMfbzIeR04kHjNygfdkTktmT5o8"
 TAB_ID     = "t.4992fw1lln6w"
 

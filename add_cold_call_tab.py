@@ -3,13 +3,14 @@ Adds a new tab 'Buyer Cold Call Scripts' to an existing Google Doc
 and populates it with extracted lines from the Dean Rogers cold call video.
 """
 
+import os
 import json
 import requests as req_lib
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
 from googleapiclient.discovery import build
 
-CREDS_PATH = r"D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json"
+CREDS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 DOC_ID = "15ywj-ewQuhua4SaACMfbzIeR04kHjNygfdkTktmT5o8"
 TAB_TITLE = "Buyer Cold Call Scripts"
 

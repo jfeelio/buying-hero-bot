@@ -3,11 +3,12 @@ Creates a 'Rehab Budget & Project Plan' tab in the Buying Hero spreadsheet.
 Spreadsheet: https://docs.google.com/spreadsheets/d/1Slci6swLejIAfu81sVAyx9NCkcPeLEOEVnvXRONdYGk
 """
 
+import os
 import requests
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
 
-CREDS_PATH    = r"D:\Dropbox\J Feels\Dev\foreclosure-agent\credentials.json"
+CREDS_PATH    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foreclosure-agent", "credentials.json")
 SPREADSHEET_ID = "1Slci6swLejIAfu81sVAyx9NCkcPeLEOEVnvXRONdYGk"
 SHEET_TITLE   = "Rehab Budget & Project Plan"
 
