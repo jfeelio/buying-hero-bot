@@ -46,8 +46,7 @@ jobs:
           GOOGLE_CREDS_PATH=credentials.json
           OLC_API_KEY=${{ secrets.OLC_API_KEY }}
           OLC_PROBATE_TEMPLATE_ID=${{ vars.OLC_PROBATE_TEMPLATE_ID }}
-          OLC_PROBATE_PRODUCT_ID=${{ vars.OLC_PROBATE_PRODUCT_ID }}
-          OLC_DAILY_CAP=${{ vars.OLC_DAILY_CAP }}
+          OLC_PROBATE_PRODUCT_ID=${{ vars.OLC_PROBATE_PRODUCT_ID }}          OLC_DAILY_CAP=${{ vars.OLC_DAILY_CAP }}
           ENVEOF
 
       # Live when the OLC_DRY_RUN repo variable is 0; dry run (logs only) otherwise.

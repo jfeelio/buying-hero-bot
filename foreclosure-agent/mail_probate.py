@@ -40,6 +40,18 @@ OLC_BASE = os.environ.get("OLC_BASE_URL") or "https://api.openletterconnect.com/
 OLC_API_KEY = os.environ.get("OLC_API_KEY", "")
 OLC_TEMPLATE_ID = int(os.environ.get("OLC_PROBATE_TEMPLATE_ID") or 12923)
 OLC_PRODUCT_ID = int(os.environ.get("OLC_PROBATE_PRODUCT_ID") or 0)
+# Printed in the double-window envelope's return window. Without it that window is blank and OLC
+# flags the order. Same address as OLC return contact 1487450 (the one saved in the OLC UI).
+RETURN_ADDRESS = {
+    "firstName": "Jorge",
+    "lastName": "Siverio",
+    "companyName": "Buying Hero",
+    "address1": "62 NE 167th St",
+    "address2": "#1171",
+    "city": "Miami",
+    "state": "FL",
+    "zip": "33162",
+}
 DRY_RUN = os.environ.get("OLC_DRY_RUN", "1") != "0"
 DAILY_CAP = int(os.environ.get("OLC_DAILY_CAP") or 150)
 
@@ -150,6 +162,7 @@ def place_order(letter_no: int, rows: list) -> dict:
         "contacts": [_contact(r) for r in rows],
         "productId": OLC_PRODUCT_ID,
         "templateId": OLC_TEMPLATE_ID,
+        "returnAddress": RETURN_ADDRESS,
         "name": f"Probate letter {letter_no} - {date.today().isoformat()}",
     }
     r = requests.post(
@@ -165,6 +178,10 @@ def place_order(letter_no: int, rows: list) -> dict:
     if not order_id:
         raise RuntimeError(f"OLC returned no order id: {r.text[:500]}")
     logger.info(f"  OLC order {order_id}: status={data.get('status')} payment={data.get('paymentStatus')} cost={data.get('cost')}")
+    # The order is already placed, so warn rather than raise: raising here would skip the Mail Log
+    # write and the next run would mail these people again.
+    if not data.get("returnContactId"):
+        logger.error(f"  OLC order {order_id} has NO return address attached - check it in OLC before it prints")
     return data
 
 
@@ -221,8 +238,9 @@ def send_summary(today: date, orders: list, failures: list, skipped: dict, cases
         ["Skipped: no address", skipped["no address"]],
     ]))
     html.append("<h3 style='margin:16px 0 6px'>Orders</h3>" + table(
-        ["Letter", "Pieces", "Order ID", "Status", "Payment", "Cost"],
-        [[n, len(rows), o.get("id"), o.get("status"), o.get("paymentStatus"), o.get("cost")] for n, rows, o in orders]))
+        ["Letter", "Pieces", "Order ID", "Status", "Payment", "Cost", "Return address"],
+        [[n, len(rows), o.get("id"), o.get("status"), o.get("paymentStatus"), o.get("cost"),
+          "ok" if o.get("returnContactId") else "MISSING"] for n, rows, o in orders]))
     html.append("<h3 style='margin:16px 0 6px'>Who we mailed today, by address source</h3>" + table(
         ["Source", "Letters"], sorted(by_source.items(), key=lambda kv: -kv[1])))
     html.append("<h3 style='margin:16px 0 6px'>Running totals</h3>" + table(["", ""], [
@@ -239,6 +257,8 @@ def send_summary(today: date, orders: list, failures: list, skipped: dict, cases
     html.append(f"<p style='font-size:12px;color:#666'>Full detail: <a href='{SHEET_URL}'>Probate and Probate Mail Log tabs</a>.</p>")
 
     subject = f"Probate mail sent: {mailed} letters ({today:%b %d})" + (" - SOME ORDERS FAILED" if failures else "")
+    if any(not o.get("returnContactId") for _, _, o in orders):
+        subject += " - RETURN ADDRESS MISSING, check OLC"
     try:
         r = requests.post(url, json={"kind": "failure", "subject": subject, "html": "".join(html)},
                           headers={"X-Report-Key": key}, timeout=60)
@@ -257,6 +277,8 @@ def run(today: date = None):
     logger.info("=" * 60)
     logger.info(f"Probate mailer starting ({'DRY RUN - nothing is sent or written' if DRY_RUN else 'LIVE'})")
     logger.info(f"  Template {OLC_TEMPLATE_ID}, product {OLC_PRODUCT_ID}, cap {DAILY_CAP}")
+    logger.info(f"  Return address: {RETURN_ADDRESS['companyName']}, {RETURN_ADDRESS['address1']} {RETURN_ADDRESS['address2']}, "
+                f"{RETURN_ADDRESS['city']} {RETURN_ADDRESS['zip']}")
     logger.info("=" * 60)
 
     if not DRY_RUN and (not OLC_API_KEY or not OLC_PRODUCT_ID):
