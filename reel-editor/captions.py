@@ -80,8 +80,12 @@ def build(words_path, edit_path, out_path):
         f"Style: Cap,{FONT},{SIZE},{WHITE},{WHITE},&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,7,4,5,40,40,0,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
+    # list graphics replace the captions while they're on screen
+    mutes = [(ls["start"], ls["end"]) for ls in edit.get("lists", [])]
     for n, c in enumerate(chunks):
         start = c[0]["s"]
+        if any(a <= start < b for a, b in mutes):
+            continue
         nxt = chunks[n + 1][0]["s"] if n + 1 < len(chunks) else c[-1]["e"] + 0.6
         end = nxt if nxt - c[-1]["e"] < 0.6 else c[-1]["e"] + 0.25
         is_hero = len(c) == 1 and c[0]["i"] in hero

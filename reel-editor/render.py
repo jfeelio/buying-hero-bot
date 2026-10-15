@@ -8,7 +8,9 @@ edit.json keys used here:
   overlays: [{"start", "end", "file", "mode": "full"|"card", "from"?, "crop"?: [x,y,w,h], "y"?}]
       full -> covers the frame (scale-to-fill), stills get a slow push-in
       card -> screenshot cropped, rounded, blue border + shadow, slides up into the upper frame
-  zooms:    [{"start", "end", "scale"?: 1.08}]     hard punch-in on the talking head
+  zooms:    [{"start", "end", "scale"?: 1.08}]     eased push-in on the talking head
+  lists:    [{"start", "end", "items": [{"t", "text"}], "icon"?: "x", "color"?: "#E5383B"}]
+            face dims, each item slides in as it's said (e.g. a run of deal-killers)
   icons:    [{"t", "icon": lucide-name, "dur"?: 1.6}]  brand badge pops in beside the face
   sfx:      [{"t", "file": sfx/<name>.mp3, "vol"?: 0.35, "peak"?: true}]
             peak=true lines the loudest moment of the sound up with t (for whooshes)
@@ -24,6 +26,7 @@ VIDEO_EXT = (".mp4", ".mov", ".webm", ".m4v")
 HERE = os.path.dirname(os.path.abspath(__file__))
 ICON_SIZE, ICON_X, ICON_Y = 180, 900, 960   # right of the face, above the captions
 FACE_Y = 0.35                               # zoom anchor: keep the face in frame
+ZOOM_EASE = 0.35                            # seconds to ease in/out of a push-in
 
 
 def ffmpeg_bin(name="ffmpeg"):
@@ -106,6 +109,45 @@ def make_icon_frames(name, dur, outdir):
     return box
 
 
+def make_list_frames(ls, outdir):
+    """Full-frame PNG sequence: dim the video, then slide each item in on its cue."""
+    from PIL import ImageFont
+    os.makedirs(outdir, exist_ok=True)
+    st, en, items = ls["start"], ls["end"], ls["items"]
+    badge_p = os.path.join(outdir, "badge.png")
+    subprocess.run(["node", os.path.join(HERE, "icon.js"), ls.get("icon", "x"), badge_p, "110",
+                    ls.get("color", "#E5383B")], check=True, capture_output=True)
+    badge = Image.open(badge_p).convert("RGBA")
+    font = ImageFont.truetype(os.path.join(HERE, "fonts", "Montserrat-Black.ttf"), 76)
+    row_h, x0 = 170, 110
+    y0 = ls.get("y", 1150) - row_h * len(items) // 2   # chest height, face stays visible
+    rows = []
+    for it in items:   # pre-render each row once
+        txt = it["text"].upper()
+        tw = int(font.getlength(txt))
+        im = Image.new("RGBA", (130 + tw + 20, row_h), (0, 0, 0, 0))
+        im.paste(badge, (0, (row_h - 110) // 2), badge)
+        ImageDraw.Draw(im).text((135, row_h // 2), txt, font=font, fill="white", anchor="lm",
+                                stroke_width=5, stroke_fill="black")
+        rows.append(im)
+    n = int((en - st) * FPS)
+    for f in range(n):
+        t = st + f / FPS
+        dim_a = min(f / 6, (n - 1 - f) / 6, 1.0)
+        frame = Image.new("RGBA", (W, H), (0, 0, 0, int(150 * dim_a)))
+        for r, (it, im) in enumerate(zip(items, rows)):
+            k = (t - it["t"]) * FPS
+            if k < 0:
+                continue
+            p = min(k / 6, 1.0)
+            p = 1 - (1 - p) ** 3                       # ease-out
+            a = p * min(dim_a * 1.0, 1.0) if f > n - 7 else p
+            row = im.copy()
+            row.putalpha(row.getchannel("A").point(lambda v: int(v * a)))
+            frame.alpha_composite(row, (int(x0 - 80 * (1 - p)), y0 + r * row_h))
+        frame.save(os.path.join(outdir, f"f_{f:04d}.png"), compress_level=1)
+
+
 def build(reel, name):
     edit = json.load(open(os.path.join(reel, "edit.json"), encoding="utf-8"))
     video = os.path.join(reel, "raw.mov")
@@ -118,7 +160,12 @@ def build(reel, name):
 
     # talking head + punch-in zooms (hard cut in/out, anchored on the face)
     zooms = edit.get("zooms", [])
-    z = "+".join(f"{z.get('scale', 1.08) - 1:.3f}*between(t,{z['start']},{z['end']})" for z in zooms) or "0"
+    # smoothstep ramp in over ZOOM_EASE, hold, ramp out — no hard jumps
+    def ramp(a, b):
+        e = ZOOM_EASE
+        u = rf"clip(min((t-{a})/{e},({b}-t)/{e}),0,1)"
+        return f"({u}*{u}*(3-2*{u}))"
+    z = "+".join(f"{z.get('scale', 1.08) - 1:.3f}*{ramp(z['start'], z['end'])}" for z in zooms) or "0"
     chains.append(f"[0:v]scale={W}:{H},setsar=1,fps={FPS},"
                   f"scale=w='trunc({W}*(1+{z})/2)*2':h='trunc({H}*(1+{z})/2)*2':eval=frame,"
                   f"crop={W}:{H}:x='(iw-{W})/2':y='(ih-{H})*{FACE_Y}'[v0]")
@@ -151,6 +198,15 @@ def build(reel, name):
                         f"scale={W}:{H},setsar=1,setpts=PTS-STARTPTS+{st}/TB[{tag}]")
             chains.append(fill)
             chains.append(f"[{last}][{tag}]overlay=0:0:eof_action=pass:enable='between(t,{st},{en})'[v{n}]")
+        last = f"v{n}"
+
+    for k, ls in enumerate(edit.get("lists", [])):
+        n += 1
+        d = os.path.join(work, f"list_{k}")
+        make_list_frames(ls, d)
+        inputs += ["-framerate", str(FPS), "-i", os.path.join(d, "f_%04d.png")]
+        chains.append(f"[{n}:v]format=rgba,setpts=PTS-STARTPTS+{ls['start']}/TB[l{n}]")
+        chains.append(f"[{last}][l{n}]overlay=0:0:eof_action=pass:enable='between(t,{ls['start']},{ls['end']})'[v{n}]")
         last = f"v{n}"
 
     for k, ic in enumerate(edit.get("icons", [])):
