@@ -1,4 +1,4 @@
-"""Buying Hero "SOLD" social post: property photo + hanging SOLD sign + Jorge headshot + deal numbers.
+"""BH Properties "SOLD" social post: property photo + hanging SOLD sign + Jorge headshot + deal numbers.
 
   python sold_post.py <post_dir> --price 500000 --spread 220000 [--headline auto|"..."] [--area "Miami-Dade"]
                       [--sign left|right] [--photo property.png] [--headshot D:/Brand/jorge_headshot.png]
@@ -11,10 +11,11 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 HERE = os.path.dirname(os.path.abspath(__file__))
 FONTS = os.path.join(HERE, "..", "reel-editor", "fonts")
 POSTS = "D:/Posts"
+BRAND = "BH PROPERTIES"   # Jorge's DBA for the buyer side + the channel (not "Buying Hero"); logo pending
 # Rotated so the feed never shows the same line twice in a row (see `--headline auto`)
 HEADLINES = [
     "Another investor just got the keys.",
-    "Another Hero deal. Closed.",
+    "Another BH deal. Closed.",
     "Off-market. Under value. Closed.",
     "Bought right. Closed fast.",
     "Our investors don't chase deals. We bring them.",
@@ -53,7 +54,7 @@ def cover(im, w, h, focus_y=0.5):
 
 
 def hanging_sign(scale=1.0):
-    """Classic real-estate post-and-arm sign with a Buying Hero rider and a big SOLD panel."""
+    """Classic real-estate post-and-arm sign with a BRAND rider and a big SOLD panel."""
     S = lambda v: int(v * scale)
     W, H = S(420), S(560)
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -76,7 +77,7 @@ def hanging_sign(scale=1.0):
             size -= 2
         return font(size)
     inner = sx1 - sx0
-    d.text(((sx0 + sx1) // 2, sy + S(30)), "BUYING HERO", font=fit("BUYING HERO", S(34), inner - S(36)),
+    d.text(((sx0 + sx1) // 2, sy + S(30)), BRAND, font=fit(BRAND, S(34), inner - S(36)),
            fill=WHITE, anchor="mm")
     py0 = sy + S(66)
     d.rounded_rectangle((sx0, py0, sx1, py0 + S(170)), S(10), fill=WHITE, outline=BLUE, width=S(8))
@@ -148,7 +149,7 @@ def compose(args, W, H, photo_h):
         hf = font(hf.size - 2)
     d.text((left, hy), args.headline.upper(), font=hf, fill=WHITE)
     d.line((left, H - 92, W - left, H - 92), fill=(40, 44, 48), width=2)
-    d.text((left, H - 50), "BUYING HERO", font=font(38), fill=BLUE, anchor="lm")
+    d.text((left, H - 50), BRAND, font=font(38), fill=BLUE, anchor="lm")
     d.text((W - left, H - 50), f"Off-market deals · {args.area}", font=font(30, "ExtraBold"), fill=GRAY, anchor="rm")
     return canvas
 

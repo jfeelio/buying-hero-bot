@@ -1,12 +1,17 @@
 ---
 name: sold-post
-description: Make Buying Hero's standardized "SOLD" social post — property photo with a branded hanging SOLD yard sign, Jorge's headshot, sale price, investor equity spread, a rotating Buying Hero headline, plus a long Instagram caption. Use whenever Jorge sends a property photo and says it sold / closed / assigned and wants a post, graphic, "just sold" image, deal announcement, win post, or "another satisfied investor" style post — even if he only gives a photo and two numbers like "sold for $500k, $220k spread".
+description: Make the standardized BH Properties "SOLD" social post (Buying Hero's buyer-side DBA) — property photo with a branded hanging SOLD yard sign, Jorge's headshot, sale price, investor equity spread, a rotating Buying Hero headline, plus a long Instagram caption. Use whenever Jorge sends a property photo and says it sold / closed / assigned and wants a post, graphic, "just sold" image, deal announcement, win post, or "another satisfied investor" style post — even if he only gives a photo and two numbers like "sold for $500k, $220k spread".
 ---
 
 # SOLD Post
 
 One image (1080x1350, Instagram 4:5) + caption per closed deal. Same look every time, so the
-feed builds a recognizable "Buying Hero closed another one" series.
+feed builds a recognizable "BH Properties closed another one" series.
+
+**Brand = BH PROPERTIES**, not Buying Hero. BH Properties is Jorge's DBA and the brand for
+buyers and for his channel; the sign rider, footer and any brand mention in the caption use it
+(`BRAND` constant in sold_post.py). Its logo isn't final yet — when Jorge sends it, save it to
+`D:\Brandh_properties_logo.png` and swap it in for the footer wordmark and sign rider text.
 
 Code: `C:\Users\jsive\Dropbox\J Feels\Dev\sold-post\sold_post.py` (uses fonts from
 `..\reel-editor\fonts`). Posts: `D:\Posts\<YYYY-MM-DD>-sold-<price-k>\` (property.png,
@@ -15,7 +20,8 @@ sold_post.png, post.json, caption.txt). Headshot lives once at `D:\Brand\jorge_h
 
 ## Workflow
 1. **Intake.** Need: property photo, sale price, investor equity spread. Ask only for what's
-   missing. Area defaults to "Miami-Dade" — confirm if the deal is elsewhere in South Florida.
+   missing. **Always ask the city** (e.g. first deal was Hialeah, FL) and pass `--area "Hialeah, FL"`;
+   name the city in the caption's price line and add it as a hashtag.
    Copy pasted images from the session `images\` folder; move files Jorge links from Downloads.
 2. **Privacy/accuracy check on the photo:** no visible house number, street sign, plate,
    people's faces or the seller's belongings that identify them. If the house number shows,
@@ -40,8 +46,7 @@ sold_post.png, post.json, caption.txt). Headshot lives once at `D:\Brand\jorge_h
 
 ## Design (approved 2026-10-15)
 Photo top ~56% with a fade into brand black · white post-and-arm yard sign with a blue
-"BUYING HERO" rider and white SOLD panel in blue (#0083CA) · headshot in a white + blue ring on
+"BH PROPERTIES" rider and white SOLD panel in blue (#0083CA) · headshot in a white + blue ring on
 the photo/panel seam · "SOLD FOR" (white) and "EQUITY SPREAD FOR OUR INVESTOR" (blue)
-numbers in Montserrat Black · rotating headline · footer "BUYING HERO · Off-market deals ·
-<area>". The real logo font (Dunbar Tall Bold) isn't installed — if Jorge supplies a logo
-PNG, put it in D:\Brand and swap the footer wordmark for it.
+numbers in Montserrat Black · rotating headline · footer "BH PROPERTIES · Off-market deals ·
+<city>". Montserrat wordmark until the BH Properties logo is final.
