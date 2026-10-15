@@ -3,7 +3,7 @@
 Runs every 15 min (Windows Task Scheduler, see install_task.ps1). Each run:
   1. scan   - every reel/post folder on D: gets a row (latest file + caption.txt). Rows that are
               Scheduled/Posted are frozen; Draft/Approved/Failed rows get their file refreshed.
-  2. publish- rows with Status=Approved + date + time are uploaded to GHL media and created as a
+  2. publish- rows with Status=Approved + date (+ time, or Auto = best slot) are uploaded to GHL media and created as a
               scheduled Instagram post (caption from the sheet, BH Properties collab invite,
               optional follow-up comment). Status -> Scheduled. Reels marked "Manual" -> Post Manually.
   3. track  - Scheduled rows are checked in GHL; once live -> Posted (+ link), errors -> Failed.
@@ -37,7 +37,14 @@ HEADERS = ["ID", "Type", "Title", "Status", "Post Date", "Post Time (ET)", "Reel
 C = {h: i for i, h in enumerate(HEADERS)}
 STATUSES = ["Draft", "Approved", "Scheduled", "Posted", "Post Manually", "Failed", "Skip"]
 AUDIO = ["Auto-post", "Manual (trending audio)"]
-TIMES = [f"{h % 12 or 12}:{m:02d} {'AM' if h < 12 else 'PM'}" for h in range(6, 23) for m in (0, 30)]
+AUTO_TIME = "Auto (best time)"
+TIMES = [AUTO_TIME] + [f"{h % 12 or 12}:{m:02d} {'AM' if h < 12 else 'PM'}" for h in range(6, 23) for m in (0, 30)]
+DATE_FMT = "%a %b %d, %Y"          # dropdown values look like "Fri Oct 16, 2026"
+# Default slots (ET) when Post Time is Auto. Industry benchmarks for IG in US Eastern: Reels do
+# best in the evening scroll window, feed images around lunch; weekends skew late morning.
+# Replace with Jorge's own IG insights once there are ~20 posts of data.
+BEST_TIME = {("Reel", "weekday"): "7:00 PM", ("Reel", "weekend"): "11:00 AM",
+             ("Sold Post", "weekday"): "12:00 PM", ("Sold Post", "weekend"): "10:00 AM"}
 FROZEN = {"Scheduled", "Posted", "Post Manually", "Skip"}
 
 
@@ -98,6 +105,29 @@ def open_tab(gc):
         return sh, ws
 
 
+def date_options():
+    today = dt.datetime.now(TZ).date()
+    return [(today + dt.timedelta(days=k)).strftime(DATE_FMT) for k in range(0, 31)]
+
+
+def refresh_dropdowns(sh, ws):
+    sid = ws.id
+
+    def dv(col, values, strict=True):
+        return {"setDataValidation": {
+            "range": {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000, "startColumnIndex": col, "endColumnIndex": col + 1},
+            "rule": {"condition": {"type": "ONE_OF_LIST", "values": [{"userEnteredValue": v} for v in values]},
+                     "showCustomUi": True, "strict": strict}}}
+    sh.batch_update({"requests": [
+        dv(C["Post Date"], date_options(), strict=False),   # typed dates further out still work
+        dv(C["Post Time (ET)"], TIMES),
+        {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000,
+                                  "startColumnIndex": C["Post Date"], "endColumnIndex": C["Post Date"] + 1},
+                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "TEXT"}}},
+                        "fields": "userEnteredFormat.numberFormat"}},
+    ]})
+
+
 def setup_tab(sh, ws):
     ws.update([HEADERS], "A1")
     sid = ws.id
@@ -120,14 +150,7 @@ def setup_tab(sh, ws):
         {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000},
                         "cell": {"userEnteredFormat": {"verticalAlignment": "TOP", "wrapStrategy": "CLIP"}},
                         "fields": "userEnteredFormat(verticalAlignment,wrapStrategy)"}},
-        dv(C["Status"], STATUSES), dv(C["Reel Audio"], AUDIO), dv(C["Post Time (ET)"], TIMES),
-        {"setDataValidation": {"range": {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000,
-                                         "startColumnIndex": C["Post Date"], "endColumnIndex": C["Post Date"] + 1},
-                               "rule": {"condition": {"type": "DATE_IS_VALID"}, "showCustomUi": True, "strict": True}}},
-        {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000,
-                                  "startColumnIndex": C["Post Date"], "endColumnIndex": C["Post Date"] + 1},
-                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "ddd mmm d, yyyy"}}},
-                        "fields": "userEnteredFormat.numberFormat"}},
+        dv(C["Status"], STATUSES), dv(C["Reel Audio"], AUDIO),
     ]
     for i, w in enumerate(widths):
         reqs.append({"updateDimensionProperties": {"range": {"sheetId": sid, "dimension": "COLUMNS", "startIndex": i, "endIndex": i + 1},
@@ -140,6 +163,26 @@ def setup_tab(sh, ws):
             "booleanRule": {"condition": {"type": "CUSTOM_FORMULA", "values": [{"userEnteredValue": f'=$D2="{st}"'}]},
                             "format": {"backgroundColor": {"red": r, "green": g, "blue": b}}}}}})
     sh.batch_update({"requests": reqs})
+
+
+def resolve_time(kind, date_s, time_s):
+    """Blank or Auto -> best slot for this content type and day of week."""
+    time_s = (time_s or "").strip()
+    if time_s and time_s != AUTO_TIME:
+        return time_s
+    d = parse_date(date_s)
+    if not d:
+        return ""
+    return BEST_TIME[(kind, "weekend" if d.weekday() >= 5 else "weekday")]
+
+
+def parse_date(date_s):
+    for fmt in (DATE_FMT, "%a %b %d, %Y", "%m/%d/%Y", "%Y-%m-%d", "%m/%d/%y", "%b %d, %Y", "%B %d, %Y"):
+        try:
+            return dt.datetime.strptime((date_s or "").strip(), fmt).date()
+        except ValueError:
+            pass
+    return None
 
 
 def parse_when(date_s, time_s):
@@ -241,7 +284,7 @@ def validate(row, when):
     if not row[C["File"]] or not os.path.exists(row[C["File"]]):
         return "File not found on D: (is the drive connected?)"
     if when is None:
-        return "Pick a Post Date and Post Time, then set Approved again"
+        return "Pick a Post Date, then set Approved again"
     if when < dt.datetime.now(TZ) + dt.timedelta(minutes=10):
         return "Post date/time is in the past (or <10 min away) - pick a later time"
     if not cap.strip():
@@ -256,6 +299,8 @@ def validate(row, when):
 def run(dry):
     gc = gspread.service_account(filename=SA_KEY)
     sh, ws = open_tab(gc)
+    if not dry:
+        refresh_dropdowns(sh, ws)
     rows = ws.get_all_values()[1:]
     rows = [r + [""] * (len(HEADERS) - len(r)) for r in rows]
     by_id = {r[C["ID"]]: i for i, r in enumerate(rows) if r[C["ID"]]}
@@ -273,6 +318,7 @@ def run(dry):
             r = [""] * len(HEADERS)
             r[C["ID"]], r[C["Type"]], r[C["Title"]], r[C["Status"]] = it["id"], it["type"], it["title"], "Draft"
             r[C["Reel Audio"]] = "Auto-post" if it["type"] == "Reel" else ""
+            r[C["Post Time (ET)"]] = AUTO_TIME
             r[C["Collab"]], r[C["Caption"]] = DEFAULT_COLLAB, it["caption"]
             r[C["File"]], r[C["Version"]], r[C["Last Sync / Notes"]] = it["file"].replace("\\", "/"), it["version"], f"Added {now}"
             appends.append(r)
@@ -283,6 +329,8 @@ def run(dry):
             continue
         setcell(i, "File", it["file"].replace("\\", "/"))
         setcell(i, "Version", it["version"])
+        if not rows[i][C["Post Time (ET)"]].strip():
+            setcell(i, "Post Time (ET)", AUTO_TIME)
         if not rows[i][C["Caption"]].strip() and it["caption"]:
             setcell(i, "Caption", it["caption"])
 
@@ -295,8 +343,9 @@ def run(dry):
             setcell(i, "Status", "Post Manually")
             setcell(i, "Last Sync / Notes", f"{now}: post from your phone on {r[C['Post Date']]} {r[C['Post Time (ET)']]} (trending audio)")
             continue
+        slot = resolve_time(r[C["Type"]], r[C["Post Date"]], r[C["Post Time (ET)"]])
         try:
-            when = parse_when(r[C["Post Date"]], r[C["Post Time (ET)"]])
+            when = parse_when(r[C["Post Date"]], slot)
         except ValueError:
             when = None
         problem = validate(r, when)
@@ -315,7 +364,11 @@ def run(dry):
             pid = schedule(r, when, token)
             setcell(i, "GHL Post ID", pid)
             setcell(i, "Status", "Scheduled")
+            same_day = [x[C["ID"]] for j, x in enumerate(rows) if j != i and x[C["Status"]] in ("Scheduled", "Posted")
+                        and parse_date(x[C["Post Date"]]) == when.date()]
             setcell(i, "Last Sync / Notes", f"{now}: scheduled for {when:%a %b %d %I:%M %p} ET"
+                    + (" (auto best time)" if slot != r[C["Post Time (ET)"]].strip() else "")
+                    + (f" - heads-up: {', '.join(same_day)} also posts that day" if same_day else "")
                     + (f" - collab invite to @{r[C['Collab']].lstrip('@')} (accept it from that account)" if r[C["Collab"]].strip() else ""))
             log(f"scheduled {r[C['ID']]} -> {pid}")
         except Exception as e:
