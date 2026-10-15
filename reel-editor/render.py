@@ -6,7 +6,8 @@ Reads <reel>/raw.mov, edit.json, captions.ass -> writes <reel>/output/<name>.mp4
 
 edit.json keys used here:
   overlays: [{"start", "end", "file", "mode": "full"|"card", "from"?, "crop"?: [x,y,w,h], "y"?}]
-      full -> covers the frame (scale-to-fill), stills get a slow push-in
+      full -> covers the frame (scale-to-fill), stills get a slow push-in; 0.25s crossfade
+              in/out by default ("transition": "cut" for a hard cut)
       card -> screenshot cropped, rounded, blue border + shadow, slides up into the upper frame
   zooms:    [{"start", "end", "scale"?: 1.08}]     eased push-in on the talking head
   lists:    [{"start", "end", "items": [{"t", "text"}], "style": x|check|numbered,
@@ -29,6 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ICON_SIZE, ICON_X, ICON_Y = 180, 900, 960   # right of the face, above the captions
 FACE_Y = 0.35                               # zoom anchor: keep the face in frame
 ZOOM_EASE = 0.35                            # seconds to ease in/out of a push-in
+XFADE = 0.25                                # B-roll crossfade in/out
 
 
 def ffmpeg_bin(name="ffmpeg"):
@@ -276,6 +278,11 @@ def build(reel, name):
                 fill = (f"[{n}:v]scale={W * 2}:{H * 2}:force_original_aspect_ratio=increase,crop={W * 2}:{H * 2},"
                         f"fps={FPS},crop=w='{W * 2}*(1-0.08*n/{frames})':h='{H * 2}*(1-0.08*n/{frames})',"
                         f"scale={W}:{H},setsar=1,setpts=PTS-STARTPTS+{st}/TB[{tag}]")
+            # soft crossfade in/out instead of a hard cut ("transition": "cut" to disable)
+            if o.get("transition", "fade") == "fade":
+                fd = min(XFADE, dur / 3)
+                fill = fill[:-len(f"[{tag}]")] + (f",format=yuva420p,fade=t=in:st={st}:d={fd}:alpha=1,"
+                                                  f"fade=t=out:st={en - fd:.3f}:d={fd}:alpha=1[{tag}]")
             chains.append(fill)
             chains.append(f"[{last}][{tag}]overlay=0:0:eof_action=pass:enable='between(t,{st},{en})'[v{n}]")
         last = f"v{n}"

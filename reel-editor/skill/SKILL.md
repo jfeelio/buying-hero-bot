@@ -70,7 +70,9 @@ reel shown alone and big. Use `lead_in` to stack set-up words over a hero number
 called out "a lot of zooming jumps" when there were 6. Save them for the hook and the
 biggest moments.
 
-**B-roll:** 1.5–2.5s each, full-frame, roughly one per 10–12s at most, whoosh on each cut.
+**B-roll:** 1.5–2.5s each, full-frame, roughly one per 10–12s at most. 0.25s crossfade in/out
+is the default (he found hard cuts not smooth enough). **No whoosh on B-roll cuts** — he
+didn't like a sound before every B-roll.
 Center-cropped from 16:9 — check the subject survives the crop (set `from` to skip to a
 better moment of the clip).
 
@@ -92,9 +94,10 @@ key-round, search). New icons: `curl -sSf -o icons/<name>.svg
 https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/<name>.svg` (ISC license).
 
 **SFX** (`sfx/`, Mixkit free license — previews downloaded locally, never commit them):
-`whoosh_fast` vol 0.3 `peak:true` on every B-roll cut · `pop_light` 0.18 on icons ·
-`pop_hard` 0.22 on list items · `pop_long` 0.4 on a hero · `money_bag` 0.9 or `coins` on money.
-Voice must always dominate. Also available: `whoosh_air`, `whoosh_transition`, `impact`.
+SFX are for a few beats, not every cut: `pop_light` 0.18 on icons · `pop_hard` 0.22 on list
+items · `pop_long` 0.4 on a hero · `money_bag` 0.9 or `coins` on money. Voice must always
+dominate. Whooshes (`whoosh_fast`/`whoosh_air`/`whoosh_transition`, use `peak:true`) and
+`impact` exist but use at most one per reel, on a genuine big reveal — never as a B-roll habit.
 
 **Progress bar:** on by default (`"progress": true`).
 
@@ -112,7 +115,7 @@ Voice must always dominate. Also available: `whoosh_air`, `whoosh_transition`, `
   "stats": [{"start": 48.0, "end": 51.8, "value": 115000, "prefix": "$", "label": "We almost lost"}],
   "zooms": [{"start": 3.52, "end": 5.9, "scale": 1.06}],
   "icons": [{"t": 34.84, "icon": "scale"}],
-  "sfx": [{"t": 6.3, "file": "sfx/whoosh_fast.mp3", "vol": 0.3, "peak": true}],
+  "sfx": [{"t": 48.62, "file": "sfx/money_bag.mp3", "vol": 0.9}],
   "progress": true
 }
 ```
