@@ -6,6 +6,7 @@ Runs every 15 min (Windows Task Scheduler, see install_task.ps1). Each run:
   2. publish- rows with Status=Approved + date (+ time, or Auto = best slot) are uploaded to GHL media and created as a
               scheduled Instagram post (caption from the sheet, BH Properties collab invite,
               optional follow-up comment). Status -> Scheduled. Reels marked "Manual" -> Post Manually.
+  1b.unsched- rows moved back to Draft/Skip that still have a GHL post get it deleted from GHL.
   3. track  - Scheduled rows are checked in GHL; once live -> Posted (+ link), errors -> Failed.
 
   python content_sync.py            # full run
@@ -329,6 +330,27 @@ def run(dry):
             setcell(i, "Caption", it["caption"])
 
     token = ghl_token()
+    # 1b. unschedule: a row moved back to Draft/Skip pulls its pending post out of GHL
+    for i, r in enumerate(rows):
+        pid = r[C["GHL Post ID"]]
+        if r[C["Status"]] not in ("Draft", "Skip") or not pid or not token:
+            continue
+        if dry:
+            log(f"[dry-run] would unschedule {r[C['ID']]} ({pid})")
+            continue
+        try:
+            post = ghl("GET", f"/social-media-posting/{LOCATION}/posts/{pid}", token)["results"]["post"]
+            if post.get("status") == "published":
+                setcell(i, "Last Sync / Notes", f"{now}: already posted on Instagram - delete it in the IG app if needed")
+                continue
+            if not post.get("deleted"):
+                ghl("POST", f"/social-media-posting/{LOCATION}/posts/bulk-delete", token, json={"postIds": [pid]})
+            setcell(i, "GHL Post ID", "")
+            setcell(i, "Last Sync / Notes", f"{now}: pulled from the GHL schedule (set Approved again to reschedule)")
+            log(f"unscheduled {r[C['ID']]} ({pid})")
+        except Exception as e:
+            log(f"unschedule {r[C['ID']]} failed: {e}")
+
     # 2. publish approved
     for i, r in enumerate(rows):
         if r[C["Status"]] != "Approved":
