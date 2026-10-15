@@ -9,8 +9,10 @@ edit.json keys used here:
       full -> covers the frame (scale-to-fill), stills get a slow push-in
       card -> screenshot cropped, rounded, blue border + shadow, slides up into the upper frame
   zooms:    [{"start", "end", "scale"?: 1.08}]     eased push-in on the talking head
-  lists:    [{"start", "end", "items": [{"t", "text"}], "icon"?: "x", "color"?: "#E5383B"}]
-            face dims, each item slides in as it's said (e.g. a run of deal-killers)
+  lists:    [{"start", "end", "items": [{"t", "text"}], "style": x|check|numbered,
+              "entrance": slide|pop|drop, "panel": dim|pills}]   each item enters as it's said
+  stats:    [{"start", "end", "value": 115000, "prefix": "$", "suffix"?, "label"?: "WE ALMOST LOST"}]
+            big brand-blue number counts up from 0 (captions muted underneath)
   icons:    [{"t", "icon": lucide-name, "dur"?: 1.6}]  brand badge pops in beside the face
   sfx:      [{"t", "file": sfx/<name>.mp3, "vol"?: 0.35, "peak"?: true}]
             peak=true lines the loudest moment of the sound up with t (for whooshes)
@@ -109,42 +111,120 @@ def make_icon_frames(name, dur, outdir):
     return box
 
 
+LIST_STYLES = {           # badge kind -> (lucide icon or None for numbers, colour)
+    "x": ("x", "#E5383B"),          # deal-killers, mistakes, what goes wrong
+    "check": ("check", "#0083CA"),  # wins, what to do, what you get
+    "numbered": (None, "#0083CA"),  # steps, reasons, ranked points
+}
+
+
+def _badge(kind, num, size, outdir):
+    from PIL import ImageFont
+    icon, colour = LIST_STYLES[kind]
+    p = os.path.join(outdir, f"badge_{kind}_{num}.png")
+    if icon:
+        subprocess.run(["node", os.path.join(HERE, "icon.js"), icon, p, str(size), colour],
+                       check=True, capture_output=True)
+        return Image.open(p).convert("RGBA")
+    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse((3, 3, size - 4, size - 4), fill=colour, outline="white", width=6)
+    font = ImageFont.truetype(os.path.join(HERE, "fonts", "Montserrat-Black.ttf"), int(size * 0.5))
+    d.text((size / 2, size / 2 + 2), str(num), font=font, fill="white", anchor="mm")
+    return im
+
+
+def _entrance(kind, p):
+    """p in 0..1 (eased) -> (dx, dy, scale)"""
+    if kind == "pop":
+        s = 0.4 + 0.75 * p if p < 0.8 else 1.0 + 0.15 * (1 - p) / 0.2
+        return 0, 0, min(s, 1.15)
+    if kind == "drop":
+        return 0, int(-70 * (1 - p)), 1.0
+    return int(-80 * (1 - p)), 0, 1.0          # slide
+
+
 def make_list_frames(ls, outdir):
-    """Full-frame PNG sequence: dim the video, then slide each item in on its cue."""
+    """Full-frame PNG sequence of a list graphic; each item enters on its spoken cue.
+
+    style:    x | check | numbered        (what the badge says)
+    entrance: slide | pop | drop          (how each row arrives)
+    panel:    dim | pills                 (darken the whole frame, or a dark pill behind each row)
+    """
     from PIL import ImageFont
     os.makedirs(outdir, exist_ok=True)
     st, en, items = ls["start"], ls["end"], ls["items"]
-    badge_p = os.path.join(outdir, "badge.png")
-    subprocess.run(["node", os.path.join(HERE, "icon.js"), ls.get("icon", "x"), badge_p, "110",
-                    ls.get("color", "#E5383B")], check=True, capture_output=True)
-    badge = Image.open(badge_p).convert("RGBA")
-    font = ImageFont.truetype(os.path.join(HERE, "fonts", "Montserrat-Black.ttf"), 76)
-    row_h, x0 = 170, 110
+    style, entrance, panel = ls.get("style", "x"), ls.get("entrance", "slide"), ls.get("panel", "dim")
+    row_h, x0, bs = 170, 90, 110
+    fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
+    size = 76   # shrink until the longest row fits inside a 60px right margin
+    while size > 44 and bs + 70 + ImageFont.truetype(fpath, size).getlength(
+            max((it["text"].upper() for it in items), key=len)) > W - x0 - 60:
+        size -= 2
+    font = ImageFont.truetype(fpath, size)
     y0 = ls.get("y", 1150) - row_h * len(items) // 2   # chest height, face stays visible
     rows = []
-    for it in items:   # pre-render each row once
+    for i, it in enumerate(items):   # pre-render each row once
+        badge = _badge(style, i + 1, bs, outdir)
         txt = it["text"].upper()
         tw = int(font.getlength(txt))
-        im = Image.new("RGBA", (130 + tw + 20, row_h), (0, 0, 0, 0))
-        im.paste(badge, (0, (row_h - 110) // 2), badge)
-        ImageDraw.Draw(im).text((135, row_h // 2), txt, font=font, fill="white", anchor="lm",
-                                stroke_width=5, stroke_fill="black")
+        im = Image.new("RGBA", (bs + 60 + tw + 40, row_h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        if panel == "pills":
+            d.rounded_rectangle((bs // 2, 22, im.width - 1, row_h - 22), (row_h - 44) // 2, fill=(0, 0, 0, 215))
+        im.paste(badge, (0, (row_h - bs) // 2), badge)
+        d.text((bs + 30, row_h // 2), txt, font=font, fill="white", anchor="lm",
+               stroke_width=0 if panel == "pills" else 5, stroke_fill="black")
         rows.append(im)
     n = int((en - st) * FPS)
     for f in range(n):
         t = st + f / FPS
-        dim_a = min(f / 6, (n - 1 - f) / 6, 1.0)
-        frame = Image.new("RGBA", (W, H), (0, 0, 0, int(150 * dim_a)))
+        fade = min(f / 6, (n - 1 - f) / 6, 1.0)
+        frame = Image.new("RGBA", (W, H), (0, 0, 0, int(150 * fade) if panel == "dim" else 0))
         for r, (it, im) in enumerate(zip(items, rows)):
             k = (t - it["t"]) * FPS
             if k < 0:
                 continue
-            p = min(k / 6, 1.0)
-            p = 1 - (1 - p) ** 3                       # ease-out
-            a = p * min(dim_a * 1.0, 1.0) if f > n - 7 else p
-            row = im.copy()
+            p = 1 - (1 - min(k / 6, 1.0)) ** 3            # ease-out
+            a = min(p, fade)
+            dx, dy, sc = _entrance(entrance, p)
+            row = im if sc == 1.0 else im.resize((max(int(im.width * sc), 1), max(int(im.height * sc), 1)))
+            row = row.copy()
             row.putalpha(row.getchannel("A").point(lambda v: int(v * a)))
-            frame.alpha_composite(row, (int(x0 - 80 * (1 - p)), y0 + r * row_h))
+            ox = x0 + dx
+            oy = y0 + r * row_h + dy - (row.height - im.height) // 2
+            frame.alpha_composite(row, (max(ox, 0), max(oy, 0)))
+        frame.save(os.path.join(outdir, f"f_{f:04d}.png"), compress_level=1)
+
+
+def make_stat_frames(stt, outdir):
+    """Count-up number: label on top, the value rolls from 0 to target, then settles with a pulse."""
+    from PIL import ImageFont
+    os.makedirs(outdir, exist_ok=True)
+    st, en, val = stt["start"], stt["end"], float(stt["value"])
+    prefix, suffix, label = stt.get("prefix", ""), stt.get("suffix", ""), stt.get("label", "").upper()
+    count_t = stt.get("count", 0.9)
+    big = ImageFont.truetype(os.path.join(HERE, "fonts", "Montserrat-Black.ttf"), stt.get("size", 210))
+    small = ImageFont.truetype(os.path.join(HERE, "fonts", "Montserrat-Black.ttf"), 84)
+    y = stt.get("y", 1220)
+    n = int((en - st) * FPS)
+    for f in range(n):
+        t = f / FPS
+        fade = min(f / 5, (n - 1 - f) / 5, 1.0)
+        frame = Image.new("RGBA", (W, H), (0, 0, 0, int(110 * fade)))
+        d = ImageDraw.Draw(frame)
+        p = min(t / count_t, 1.0)
+        p = 1 - (1 - p) ** 3
+        v = val * p
+        txt = f"{prefix}{v:,.0f}{suffix}"
+        pulse = 1.0 + (0.08 * np.sin(min((t - count_t) / 0.25, 1) * np.pi) if t > count_t else 0)
+        f_big = big if pulse == 1.0 else ImageFont.truetype(big.path, int(big.size * pulse))
+        alpha = int(255 * fade)
+        if label:
+            d.text((W // 2, y - 175), label, font=small, fill=(255, 255, 255, alpha), anchor="mm",
+                   stroke_width=6, stroke_fill=(0, 0, 0, alpha))
+        d.text((W // 2, y), txt, font=f_big, fill=(0, 131, 202, alpha), anchor="mm",
+               stroke_width=10, stroke_fill=(0, 0, 0, alpha))
         frame.save(os.path.join(outdir, f"f_{f:04d}.png"), compress_level=1)
 
 
@@ -207,6 +287,15 @@ def build(reel, name):
         inputs += ["-framerate", str(FPS), "-i", os.path.join(d, "f_%04d.png")]
         chains.append(f"[{n}:v]format=rgba,setpts=PTS-STARTPTS+{ls['start']}/TB[l{n}]")
         chains.append(f"[{last}][l{n}]overlay=0:0:eof_action=pass:enable='between(t,{ls['start']},{ls['end']})'[v{n}]")
+        last = f"v{n}"
+
+    for k, stt in enumerate(edit.get("stats", [])):
+        n += 1
+        d = os.path.join(work, f"stat_{k}")
+        make_stat_frames(stt, d)
+        inputs += ["-framerate", str(FPS), "-i", os.path.join(d, "f_%04d.png")]
+        chains.append(f"[{n}:v]format=rgba,setpts=PTS-STARTPTS+{stt['start']}/TB[st{n}]")
+        chains.append(f"[{last}][st{n}]overlay=0:0:eof_action=pass:enable='between(t,{stt['start']},{stt['end']})'[v{n}]")
         last = f"v{n}"
 
     for k, ic in enumerate(edit.get("icons", [])):
