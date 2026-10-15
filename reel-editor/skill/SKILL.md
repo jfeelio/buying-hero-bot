@@ -74,8 +74,14 @@ chose not to do and why. Paste the caption. Iterate as v2, v3… in the same fol
 
 ## Style rules (Jorge-approved — keep these)
 
+**Instagram safe zone (hard rule):** Instagram covers roughly the bottom 37% of a Reel with the
+username, collab name, post caption and music line (below ~y=1210 of 1920), plus the right-edge
+like/comment/share buttons. ALL burned-in text, lists, stats and cards must sit above that line.
+Jorge caught captions colliding with the username row in GHL's preview. When checking frames,
+shade the bottom 37% and confirm nothing important is in it.
+
 **Captions** (captions.py): Montserrat Black, ALL CAPS, 1–3 words per chunk, white with thick
-black outline, centered on the chest (y≈1300). Keywords → brand blue via `emphasis`
+black outline, centered just below the chin (y≈1120, inside the safe zone). Keywords → brand blue via `emphasis`
 (roughly one per sentence: numbers, money, pain words, roles, key nouns). 3–6 `hero` words per
 reel shown alone and big. Use `lead_in` to stack set-up words over a hero number
 ("WE ALMOST LOST" / "$115,000") — he specifically liked that.
@@ -96,13 +102,15 @@ says it; captions are auto-muted underneath. Rotate across reels:
   `numbered` (1-2-3 — steps, reasons)
 - `entrance`: `slide` · `pop` · `drop`
 - `panel`: `dim` (whole frame darkens) · `pills` (dark pill behind each row, face stays bright)
-Keep item text short (2–4 words). Default y=1150 keeps his face visible.
+Keep item text short (2–4 words). Default y=960 keeps it above Instagram's bottom UI. When he's
+standing back from the camera (wide shot), move the list to the top of the frame (y≈470) so it
+doesn't cover his face — check the frame first.
 
 **Stats:** big brand-blue count-up for a headline number (`value`, `prefix`/`suffix`,
 optional `label`). Use for at most 1–2 numbers per reel; alternate with the hero+lead_in
 treatment across reels.
 
-**Icons:** 3–4 Lucide badges per reel beside his head (x=900, y=960), on concrete nouns
+**Icons:** 3–4 Lucide badges per reel beside his head (x=900, y=760), on concrete nouns
 (contract → file-text, attorney → scale, money → dollar-sign, legal → shield-check, house,
 key-round, search). New icons: `curl -sSf -o icons/<name>.svg
 https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/<name>.svg` (ISC license).

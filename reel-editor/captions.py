@@ -14,7 +14,7 @@ FONT = "Montserrat Black"
 BLUE = "&H00CA8300&"   # #0083CA in ASS BGR order
 WHITE = "&H00FFFFFF&"
 SIZE, HERO_SIZE = 118, 200
-Y = 1300               # caption baseline-centre; sits on the chest, clear of the face
+Y = 1120               # caption centre: below the chin, above Instagram's bottom UI (~62% down)
 MAX_WORDS, MAX_CHARS, GAP_BREAK = 3, 16, 0.35
 
 
@@ -106,7 +106,7 @@ def build(words_path, edit_path, out_path):
             lead = " ".join(clean(by_i[i]["w"]) for i in lead_in[c[0]["i"]])
             lines.append(f"Dialogue: 0,{ts(start)},{ts(end)},Cap,,0,0,0,,"
                          rf"{{\pos({W // 2},{Y - 150})}}{lead}")
-            text = rf"{{\pos({W // 2},{Y + 40}){size}{pop}}}" + " ".join(parts)
+            text = rf"{{\pos({W // 2},{Y + 10}){size}{pop}}}" + " ".join(parts)
         lines.append(f"Dialogue: 0,{ts(start)},{ts(end)},Cap,,0,0,0,,{text}")
     open(out_path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     print(f"{len(chunks)} caption chunks -> {out_path}")

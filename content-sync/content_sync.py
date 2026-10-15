@@ -40,11 +40,10 @@ AUDIO = ["Auto-post", "Manual (trending audio)"]
 AUTO_TIME = "Auto (best time)"
 TIMES = [AUTO_TIME] + [f"{h % 12 or 12}:{m:02d} {'AM' if h < 12 else 'PM'}" for h in range(6, 23) for m in (0, 30)]
 DATE_FMT = "%a %b %d, %Y"          # how the date picker cells display, e.g. "Fri Oct 16, 2026"
-# Default slots (ET) when Post Time is Auto. Industry benchmarks for IG in US Eastern: Reels do
-# best in the evening scroll window, feed images around lunch; weekends skew late morning.
-# Replace with Jorge's own IG insights once there are ~20 posts of data.
-BEST_TIME = {("Reel", "weekday"): "7:00 PM", ("Reel", "weekend"): "11:00 AM",
-             ("Sold Post", "weekday"): "12:00 PM", ("Sold Post", "weekend"): "10:00 AM"}
+# Default slots (ET) when Post Time is Auto. Jorge wants late morning / lunch (2026-10-15), so
+# reels and posts are staggered 11 AM / 12 PM. Tune with his IG insights after ~20 posts.
+BEST_TIME = {("Reel", "weekday"): "11:00 AM", ("Reel", "weekend"): "11:00 AM",
+             ("Sold Post", "weekday"): "12:00 PM", ("Sold Post", "weekend"): "12:00 PM"}
 FROZEN = {"Scheduled", "Posted", "Post Manually", "Skip"}
 
 
