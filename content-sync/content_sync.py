@@ -294,6 +294,8 @@ def run(dry):
     sh, ws = open_tab(gc)
     if not dry:
         refresh_dropdowns(sh, ws)
+        from overview import build_overview
+        build_overview(sh)                      # no-op if the Overview tab already exists
     rows = ws.get_all_values()[1:]
     rows = [r + [""] * (len(HEADERS) - len(r)) for r in rows]
     by_id = {r[C["ID"]]: i for i, r in enumerate(rows) if r[C["ID"]]}
