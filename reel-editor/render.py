@@ -27,7 +27,7 @@ W, H, FPS = 1080, 1920, 30
 BLUE = (0, 131, 202)
 VIDEO_EXT = (".mp4", ".mov", ".webm", ".m4v")
 HERE = os.path.dirname(os.path.abspath(__file__))
-ICON_SIZE, ICON_X, ICON_Y = 180, 900, 760   # right of the head, clear of captions + lead-ins
+ICON_SIZE, ICON_X, ICON_Y = 180, 900, 960   # right of the face, above the captions
 FACE_Y = 0.35                               # zoom anchor: keep the face in frame
 ZOOM_EASE = 0.35                            # seconds to ease in/out of a push-in
 XFADE = 0.25                                # B-roll crossfade in/out
@@ -164,7 +164,7 @@ def make_list_frames(ls, outdir):
             max((it["text"].upper() for it in items), key=len)) > W - x0 - 60:
         size -= 2
     font = ImageFont.truetype(fpath, size)
-    y0 = ls.get("y", 960) - row_h * len(items) // 2   # ends above Instagram's bottom UI (~1190px)
+    y0 = ls.get("y", 1150) - row_h * len(items) // 2   # chest height, face stays visible
     rows = []
     for i, it in enumerate(items):   # pre-render each row once
         badge = _badge(style, i + 1, bs, outdir)
@@ -214,7 +214,7 @@ def make_stat_frames(stt, outdir):
         return ImageFont.truetype(fpath, size)
     big = fit(f"{prefix}{val:,.0f}{suffix}", stt.get("size", 210), 10)
     small = fit(label, 84, 6)
-    y = stt.get("y", 1040)   # number + label stay above Instagram's bottom UI
+    y = stt.get("y", 1220)
     n = int((en - st) * FPS)
     for f in range(n):
         t = f / FPS
