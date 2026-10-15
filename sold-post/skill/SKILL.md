@@ -19,8 +19,8 @@ sold_post.png, post.json, caption.txt). Headshot lives once at `D:\Brand\jorge_h
 **Never put property photos or posts in Dev** — Dev is pushed to a public GitHub repo.
 
 ## Workflow
-1. **Intake.** Need: property photo, sale price, investor equity spread. Ask only for what's
-   missing. **Always ask the city** (e.g. first deal was Hialeah, FL) and pass `--area "Hialeah, FL"`;
+1. **Intake.** Need: property photo, sale price, investor equity spread, **ARV**, and city. Ask only
+   for what's missing. Sanity-check the math: ARV - price should equal the spread; if not, ask. **Always ask the city** (e.g. first deal was Hialeah, FL) and pass `--area "Hialeah, FL"`;
    name the city in the caption's price line and add it as a hashtag.
    Copy pasted images from the session `images\` folder; move files Jorge links from Downloads.
 2. **Privacy/accuracy check on the photo:** no visible house number, street sign, plate,
@@ -28,15 +28,15 @@ sold_post.png, post.json, caption.txt). Headshot lives once at `D:\Brand\jorge_h
    tell Jorge (or crop/blur it). Numbers go on the image exactly as he gave them — never round
    up or "estimate" a spread. Reputation compounds.
 3. **Render:**
-   `python sold_post.py D:/Posts/<folder> --price 500000 --spread 220000`
+   `python sold_post.py D:/Posts/<folder> --price 500000 --arv 720000 --spread 220000 --area "Hialeah, FL"`
    `--headline auto` (default) rotates through the HEADLINES list so consecutive posts never
    repeat; pass a custom line if Jorge gives one. `--sign right` puts the sign on the right and
    the headshot on the left — use it when the yard/lawn is on the right of the photo, and to
    vary the feed. Photos with a black screenshot frame are auto-trimmed.
 4. **Look at the output** (Read the PNG). Check: sign standing on ground/lawn and not covering
    the front door, headshot not over anything important, all text inside the frame.
-5. **Caption** → `caption.txt` + paste in chat: line 1 = the headline as a hook, the two
-   numbers on their own lines, 1 short paragraph on how the deal happened (only facts Jorge
+5. **Caption** → `caption.txt` + paste in chat: line 1 = the headline as a hook, then
+   "📍 City, FL" / ARV / Sold for / Equity spread for our investor, each on its own line, 1 short paragraph on how the deal happened (only facts Jorge
    gave or the standard model: direct from homeowner → under contract → title/liens/condition
    checked → matched with a buyer from our list), the three-arrow "how it works" block (vary
    the wording each time), then **two CTAs**: investors comment "DEALS" to join the buyers
@@ -45,8 +45,10 @@ sold_post.png, post.json, caption.txt). Headshot lives once at `D:\Brand\jorge_h
 6. Deliver: path to sold_post.png and the caption.
 
 ## Design (approved 2026-10-15)
-Photo top ~56% with a fade into brand black · white post-and-arm yard sign with a blue
-"BH PROPERTIES" rider and white SOLD panel in blue (#0083CA) · headshot in a white + blue ring on
-the photo/panel seam · "SOLD FOR" (white) and "EQUITY SPREAD FOR OUR INVESTOR" (blue)
-numbers in Montserrat Black · rotating headline · footer "BH PROPERTIES · Off-market deals ·
-<city>". Montserrat wordmark until the BH Properties logo is final.
+Photo top ~56% with a fade into brand black · **city tag at the top** (dark pill, blue map-pin
+badge, opposite the sign) · white post-and-arm yard sign with a blue
+"BH PROPERTIES" rider and white SOLD panel in blue (#0083CA) · small head-and-shoulders headshot
+(160px, thin white ring + soft shadow — Jorge found the thick blue ring and tight face crop
+too strong) on the photo/panel seam · ARV and SOLD FOR side by side (white), EQUITY SPREAD FOR
+OUR INVESTOR as the big blue hero number · rotating headline · footer "BH PROPERTIES ·
+Off-market deals for investors". Montserrat wordmark until the BH Properties logo is final.

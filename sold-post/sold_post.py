@@ -1,11 +1,11 @@
 """BH Properties "SOLD" social post: property photo + hanging SOLD sign + Jorge headshot + deal numbers.
 
-  python sold_post.py <post_dir> --price 500000 --spread 220000 [--headline auto|"..."] [--area "Miami-Dade"]
+  python sold_post.py <post_dir> --price 500000 --spread 220000 [--arv 720000] [--headline auto|"..."] [--area "Miami-Dade"]
                       [--sign left|right] [--photo property.png] [--headshot D:/Brand/jorge_headshot.png]
 
 Writes <post_dir>/sold_post.png (1080x1350, Instagram 4:5) and post.json (settings, used for headline rotation).
 """
-import argparse, glob, json, os
+import argparse, glob, json, os, subprocess
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -86,19 +86,37 @@ def hanging_sign(scale=1.0):
 
 
 def avatar(path, size):
-    im = Image.open(path).convert("RGB")
-    im = trim_dark_border(im)
-    side = int(min(im.width, im.height) * 0.78)          # tighter on the face
-    cx, cy = im.width // 2, int(im.height * 0.46)
+    """Head-and-shoulders circle with a thin white ring and soft shadow (not a tight face crop)."""
+    im = trim_dark_border(Image.open(path).convert("RGB"))
+    side = min(im.width, im.height)
+    cx, cy = im.width // 2, min(int(im.height * 0.5), im.height - side // 2)
     im = im.crop((cx - side // 2, cy - side // 2, cx + side // 2, cy + side // 2)).resize((size, size), Image.LANCZOS)
-    ring = 10
-    out = Image.new("RGBA", (size + 4 * ring, size + 4 * ring), (0, 0, 0, 0))
-    d = ImageDraw.Draw(out)
-    d.ellipse((0, 0, out.width - 1, out.height - 1), fill=BLUE)
-    d.ellipse((ring, ring, out.width - 1 - ring, out.height - 1 - ring), fill=WHITE)
+    ring, pad = 5, 16
+    out = Image.new("RGBA", (size + 2 * ring + 2 * pad, size + 2 * ring + 2 * pad), (0, 0, 0, 0))
+    sh = Image.new("RGBA", out.size, (0, 0, 0, 0))
+    ImageDraw.Draw(sh).ellipse((pad, pad + 6, out.width - pad, out.height - pad + 6), fill=(0, 0, 0, 140))
+    out = Image.alpha_composite(out, sh.filter(ImageFilter.GaussianBlur(8)))
+    ImageDraw.Draw(out).ellipse((pad, pad, out.width - pad - 1, out.height - pad - 1), fill=WHITE)
     mask = Image.new("L", (size, size), 0)
     ImageDraw.Draw(mask).ellipse((0, 0, size - 1, size - 1), fill=255)
-    out.paste(im, (2 * ring, 2 * ring), mask)
+    out.paste(im, (pad + ring, pad + ring), mask)
+    return out
+
+
+def location_tag(area):
+    """Dark translucent pill with a blue map-pin badge: the city, up top where it catches the eye."""
+    badge_p = os.path.join(os.environ.get("TEMP", "."), "bh_pin.png")
+    subprocess.run(["node", os.path.join(HERE, "..", "reel-editor", "icon.js"), "map-pin", badge_p, "70"],
+                   check=True, capture_output=True)
+    badge = Image.open(badge_p).convert("RGBA")
+    f = font(44)
+    txt = area.upper()
+    w = 70 + 18 + int(f.getlength(txt)) + 34
+    out = Image.new("RGBA", (w + 12, 92), (0, 0, 0, 0))
+    d = ImageDraw.Draw(out)
+    d.rounded_rectangle((0, 0, w + 11, 91), 46, fill=(8, 10, 12, 200))
+    out.paste(badge, (11, 11), badge)
+    d.text((70 + 30, 47), txt, font=f, fill=WHITE, anchor="lm")
     return out
 
 
@@ -126,31 +144,42 @@ def compose(args, W, H, photo_h):
     canvas.paste(shadow.filter(ImageFilter.GaussianBlur(8)), (sx + 10, sy + 12), shadow.filter(ImageFilter.GaussianBlur(8)))
     canvas.paste(sign, (sx, sy), sign)
 
+    # city tag up top, on the side opposite the sign
+    tag = location_tag(args.area)
+    canvas.paste(tag, (W - tag.width - 36 if args.sign == "left" else 36, 36), tag)
+
     d = ImageDraw.Draw(canvas)
     # headshot on the seam, opposite the sign
-    av = avatar(args.headshot, 210)
-    ax = W - av.width - 50 if args.sign == "left" else 50
-    ay = photo_h - av.height // 2 - 30
+    av = avatar(args.headshot, 160)
+    ax = W - av.width - 40 if args.sign == "left" else 40
+    ay = photo_h - av.height // 2 - 40
     canvas.paste(av, (ax, ay), av)
 
-    # numbers
-    y = photo_h + 30
-    left = 60
-    d.text((left, y), "SOLD FOR", font=font(36, "ExtraBold"), fill=GRAY)
-    d.text((left, y + 44), money(args.price), font=font(108), fill=WHITE)
-    y2 = y + 190
-    d.text((left, y2), "EQUITY SPREAD FOR OUR INVESTOR", font=font(36, "ExtraBold"), fill=GRAY)
-    d.text((left, y2 + 44), money(args.spread), font=font(108), fill=BLUE)
+    # numbers: ARV + sale price side by side, the investor's spread as the hero
+    left, col2 = 60, 560
+    y = photo_h + 24
+    label = font(34, "ExtraBold")
+    if args.arv:
+        d.text((left, y), "ARV", font=label, fill=GRAY)
+        d.text((left, y + 40), money(args.arv), font=font(80), fill=WHITE)
+        d.text((col2, y), "SOLD FOR", font=label, fill=GRAY)
+        d.text((col2, y + 40), money(args.price), font=font(80), fill=WHITE)
+    else:
+        d.text((left, y), "SOLD FOR", font=label, fill=GRAY)
+        d.text((left, y + 40), money(args.price), font=font(80), fill=WHITE)
+    y2 = y + 172
+    d.text((left, y2), "EQUITY SPREAD FOR OUR INVESTOR", font=label, fill=GRAY)
+    d.text((left, y2 + 40), money(args.spread), font=font(120), fill=BLUE)
 
     # headline + footer
-    hy = y2 + 190
+    hy = y2 + 206
     hf = font(52)
     while hf.getlength(args.headline.upper()) > W - 2 * left and hf.size > 30:
         hf = font(hf.size - 2)
     d.text((left, hy), args.headline.upper(), font=hf, fill=WHITE)
     d.line((left, H - 92, W - left, H - 92), fill=(40, 44, 48), width=2)
     d.text((left, H - 50), BRAND, font=font(38), fill=BLUE, anchor="lm")
-    d.text((W - left, H - 50), f"Off-market deals · {args.area}", font=font(30, "ExtraBold"), fill=GRAY, anchor="rm")
+    d.text((W - left, H - 50), "Off-market deals for investors", font=font(30, "ExtraBold"), fill=GRAY, anchor="rm")
     return canvas
 
 
@@ -159,6 +188,7 @@ def main():
     ap.add_argument("post_dir")
     ap.add_argument("--price", required=True)
     ap.add_argument("--spread", required=True)
+    ap.add_argument("--arv", help="after-repair value (optional; shown beside the sale price)")
     ap.add_argument("--headline", default="auto", help='"auto" = least-recently used line from HEADLINES')
     ap.add_argument("--area", default="Miami-Dade")
     ap.add_argument("--sign", default="left", choices=["left", "right"])
