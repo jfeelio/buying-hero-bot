@@ -39,7 +39,7 @@ STATUSES = ["Draft", "Approved", "Scheduled", "Posted", "Post Manually", "Failed
 AUDIO = ["Auto-post", "Manual (trending audio)"]
 AUTO_TIME = "Auto (best time)"
 TIMES = [AUTO_TIME] + [f"{h % 12 or 12}:{m:02d} {'AM' if h < 12 else 'PM'}" for h in range(6, 23) for m in (0, 30)]
-DATE_FMT = "%a %b %d, %Y"          # dropdown values look like "Fri Oct 16, 2026"
+DATE_FMT = "%a %b %d, %Y"          # how the date picker cells display, e.g. "Fri Oct 16, 2026"
 # Default slots (ET) when Post Time is Auto. Industry benchmarks for IG in US Eastern: Reels do
 # best in the evening scroll window, feed images around lunch; weekends skew late morning.
 # Replace with Jorge's own IG insights once there are ~20 posts of data.
@@ -105,26 +105,19 @@ def open_tab(gc):
         return sh, ws
 
 
-def date_options():
-    today = dt.datetime.now(TZ).date()
-    return [(today + dt.timedelta(days=k)).strftime(DATE_FMT) for k in range(0, 31)]
-
-
 def refresh_dropdowns(sh, ws):
+    """Post Date = Google's date picker (double-click a cell); Post Time = list with Auto first."""
     sid = ws.id
-
-    def dv(col, values, strict=True):
-        return {"setDataValidation": {
-            "range": {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000, "startColumnIndex": col, "endColumnIndex": col + 1},
-            "rule": {"condition": {"type": "ONE_OF_LIST", "values": [{"userEnteredValue": v} for v in values]},
-                     "showCustomUi": True, "strict": strict}}}
+    col = lambda c: {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000, "startColumnIndex": c, "endColumnIndex": c + 1}
     sh.batch_update({"requests": [
-        dv(C["Post Date"], date_options(), strict=False),   # typed dates further out still work
-        dv(C["Post Time (ET)"], TIMES),
-        {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": 1, "endRowIndex": 1000,
-                                  "startColumnIndex": C["Post Date"], "endColumnIndex": C["Post Date"] + 1},
-                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "TEXT"}}},
+        {"setDataValidation": {"range": col(C["Post Date"]),
+                               "rule": {"condition": {"type": "DATE_IS_VALID"}, "strict": True}}},
+        {"repeatCell": {"range": col(C["Post Date"]),
+                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "ddd mmm d, yyyy"}}},
                         "fields": "userEnteredFormat.numberFormat"}},
+        {"setDataValidation": {"range": col(C["Post Time (ET)"]),
+                               "rule": {"condition": {"type": "ONE_OF_LIST", "values": [{"userEnteredValue": v} for v in TIMES]},
+                                        "showCustomUi": True, "strict": True}}},
     ]})
 
 
