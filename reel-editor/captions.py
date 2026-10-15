@@ -84,14 +84,17 @@ def build(words_path, edit_path, out_path):
     mutes = [(g["start"], g["end"]) for g in edit.get("lists", []) + edit.get("stats", [])]
     for n, c in enumerate(chunks):
         start = c[0]["s"]
-        if any(a <= start < b for a, b in mutes):
-            continue
         nxt = chunks[n + 1][0]["s"] if n + 1 < len(chunks) else c[-1]["e"] + 0.6
         end = nxt if nxt - c[-1]["e"] < 0.6 else c[-1]["e"] + 0.25
+        if any(start < b and c[-1]["e"] > a + 0.1 for a, b in mutes):   # any spoken overlap
+            continue
+        end = min([end] + [a for a, b in mutes if a > start])          # never run under a graphic
         is_hero = len(c) == 1 and c[0]["i"] in hero
         pop = (r"\fscx70\fscy70\t(0,90,\fscx112\fscy112)\t(90,160,\fscx100\fscy100)" if is_hero
                else r"\fscx85\fscy85\t(0,80,\fscx100\fscy100)")
-        size = rf"\fs{HERO_SIZE}" if is_hero else ""
+        # long hero words shrink to stay inside the frame (~0.47 * size px per glyph)
+        hero_size = min(HERO_SIZE, int(980 / (0.47 * len(clean(c[0]["w"]))))) if is_hero else 0
+        size = rf"\fs{hero_size}" if is_hero else ""
         parts = []
         for t in c:
             col = BLUE if (t["i"] in emph or t["i"] in hero) else WHITE

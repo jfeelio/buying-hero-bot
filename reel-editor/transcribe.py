@@ -1,5 +1,5 @@
 """Transcribe a reel with word-level timestamps -> words.json"""
-import json, shutil, subprocess, sys
+import json, os, subprocess, sys
 import numpy as np
 
 def _add_cuda_dlls():
@@ -27,7 +27,9 @@ def load_model():
 
 def load_audio(video):
     # decode via ffmpeg ourselves (faster-whisper's PyAV path is version-fragile)
-    ff = shutil.which("ffmpeg") or "ffmpeg"
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from render import ffmpeg_bin   # finds the WinGet install when ffmpeg isn't on PATH
+    ff = ffmpeg_bin()
     raw = subprocess.run([ff, "-v", "error", "-i", video, "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
                          capture_output=True, check=True).stdout
     return np.frombuffer(raw, np.float32)

@@ -206,8 +206,14 @@ def make_stat_frames(stt, outdir):
     st, en, val = stt["start"], stt["end"], float(stt["value"])
     prefix, suffix, label = stt.get("prefix", ""), stt.get("suffix", ""), stt.get("label", "").upper()
     count_t = stt.get("count", 0.9)
-    big = ImageFont.truetype(os.path.join(HERE, "fonts", "Montserrat-Black.ttf"), stt.get("size", 210))
-    small = ImageFont.truetype(os.path.join(HERE, "fonts", "Montserrat-Black.ttf"), 84)
+    fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
+
+    def fit(text, size, stroke):   # largest size <= requested that keeps text 60px inside each edge
+        while size > 40 and ImageFont.truetype(fpath, size).getlength(text) + 2 * stroke > W - 120:
+            size -= 4
+        return ImageFont.truetype(fpath, size)
+    big = fit(f"{prefix}{val:,.0f}{suffix}", stt.get("size", 210), 10)
+    small = fit(label, 84, 6)
     y = stt.get("y", 1220)
     n = int((en - st) * FPS)
     for f in range(n):
@@ -220,7 +226,7 @@ def make_stat_frames(stt, outdir):
         v = val * p
         txt = f"{prefix}{v:,.0f}{suffix}"
         pulse = 1.0 + (0.08 * np.sin(min((t - count_t) / 0.25, 1) * np.pi) if t > count_t else 0)
-        f_big = big if pulse == 1.0 else ImageFont.truetype(big.path, int(big.size * pulse))
+        f_big = big if pulse == 1.0 else ImageFont.truetype(big.path, int(big.size * min(pulse, 1.0 + 60 / W)))
         alpha = int(255 * fade)
         if label:
             d.text((W // 2, y - 175), label, font=small, fill=(255, 255, 255, alpha), anchor="mm",

@@ -54,9 +54,23 @@ Then `python reel.py frames <reel> v1 <t> <t> ...` and **look at the strip** at 
 card, hero and B-roll moment. Check: nothing covering his eyes, text inside the frame,
 captions not colliding with graphics. Fix and re-render before handing it over.
 
-### 6. Deliver
+### 6. Write the post caption
+Every reel gets a long Instagram caption saved to `<reel>/caption.txt` and pasted in chat
+(Jorge asked for "a nice and long caption that will keep folks reading"):
+- **Line 1 is a second hook** that stands alone above "…more" (a bet, a number, a contrarian claim).
+- 200–350 words of short paragraphs (1–3 lines each) with white space: story → proof
+  (numbers exactly as the video/screenshot supports them) → the messy/real part → the lesson.
+- Use → arrows or 1️⃣2️⃣3️⃣ to mirror any list in the video.
+- End with a CTA that starts conversations: comment a word/emoji, or "follow for part 2".
+  Then 5–7 hashtags max.
+- **Never invent facts** (hours slept, dollar figures, anecdotes he didn't say). Pull details
+  only from the transcript, this reel's screenshots, or what he's said in earlier reels. If a
+  line would need a fact you don't have, leave it out or mark it `[confirm]`.
+- Don't round numbers up past what the screenshot shows (a "~" is fine: $595,906 → ~$600K).
+
+### 7. Deliver
 Tell him the Downloads path and summarize what was added (with timestamps) and anything you
-chose not to do and why. Iterate as v2, v3… in the same folder.
+chose not to do and why. Paste the caption. Iterate as v2, v3… in the same folder.
 
 ## Style rules (Jorge-approved — keep these)
 
