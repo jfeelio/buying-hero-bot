@@ -61,7 +61,11 @@ Every reel gets a long Instagram caption saved to `<reel>/caption.txt` and paste
 - 200–350 words of short paragraphs (1–3 lines each) with white space: story → proof
   (numbers exactly as the video/screenshot supports them) → the messy/real part → the lesson.
 - Use → arrows or 1️⃣2️⃣3️⃣ to mirror any list in the video.
-- End with a CTA that starts conversations: comment a word/emoji, or "follow for part 2".
+- **Audience is investors, buyers and wholesalers, never sellers.** Jorge doesn't want sellers
+  finding him on IG: no "want to sell / we buy houses / DM us your property" CTAs or seller-benefit
+  copy. Sellers can appear in the *story* ("a seller tried to back out"), never as the reader.
+- End with a CTA that starts conversations with investors: comment a word/emoji (e.g. "DEALS" for
+  the buyers list), or "follow for part 2".
   Then 5–7 hashtags max.
 - **Never invent facts** (hours slept, dollar figures, anecdotes he didn't say). Pull details
   only from the transcript, this reel's screenshots, or what he's said in earlier reels. If a

@@ -18,6 +18,12 @@ Code: `C:\Users\jsive\Dropbox\J Feels\Dev\sold-post\sold_post.py` (uses fonts fr
 sold_post.png, post.json, caption.txt). Headshot lives once at `D:\Brand\jorge_headshot.png`.
 **Never put property photos or posts in Dev** — Dev is pushed to a public GitHub repo.
 
+## Audience: BUYERS ONLY (hard rule)
+These posts market to investors / cash buyers only. Jorge does NOT want sellers finding him or
+@officialbhproperties on Instagram. Never write seller-facing copy: no "own a property / want to
+sell / we buy as-is / DM us to sell", no seller benefits ("fast sale, no repairs"), no "came
+straight from the homeowner". Frame everything as what the buyer gets.
+
 ## Workflow
 1. **Intake.** Need: property photo, sale price, investor equity spread, **ARV**, and city. Ask only
    for what's missing. Sanity-check the math: ARV - price should equal the spread; if not, ask. **Always ask the city** (e.g. first deal was Hialeah, FL) and pass `--area "Hialeah, FL"`;
@@ -37,10 +43,9 @@ sold_post.png, post.json, caption.txt). Headshot lives once at `D:\Brand\jorge_h
    the front door, headshot not over anything important, all text inside the frame.
 5. **Caption** → `caption.txt` + paste in chat: line 1 = the headline as a hook, then
    "📍 City, FL" / ARV / Sold for / Equity spread for our investor, each on its own line, 1 short paragraph on how the deal happened (only facts Jorge
-   gave or the standard model: direct from homeowner → under contract → title/liens/condition
-   checked → matched with a buyer from our list), the three-arrow "how it works" block (vary
-   the wording each time), then **two CTAs**: investors comment "DEALS" to join the buyers
-   list; owners DM to sell as-is. 5–7 hashtags. Never invent days-to-close, rehab budgets,
+   gave or the standard model: locked up off-market → title/liens/condition checked → sent to
+   a buyer on our list), a three-arrow "what our buyers get" block (vary
+   the wording each time), then **one CTA**: investors comment "DEALS" to join the buyers list. 5–7 hashtags. Never invent days-to-close, rehab budgets,
    ARVs, or buyer quotes he didn't provide.
 6. Deliver: path to sold_post.png and the caption.
 
