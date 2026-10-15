@@ -1,6 +1,6 @@
 ---
 name: sold-post
-description: Make the standardized BH Properties "SOLD" social post (Buying Hero's buyer-side DBA) — property photo with a branded hanging SOLD yard sign, Jorge's headshot, sale price, investor equity spread, a rotating Buying Hero headline, plus a long Instagram caption. Use whenever Jorge sends a property photo and says it sold / closed / assigned and wants a post, graphic, "just sold" image, deal announcement, win post, or "another satisfied investor" style post — even if he only gives a photo and two numbers like "sold for $500k, $220k spread".
+description: Make the standardized BH Properties "SOLD" social post (Buying Hero's buyer-side DBA) — property photo with a branded hanging SOLD yard sign, Jorge's headshot, sale price, investor equity spread, a rotating BH Properties headline, plus a long Instagram caption. Use whenever Jorge sends a property photo and says it sold / closed / assigned and wants a post, graphic, "just sold" image, deal announcement, win post, or "another satisfied investor" style post — even if he only gives a photo and two numbers like "sold for $500k, $220k spread".
 ---
 
 # SOLD Post
