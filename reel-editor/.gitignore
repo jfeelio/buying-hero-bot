@@ -2,3 +2,5 @@ work/
 __pycache__/
 .cache/
 .pixabay_key
+node_modules/
+sfx/
