@@ -11,7 +11,7 @@ feed builds a recognizable "BH Properties closed another one" series.
 **Brand = BH PROPERTIES**, not Buying Hero. BH Properties is Jorge's DBA and the brand for
 buyers and for his channel; the sign rider, footer and any brand mention in the caption use it
 (`BRAND` constant in sold_post.py). Its logo isn't final yet — when Jorge sends it, save it to
-`D:\Brandh_properties_logo.png` and swap it in for the footer wordmark and sign rider text.
+`D:\Brand\bh_properties_logo.png` and swap it in for the footer wordmark and sign rider text.
 
 Code: `C:\Users\jsive\Dropbox\J Feels\Dev\sold-post\sold_post.py` (uses fonts from
 `..\reel-editor\fonts`). Posts: `D:\Posts\<YYYY-MM-DD>-sold-<price-k>\` (property.png,
