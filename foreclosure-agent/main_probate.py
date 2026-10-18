@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import sys
+import time
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -126,6 +127,13 @@ def build_row(case: dict, mdpa: dict, heir: dict) -> list:
 # Main pipeline
 # ---------------------------------------------------------------------------
 
+# GitHub kills the job at 45 min (run_probate.yml), and a killed job saves nothing.
+# Stop enriching before then, write what's done, and leave the rest unseen so the next
+# run picks it up.
+RUN_START = time.time()
+RUN_BUDGET_SECS = int(float(os.environ.get("PROBATE_RUN_BUDGET_MIN", "38")) * 60)
+
+
 def run():
     tab = config.PROBATE_TAB
     days_back = config.PROBATE_DAYS_BACK
@@ -190,6 +198,12 @@ def run():
         logger.warning("  ANTHROPIC_API_KEY not set: mailing property-record addresses only")
 
     for i, case in enumerate(new_cases, start=1):
+        if time.time() - RUN_START > RUN_BUDGET_SECS:
+            left = len(new_cases) - i + 1
+            logger.error(f"  Run time budget reached: writing {len(enriched_rows)} row(s) now; "
+                         f"{left} case(s) left for the next run")
+            incomplete = incomplete or RuntimeError(f"run budget reached, {left} case(s) deferred")
+            break
         case_num = case["case_number"]
         first = case["decedent_first"]
         last = case["decedent_last"]

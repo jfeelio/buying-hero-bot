@@ -164,26 +164,72 @@ def _search(s: requests.Session, letter: str, case_type: str, date_from: date, d
 # ---------------------------------------------------------------------------
 
 # The Clerk gives up on a slow search after ~30 s and answers "0 results" with
-# HTTP 200, which looks exactly like a real empty result. At busy hours a single
-# letter ("s") is too broad; two letters ("sa".."sz") come back in seconds.
+# HTTP 200, which looks exactly like a real empty result.
+#
+# Why runs kept failing (Oct 2026): the old fallback retried a slow letter, then fanned
+# it out into 26 two-letter prefixes, each retried too -- ~25-30 min for ONE slow letter.
+# Any slow stretch pushed the job past GitHub's 45-min hard limit, GitHub killed it, and
+# the partial-results path never ran, so a failed night saved 0 rows. Now:
+#   * a timed-out search is split by DATE first (2 searches instead of 26), letters last;
+#   * a search time budget stops early and hands back what was found so it gets written;
+#   * a run of consecutive timeouts means the Clerk is degraded -> stop, don't grind.
 SLOW_SECS = 25
+SEARCH_BUDGET_SECS = int(float(os.environ.get("PROBATE_SEARCH_BUDGET_MIN", "22")) * 60)
+MAX_SLOW_STREAK = int(os.environ.get("PROBATE_MAX_SLOW_STREAK", "8"))
 
 
-def _search_prefix(s, prefix: str, case_type: str, date_from: date, date_to: date) -> tuple[list, list]:
-    """Search one name prefix; on a timed-out empty answer retry once, then split
-    into two-letter prefixes. Returns (cases, prefixes that still timed out)."""
-    for attempt in (1, 2):
-        t0 = time.time()
-        rows = _search(s, prefix, case_type, date_from, date_to)
-        if rows or time.time() - t0 < SLOW_SECS:
-            return rows, []
-        logger.warning(f"Probate OCS: '{prefix}' timed out (empty after {time.time() - t0:.0f}s), attempt {attempt}")
-        time.sleep(5)
+class _Budget:
+    """Shared stop conditions for one scrape: wall-clock deadline + consecutive-timeout streak."""
+
+    def __init__(self, secs: float):
+        self.deadline = time.time() + secs
+        self.slow_streak = 0
+        self.stop_reason = ""
+
+    def note(self, slow: bool):
+        self.slow_streak = self.slow_streak + 1 if slow else 0
+        if self.slow_streak >= MAX_SLOW_STREAK and not self.stop_reason:
+            self.stop_reason = f"Clerk degraded: {self.slow_streak} searches in a row timed out"
+        if time.time() >= self.deadline and not self.stop_reason:
+            self.stop_reason = f"search time budget ({SEARCH_BUDGET_SECS // 60} min) used up"
+
+
+def _label(prefix, d_from, d_to):
+    return f"{prefix}@{d_from:%m/%d}-{d_to:%m/%d}"
+
+
+def _search_prefix(s, prefix: str, case_type: str, date_from: date, date_to: date,
+                   budget: "_Budget") -> tuple[list, list]:
+    """Search one name prefix over a date range. A timed-out (slow + empty) answer is
+    retried by halving the date range (halves share the middle day; callers dedupe by case
+    number) down to 2-day slices, and only a slow 2-day slice falls back to two-letter prefixes.
+    Returns (cases, labels of prefix/date slices that still timed out)."""
+    if budget.stop_reason:
+        return [], [_label(prefix, date_from, date_to)]
+    t0 = time.time()
+    rows = _search(s, prefix, case_type, date_from, date_to)
+    slow = not rows and time.time() - t0 >= SLOW_SECS
+    budget.note(slow)
+    if not slow:
+        return rows, []
+    logger.warning(f"Probate OCS: '{_label(prefix, date_from, date_to)}' timed out "
+                   f"(empty after {time.time() - t0:.0f}s, streak {budget.slow_streak})")
+    if budget.stop_reason:
+        return [], [_label(prefix, date_from, date_to)]
+    span = (date_to - date_from).days
+    # Halve while the range is 3+ days. A 2-day range would "halve" into itself (the
+    # halves share the middle day), and the Clerk's end-date semantics aren't verified,
+    # so slices never go below 2 days -- from there, fall back to two-letter prefixes.
+    if span >= 2:
+        mid = date_from + timedelta(days=span // 2)
+        r1, m1 = _search_prefix(s, prefix, case_type, date_from, mid, budget)
+        r2, m2 = _search_prefix(s, prefix, case_type, mid, date_to, budget)
+        return r1 + r2, m1 + m2
     if len(prefix) >= 2:
-        return [], [prefix]
+        return [], [_label(prefix, date_from, date_to)]
     rows, missed = [], []
     for ch in string.ascii_lowercase:
-        r, m = _search_prefix(s, prefix + ch, case_type, date_from, date_to)
+        r, m = _search_prefix(s, prefix + ch, case_type, date_from, date_to, budget)
         rows += r
         missed += m
     return rows, missed
@@ -206,12 +252,13 @@ def get_new_probate_cases(days_back: int = 14) -> list[dict]:
     date_from = today - timedelta(days=days_back)
     s = _login()
     seen: dict[str, dict] = {}
+    budget = _Budget(SEARCH_BUDGET_SECS)
 
     missed = []
     for case_type, type_name in CASE_TYPES.items():
         before = len(seen)
         for letter in SEARCH_LETTERS:
-            found, still_missed = _search_prefix(s, letter, case_type, date_from, today)
+            found, still_missed = _search_prefix(s, letter, case_type, date_from, today, budget)
             missed += [f"{type_name[:6].strip()}:{m}" for m in still_missed]
             for c in found:
                 case_number = c.get("caseNumber", "")
@@ -233,6 +280,10 @@ def get_new_probate_cases(days_back: int = 14) -> list[dict]:
 
     result = list(seen.values())
     logger.info(f"Probate OCS: {len(result)} unique case(s) total")
+    if budget.stop_reason:
+        logger.error(f"Probate OCS: stopped early - {budget.stop_reason}")
+        missed.insert(0, budget.stop_reason)
+        raise IncompleteSearch(missed, result)
     # Miami-Dade files ~80 Formal + Summary cases a week. Zero across every
     # search means the Clerk is down or blocking us, not a quiet two weeks;
     # fail loudly so the dashboard shows it instead of "success, 0 rows".
