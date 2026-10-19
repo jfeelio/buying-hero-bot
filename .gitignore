@@ -48,3 +48,5 @@ crm-transition/resimpli-ppc-zap/logs/
 crm-transition/resimpli-ppc-zap/archive/
 list-efficiency-engine/data/
 list-efficiency-engine/output/
+crm-transition/n8n-workflows/acq-report/recipients.json
+crm-transition/n8n-workflows/11-acq-report-mailer.cloud.json

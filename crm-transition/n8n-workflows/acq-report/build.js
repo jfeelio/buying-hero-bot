@@ -4,10 +4,18 @@
 //
 // Security: the webhook requires the X-Report-Key header (httpHeaderAuth
 // credential acqrpthdr0001, value = GitHub secret ACQ_REPORT_WEBHOOK_KEY), and
-// the recipient is fixed below, so the endpoint can't be used as a relay.
+// the recipients are fixed below, so the endpoint can't be used as a relay.
+// The weekly report goes to the whole team; failure alerts ("failure" kind, used by the
+// fixer agent and the probate mailer) stay with Jorge only.
 const fs = require('fs');
 
-const RECIPIENTS = 'jorge@buyinghero.com';
+// Team addresses live in recipients.json next to this file, which is gitignored (the repo is
+// public), like the MLS sweep's list. {"report": [...], "alerts": [...]}; Jorge-only fallback.
+const R = fs.existsSync(__dirname + '/recipients.json')
+  ? JSON.parse(fs.readFileSync(__dirname + '/recipients.json', 'utf8'))
+  : { report: ['jorge@buyinghero.com'], alerts: ['jorge@buyinghero.com'] };
+const REPORT_TO = R.report.join(',');
+const ALERTS_TO = R.alerts.join(',');
 const GMAIL = { gmailOAuth2: { id: 'gmailbh000001', name: 'Gmail - Buying Hero' } };
 const HEADER = { httpHeaderAuth: { id: 'acqrpthdr0001', name: 'Acq Report Webhook Key' } };
 const id = (n) => `e0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -40,13 +48,13 @@ return [{ json: {
                   options: { fileName: '={{ $json.filename }}', mimeType: 'application/pdf' } },
     id: id(4), name: 'PDF to file', type: 'n8n-nodes-base.convertToFile', typeVersion: 1.1, position: [660, -100] },
 
-  { parameters: { resource: 'message', operation: 'send', sendTo: RECIPIENTS,
+  { parameters: { resource: 'message', operation: 'send', sendTo: REPORT_TO,
                   subject: "={{ $('Validate').item.json.subject }}", emailType: 'html',
                   message: "={{ $('Validate').item.json.html }}",
                   options: { attachmentsUi: { attachmentsBinary: [{ property: 'data' }] }, appendAttribution: false } },
     id: id(5), name: 'Email report', type: 'n8n-nodes-base.gmail', typeVersion: 2.1, position: [880, -100], credentials: GMAIL },
 
-  { parameters: { resource: 'message', operation: 'send', sendTo: RECIPIENTS,
+  { parameters: { resource: 'message', operation: 'send', sendTo: ALERTS_TO,
                   subject: '={{ $json.subject }}', emailType: 'html', message: '={{ $json.html }}',
                   options: { appendAttribution: false } },
     id: id(6), name: 'Email failure', type: 'n8n-nodes-base.gmail', typeVersion: 2.1, position: [660, 100], credentials: GMAIL },
