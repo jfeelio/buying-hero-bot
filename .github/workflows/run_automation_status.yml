@@ -49,7 +49,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_FIXER }}
       ACQ_REPORT_WEBHOOK_URL: ${{ secrets.ACQ_REPORT_WEBHOOK_URL }}
       ACQ_REPORT_WEBHOOK_KEY: ${{ secrets.ACQ_REPORT_WEBHOOK_KEY }}
       N8N_API_KEY: ${{ secrets.N8N_API_KEY }}

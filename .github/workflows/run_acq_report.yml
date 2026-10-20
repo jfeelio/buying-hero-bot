@@ -51,7 +51,7 @@ jobs:
     env:
       TZ: America/New_York
       RESIMPLI_KEY: ${{ secrets.RESIMPLI_KEY }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_WEEKLY_REPORT }}
       ACQ_REPORT_WEBHOOK_URL: ${{ secrets.ACQ_REPORT_WEBHOOK_URL }}
       ACQ_REPORT_WEBHOOK_KEY: ${{ secrets.ACQ_REPORT_WEBHOOK_KEY }}
     steps:
