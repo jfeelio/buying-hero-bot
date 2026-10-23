@@ -156,7 +156,7 @@ Don't put a hero caption and a stat on the same moment — pick one.
   falls back automatically to `transcribe.js` (transformers.js on Microsoft's signed ONNX Runtime,
   `onnx-community/whisper-large-v3-turbo_timestamped`, ~40-75 s on CPU). Don't try to disable SAC
   (it's permanent) and don't run Whisper on the n8n VM (2 vCPU / ~1 GB free — would starve n8n).
-- Jorge may create the reel folder himself (e.g. `D:\Reels2026-10-23 - Permit Busters\` with the
+- Jorge may create the reel folder himself (e.g. `D:\Reels\2026-10-23 - Permit Busters\` with the
   .mp4 + PNGs loose). Then skip `reel.py new`: move PNGs into screenshots/, remux the video to
   raw.mov with ffmpeg `-c copy`, run `python transcribe.py <reel>/raw.mov <reel>/words.json`.
 - Pexels API keys are paused — Pixabay key is in `reel-editor/.pixabay_key` (gitignored).
