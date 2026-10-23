@@ -40,7 +40,10 @@ cheap (~15s) but a wrong concept wastes his review time. Wait for "go" / edits.
 - **B-roll:** `python broll.py search "<query>" <reel>/build` (videos) or `isearch` (vertical
   photos — often better for niche concepts). Each writes a contact sheet; **look at it** and
   pick by ID, then `python broll.py get <id> <reel>/assets/<name>.mp4` / `iget ... .jpg`.
-  The shot must literally show what he's saying. If nothing fits, don't settle — use a list or
+  The shot must literally show what he's saying. Check the Pixabay page title `get`/`iget` prints:
+  a "gas" search returned medical O2 regulators and electric meters before the right shot (yellow
+  gas pipe). Jorge likes 4-5 full-frame cutaways per reel to "take my video out and fade in
+  something else" — full mode with the default crossfade. If nothing fits, don't settle — use a list or
   stat graphic or just stay on his face. (He rejected "a bunch of documents" for "dirty title".)
 - **Screenshots:** view each one, decide the crop box in pixel coords around the number/area
   that proves the claim, place it as a `card` overlay timed to when he says it.
@@ -151,6 +154,10 @@ Word indices come from `reel.py words`. Times are seconds in the raw video.
 Don't put a hero caption and a stat on the same moment — pick one.
 
 ## Gotchas
+- **Cutting a bad edit out of his video** (dead air / jump): find the silent span with an
+  0.1s loudness scan, re-encode raw.mov without it (keep `raw_original.mov`), then shift every
+  time in words.json and edit.json after the cut by its length. Keep word indices unchanged
+  (edit.json points at them); re-transcribe only to confirm the words around the cut.
 - **Windows Smart App Control (on, enforcing since Oct 2026) blocks faster-whisper's native libs**
   (ctranslate2, PyAV): "An Application Control policy has blocked this file". `transcribe.py`
   falls back automatically to `transcribe.js` (transformers.js on Microsoft's signed ONNX Runtime,
