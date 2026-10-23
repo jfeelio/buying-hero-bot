@@ -7,7 +7,7 @@ edit.json keys used here:
   hero:     [i, ...]             shown alone, bigger, blue, with a punch-in
   lead_in:  {"hero_i": [i, ...]} words stacked above a hero ("ALMOST LOST" / "$115,000")
 """
-import json, sys
+import json, re, sys
 
 W, H = 1080, 1920
 FONT = "Montserrat Black"
@@ -60,7 +60,8 @@ def chunk(toks, hero, lead_words):
 
 
 def clean(w):
-    return w.upper().rstrip(".,")
+    # decades keep a lowercase s ("1990s", "80s"), everything else goes ALL CAPS
+    return re.sub(r"(\d)S\b", r"\1s", w.upper().rstrip(".,"))
 
 
 def build(words_path, edit_path, out_path):

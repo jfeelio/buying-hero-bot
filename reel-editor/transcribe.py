@@ -16,7 +16,14 @@ def _add_cuda_dlls():
         pass
 
 _add_cuda_dlls()
-from faster_whisper import WhisperModel
+try:
+    from faster_whisper import WhisperModel
+except ImportError as e:
+    # Windows Smart App Control blocks ctranslate2/PyAV's unsigned DLLs ("An Application Control
+    # policy has blocked this file", seen 2026-10-23). transcribe.js runs the same Whisper family
+    # on Microsoft's signed ONNX Runtime instead (~75 s for a 90 s reel on CPU).
+    WhisperModel = None
+    _import_error = e
 
 def load_model():
     try:
@@ -34,7 +41,20 @@ def load_audio(video):
                          capture_output=True, check=True).stdout
     return np.frombuffer(raw, np.float32)
 
+def transcribe_onnx(video, out):
+    here = os.path.dirname(os.path.abspath(__file__))
+    pcm = os.path.splitext(out)[0] + ".f32le"
+    open(pcm, "wb").write(load_audio(video).tobytes())
+    try:
+        subprocess.run(["node", os.path.join(here, "transcribe.js"), pcm, out], check=True, cwd=here)
+    finally:
+        os.remove(pcm)
+
+
 def main(video, out):
+    if WhisperModel is None:
+        print(f"faster-whisper unavailable ({_import_error}); using transcribe.js (ONNX Runtime)", file=sys.stderr)
+        return transcribe_onnx(video, out)
     model = load_model()
     segments, info = model.transcribe(load_audio(video), word_timestamps=True, vad_filter=True)
     words = []

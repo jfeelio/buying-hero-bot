@@ -112,6 +112,10 @@ stands back from the camera, push it lower (y≈1350) so it stays under his face
 optional `label`). Use for at most 1–2 numbers per reel; alternate with the hero+lead_in
 treatment across reels.
 
+**Screenshot cards:** when his face fills the upper frame, place cards at `"y": 420` with
+`"max_h": 560` (logo ~520) so they sit above his eyes. Wide documents (permit records, forms)
+render as strips but stay readable at full size — check at phone scale, crop to the key rows.
+
 **Icons:** 3–4 Lucide badges per reel beside his head (x=900, y=960), on concrete nouns
 (contract → file-text, attorney → scale, money → dollar-sign, legal → shield-check, house,
 key-round, search). New icons: `curl -sSf -o icons/<name>.svg
@@ -147,6 +151,14 @@ Word indices come from `reel.py words`. Times are seconds in the raw video.
 Don't put a hero caption and a stat on the same moment — pick one.
 
 ## Gotchas
+- **Windows Smart App Control (on, enforcing since Oct 2026) blocks faster-whisper's native libs**
+  (ctranslate2, PyAV): "An Application Control policy has blocked this file". `transcribe.py`
+  falls back automatically to `transcribe.js` (transformers.js on Microsoft's signed ONNX Runtime,
+  `onnx-community/whisper-large-v3-turbo_timestamped`, ~40-75 s on CPU). Don't try to disable SAC
+  (it's permanent) and don't run Whisper on the n8n VM (2 vCPU / ~1 GB free — would starve n8n).
+- Jorge may create the reel folder himself (e.g. `D:\Reels2026-10-23 - Permit Busters\` with the
+  .mp4 + PNGs loose). Then skip `reel.py new`: move PNGs into screenshots/, remux the video to
+  raw.mov with ffmpeg `-c copy`, run `python transcribe.py <reel>/raw.mov <reel>/words.json`.
 - Pexels API keys are paused — Pixabay key is in `reel-editor/.pixabay_key` (gitignored).
   Pixabay asks that searches be cached 24h (broll.py does this in `.cache/`).
 - ffmpeg isn't on PATH in older shells; render.py/reel.py locate the WinGet install themselves.

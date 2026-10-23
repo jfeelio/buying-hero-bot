@@ -5,7 +5,7 @@
 Reads <reel>/raw.mov, edit.json, captions.ass -> writes <reel>/output/<name>.mp4
 
 edit.json keys used here:
-  overlays: [{"start", "end", "file", "mode": "full"|"card", "from"?, "crop"?: [x,y,w,h], "y"?}]
+  overlays: [{"start", "end", "file", "mode": "full"|"card", "from"?, "crop"?: [x,y,w,h], "y"?, "max_h"?}]
       full -> covers the frame (scale-to-fill), stills get a slow push-in; 0.25s crossfade
               in/out by default ("transition": "cut" for a hard cut)
       card -> screenshot cropped, rounded, blue border + shadow, slides up into the upper frame
@@ -64,12 +64,12 @@ def peak_time(path):
     return float(np.argmax(env)) / 8000
 
 
-def make_card(src, crop, out):
+def make_card(src, crop, out, max_h=820):
     im = Image.open(src).convert("RGB")
     if crop:
         x, y, w, h = crop
         im = im.crop((x, y, x + w, y + h))
-    max_w, max_h = 940, 820
+    max_w = 940
     s = min(max_w / im.width, max_h / im.height)
     im = im.resize((int(im.width * s), int(im.height * s)), Image.LANCZOS)
     pad, border, r = 40, 8, 28
@@ -267,7 +267,7 @@ def build(reel, name):
         tag = f"o{n}"
         if o.get("mode", "full") == "card":
             card = os.path.join(work, f"card_{n}.png")
-            cw, ch = make_card(src, o.get("crop"), card)
+            cw, ch = make_card(src, o.get("crop"), card, o.get("max_h", 820))
             inputs += ["-loop", "1", "-t", f"{en + 1:.3f}", "-i", card]
             chains.append(f"[{n}:v]format=rgba,fade=t=in:st={st}:d=0.15:alpha=1[{tag}]")
             y0 = o.get("y", 760) - ch // 2
