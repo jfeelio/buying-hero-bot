@@ -120,6 +120,10 @@ def analyze(raw, week_start, now=None):
     created = [x for x in raw["appointments"] if ws <= (x.get("createdAt") or 0) < we]
     upcoming = [x for x in raw["appointments"] if (x.get("startDateTimeInTimeStamp") or 0) >= we]
     prev_appts = appts_between(pws, ws)
+    # Month to date: the 1st of the month the week ends in, through the week's end.
+    ms = int(et(we - 1).replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)
+    month_appts = appts_between(ms, we)
+    month_st = collections.Counter(OUTCOME.get(x.get("appointmentStatus"), "No outcome") for x in month_appts)
 
     # ---------------------------------------------------------------- offers
     def offers_between(a, b):
@@ -401,6 +405,12 @@ def analyze(raw, week_start, now=None):
             "followup_leads": sum(f["leads"] for f in followup),
             "followup_touched": sum(f["touched"] for f in followup),
         },
+        "month": {"name": et(ms).strftime("%B"),
+                  "label": "%d–%d %s" % (et(ms).day, et(we - 1).day, et(we - 1).strftime("%b")),
+                  "appointments": len(month_appts),
+                  "unique_sellers": len({x.get("subModuleId") for x in month_appts}),
+                  "kept": month_st.get("Kept", 0), "cancelled": month_st.get("Cancelled", 0),
+                  "no_show": month_st.get("No Show", 0)},
         "trend": [
             {"week": "prior-2", "label": _label(pws - 7 * DAY), "new_leads": len(new_between(pws - 7 * DAY, pws)),
              "appointments": len(appts_between(pws - 7 * DAY, pws)), "kept": None, "offers": None},

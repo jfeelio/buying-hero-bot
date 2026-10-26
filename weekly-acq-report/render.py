@@ -27,7 +27,7 @@ section:first-of-type{border-top:none;padding-top:0}
 p{margin:0 0 12px;max-width:70ch}
 strong{font-weight:600}
 .num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-weight:500}
-.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin:20px 0 0}
+.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin:20px 0 0}
 .stat{background:var(--surface);padding:12px 14px}
 .stat .lab{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin-bottom:5px}
 .stat .val{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
@@ -118,14 +118,16 @@ def page(m, narr, author):
     prev = trend.get("prior", {})
     fu_pct = t["followup_touched"] / t["followup_leads"] if t["followup_leads"] else 1
     fz = {f["week"]: f for f in m["funnel"]}
+    mo = m["month"]
 
     def tile(lab, val, sub, cls=""):
         return '<div class="stat %s"><div class="lab">%s</div><div class="val">%s</div><div class="sub">%s</div></div>' % (cls, lab, val, sub)
 
     tiles = "".join([
-        tile("Appointments", t["appointments"], "%s last week" % prev.get("appointments", "–"),
+        tile("Appts · week", t["appointments"], "%d sellers · %d cancelled" % (t["unique_sellers"], t["cancelled"]),
              "bad" if prev.get("appointments") and t["appointments"] < prev["appointments"] / 2 else ""),
-        tile("Kept", t["kept"], "%d with no outcome" % t["no_outcome"] if t["no_outcome"] else "all recorded",
+        tile("Appts · %s" % mo["name"][:3], mo["appointments"], "%s · %d kept" % (mo["label"], mo["kept"])),
+        tile("Kept · week", t["kept"], "%d with no outcome" % t["no_outcome"] if t["no_outcome"] else "all recorded",
              "good" if t["kept"] else "flag"),
         tile("Offers made", t["offers"], "%s last week" % prev.get("offers", "–"),
              "flag" if prev.get("offers") and t["offers"] < prev["offers"] else "good"),
@@ -133,7 +135,7 @@ def page(m, narr, author):
              "flag" if fz["this"]["qualified"] < fz["prior"]["qualified"] else "good"),
         tile("New leads", t["new_leads"], " · ".join(str(trend[k]["new_leads"]) for k in ("prior-2", "prior") if k in trend) + " prior weeks",
              "good"),
-        tile("Follow-up touched", "%d<small>/%d</small>" % (t["followup_touched"], t["followup_leads"]),
+        tile("Follow-up", "%d<small>/%d</small>" % (t["followup_touched"], t["followup_leads"]),
              "%s of the buckets" % pct(t["followup_touched"], t["followup_leads"]),
              "bad" if fu_pct < 0.2 else ("flag" if fu_pct < 0.5 else "good")),
     ])
@@ -365,12 +367,14 @@ def email_body(m, narr):
 <h2 style="font-family:Georgia,serif;margin:0 0 10px">%s</h2>
 <p style="color:#57635D">%s</p>
 <table style="border-collapse:collapse;margin:12px 0;font-size:13px">
-<tr><td style="padding:3px 14px 3px 0">Appointments</td><td><strong>%d</strong> (%d kept, %d no outcome)</td></tr>
+<tr><td style="padding:3px 14px 3px 0">Appointments this week</td><td><strong>%d</strong> (%d sellers, %d kept, %d cancelled, %d no outcome)</td></tr>
+<tr><td style="padding:3px 14px 3px 0">Appointments in %s to date</td><td><strong>%d</strong> (%s, %d kept)</td></tr>
 <tr><td style="padding:3px 14px 3px 0">Qualified leads</td><td><strong>%d</strong> (last week %d)</td></tr>
 <tr><td style="padding:3px 14px 3px 0">Offers made</td><td><strong>%d</strong></td></tr>
 <tr><td style="padding:3px 14px 3px 0">New leads</td><td><strong>%d</strong></td></tr>
 <tr><td style="padding:3px 14px 3px 0">Follow-up touched</td><td><strong>%d of %d</strong></td></tr></table>
 <p style="margin:16px 0 6px"><strong>Where to focus</strong></p><ol style="padding-left:20px;margin:0">%s</ol>
 <p style="color:#7C8781;font-size:12px;margin-top:18px">Full report attached as a PDF. Forward it to the team as-is.</p></div>""" % (
-        s, e(m["week"]["label"]), md(narr.get("standfirst")), t["appointments"], t["kept"], t["no_outcome"],
+        s, e(m["week"]["label"]), md(narr.get("standfirst")), t["appointments"], t["unique_sellers"], t["kept"], t["cancelled"], t["no_outcome"],
+        e(m["month"]["name"]), m["month"]["appointments"], e(m["month"]["label"]), m["month"]["kept"],
         m["funnel"][-1]["qualified"], m["funnel"][0]["qualified"], t["offers"], t["new_leads"], t["followup_touched"], t["followup_leads"], acts)
