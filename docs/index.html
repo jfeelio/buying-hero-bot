@@ -542,6 +542,13 @@
     }
   }
 
+  // Prefill from the link, e.g. ?address=...&arv=650000&rehab=30000&pp=452000
+  // (the acquisition-prep skill opens the analyzer this way).
+  (function prefillFromUrl() {
+    const q = new URLSearchParams(location.search);
+    ['pp', 'rehab', 'arv', 'target', 'hold'].forEach(id => { if (q.get(id) && $(id)) $(id).value = q.get(id); });
+    if (q.get('address') && $('saveName')) $('saveName').value = q.get('address');
+  })();
   initDollarInputs();
   calc();
   renderSavedHelp();
