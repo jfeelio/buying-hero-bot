@@ -33,6 +33,7 @@ ICON_SIZE, ICON_X, ICON_Y = 180, 900, 960   # right of the face, above the capti
 FACE_Y = 0.35                               # zoom anchor: keep the face in frame
 ZOOM_EASE = 0.35                            # seconds to ease in/out of a push-in
 XFADE = 0.25                                # B-roll crossfade in/out
+SAFE = 60                                   # min px between card/sticker pixels and the frame edge
 
 
 def ffmpeg_bin(name="ffmpeg"):
@@ -108,6 +109,8 @@ def make_sticker(src, label, sub, out, max_h=520, max_w=380):
     fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
     big, small = ImageFont.truetype(fpath, 64), ImageFont.truetype(fpath, 30)
     label, sub = label.upper(), (sub or "").upper()
+    while sub and small.size > 20 and small.getlength(sub) + 70 > im.width:   # pill no wider than the photo
+        small = ImageFont.truetype(fpath, small.size - 2)
     pw = int(max(big.getlength(label), small.getlength(sub) if sub else 0)) + 70
     ph = 96 + (44 if sub else 0)
     pad = 40
@@ -316,7 +319,16 @@ def build(reel, name):
             inputs += ["-loop", "1", "-t", f"{en + 1:.3f}", "-i", card]
             chains.append(f"[{n}:v]format=rgba,fade=t=in:st={st}:d=0.15:alpha=1[{tag}]")
             y0 = o.get("y", 760) - ch // 2
-            x0 = f"{o['x'] - cw // 2}" if "x" in o else "(W-w)/2"
+            # keep the visible pixels SAFE px inside the frame (Edits/IG trim the edges a little)
+            bx0, _, bx1, _ = Image.open(card).getchannel("A").getbbox()
+            left = o.get("x", W // 2) - cw // 2
+            if bx1 - bx0 > W - 2 * SAFE:
+                left = (W - (bx1 - bx0)) // 2 - bx0
+            else:
+                left = min(max(left, SAFE - bx0), W - SAFE - bx1)
+            if "x" in o and left != o["x"] - cw // 2:
+                print(f"  {o['file']}: x {o['x']} -> {left + cw // 2} to stay inside the frame")
+            x0 = f"{left}"
             ypos = f"{y0}+120*max(0\\,1-(t-{st})/0.18)"
             chains.append(f"[{last}][{tag}]overlay=x={x0}:y='{ypos}':enable='between(t,{st},{en})'[v{n}]")
         else:
