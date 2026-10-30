@@ -9,6 +9,8 @@ edit.json keys used here:
       full -> covers the frame (scale-to-fill), stills get a slow push-in; 0.25s crossfade
               in/out by default ("transition": "cut" for a hard cut)
       card -> screenshot cropped, rounded, blue border + shadow, slides up into the upper frame
+      sticker -> transparent cut-out PNG (headshot) + shadow + blue name pill ("label", "sub"?),
+              centred on "x"/"y", slides up like a card
   zooms:    [{"start", "end", "scale"?: 1.08}]     eased push-in on the talking head
   lists:    [{"start", "end", "items": [{"t", "text"}], "style": x|check|numbered,
               "entrance": slide|pop|drop, "panel": dim|pills}]   each item enters as it's said
@@ -64,6 +66,14 @@ def peak_time(path):
     return float(np.argmax(env)) / 8000
 
 
+def mean_db(path, secs=None):
+    # RMS level in dB (same number ffmpeg volumedetect calls mean_volume)
+    raw = subprocess.run([ffmpeg_bin(), "-v", "error", "-i", path] + (["-t", str(secs)] if secs else []) +
+                         ["-ac", "1", "-ar", "8000", "-f", "f32le", "-"], capture_output=True, check=True).stdout
+    a = np.frombuffer(raw, np.float32)
+    return float(20 * np.log10(np.sqrt(np.mean(a ** 2)) + 1e-9))
+
+
 def make_card(src, crop, out, max_h=820):
     im = Image.open(src).convert("RGB")
     if crop:
@@ -85,6 +95,37 @@ def make_card(src, crop, out, max_h=820):
     ImageDraw.Draw(inner_mask).rounded_rectangle((0, 0, im.width - 1, im.height - 1), r - border, fill=255)
     frame.paste(im, (border, border), inner_mask)
     canvas.paste(frame, (pad, pad), mask)
+    canvas.save(out)
+    return canvas.size
+
+
+def make_sticker(src, label, sub, out, max_h=520, max_w=380):
+    """Cut-out PNG with a soft shadow and a brand-blue name pill overlapping its bottom edge."""
+    from PIL import ImageFont
+    im = Image.open(src).convert("RGBA")
+    s = min(max_w / im.width, max_h / im.height)
+    im = im.resize((int(im.width * s), int(im.height * s)), Image.LANCZOS)
+    fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
+    big, small = ImageFont.truetype(fpath, 64), ImageFont.truetype(fpath, 30)
+    label, sub = label.upper(), (sub or "").upper()
+    pw = int(max(big.getlength(label), small.getlength(sub) if sub else 0)) + 70
+    ph = 96 + (44 if sub else 0)
+    pad = 40
+    cw = max(im.width, pw) + 2 * pad
+    ch = im.height + ph // 2 + 2 * pad
+    canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    ix = (cw - im.width) // 2
+    shadow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    shadow.paste((0, 0, 0, 160), (ix, pad + 14), im.getchannel("A"))
+    canvas = Image.alpha_composite(canvas, shadow.filter(ImageFilter.GaussianBlur(14)))
+    canvas.alpha_composite(im, (ix, pad))
+    py = pad + im.height - ph // 2
+    px = (cw - pw) // 2
+    d = ImageDraw.Draw(canvas)
+    d.rounded_rectangle((px, py, px + pw, py + ph), 26, fill=BLUE + (255,), outline="white", width=5)
+    d.text((cw // 2, py + 50), label, font=big, fill="white", anchor="mm")
+    if sub:
+        d.text((cw // 2, py + 106), sub, font=small, fill="white", anchor="mm")
     canvas.save(out)
     return canvas.size
 
@@ -265,14 +306,19 @@ def build(reel, name):
         st, en = o["start"], o["end"]
         dur = en - st
         tag = f"o{n}"
-        if o.get("mode", "full") == "card":
+        if o.get("mode", "full") in ("card", "sticker"):
             card = os.path.join(work, f"card_{n}.png")
-            cw, ch = make_card(src, o.get("crop"), card, o.get("max_h", 820))
+            if o["mode"] == "sticker":
+                cw, ch = make_sticker(src, o.get("label", ""), o.get("sub"), card,
+                                      o.get("max_h", 520), o.get("max_w", 380))
+            else:
+                cw, ch = make_card(src, o.get("crop"), card, o.get("max_h", 820))
             inputs += ["-loop", "1", "-t", f"{en + 1:.3f}", "-i", card]
             chains.append(f"[{n}:v]format=rgba,fade=t=in:st={st}:d=0.15:alpha=1[{tag}]")
             y0 = o.get("y", 760) - ch // 2
+            x0 = f"{o['x'] - cw // 2}" if "x" in o else "(W-w)/2"
             ypos = f"{y0}+120*max(0\\,1-(t-{st})/0.18)"
-            chains.append(f"[{last}][{tag}]overlay=x=(W-w)/2:y='{ypos}':enable='between(t,{st},{en})'[v{n}]")
+            chains.append(f"[{last}][{tag}]overlay=x={x0}:y='{ypos}':enable='between(t,{st},{en})'[v{n}]")
         else:
             if src.lower().endswith(VIDEO_EXT):
                 inputs += ["-ss", f"{o.get('from', 0)}", "-t", f"{dur:.3f}", "-i", src]
@@ -333,6 +379,24 @@ def build(reel, name):
     # audio: voice + SFX (voice untouched; SFX ducked well under it)
     amix = ["[0:a]aformat=sample_rates=48000:channel_layouts=stereo[a0]"]
     labels = ["[a0]"]
+
+    # music: looped bed set `gap` dB under the voice's average level, dipping further while he talks
+    mus = edit.get("music")
+    if mus:
+        n += 1
+        f = os.path.join(HERE, mus["file"])
+        gain = mean_db(os.path.join(reel, "raw.mov")) - mus.get("gap", 19) - mean_db(f)
+        fin, fout = mus.get("fade_in", 1.5), mus.get("fade_out", 2.0)
+        inputs += ["-stream_loop", "-1", "-ss", str(mus.get("start", 0)), "-i", f]
+        amix[0] = "[0:a]aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[a0][sc]"
+        amix.append(f"[{n}:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim=0:{total:.3f},"
+                    f"asetpts=PTS-STARTPTS,volume={gain:.1f}dB,afade=t=in:d={fin},"
+                    f"afade=t=out:st={total - fout:.3f}:d={fout}[mraw]")
+        if mus.get("duck", True):
+            amix.append("[mraw][sc]sidechaincompress=threshold=0.03:ratio=4:attack=30:release=600:makeup=1[mus]")
+        else:
+            amix.append("[sc]anullsink;[mraw]anull[mus]")
+        labels.append("[mus]")
     for k, s in enumerate(edit.get("sfx", [])):
         n += 1
         f = os.path.join(HERE, s["file"])
