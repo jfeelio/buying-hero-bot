@@ -1,0 +1,45 @@
+name: Finance Revised Refresh
+
+# Daily ~6:30 AM ET (GitHub cron runs late; any time that morning is fine).
+# Refreshes the deals table on the "Finance Revised" cash-flow tab from
+# REsimpli's Under Contract leads: close date, assignment fee, new deals, and
+# deals that left Under Contract. Locked rows and every manual column are kept.
+# The REsimpli key lives only in GitHub secrets, never in the sheet.
+on:
+  schedule:
+    - cron: '29 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: finance-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # This repo is PUBLIC: the script logs counts only, never deal details.
+    env:
+      TZ: America/New_York
+      RESIMPLI_KEY: ${{ secrets.RESIMPLI_KEY }}
+      FINANCE_SHEET_ID: ${{ secrets.FINANCE_SHEET_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: finance-sync/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r finance-sync/requirements.txt
+
+      - name: Write credentials
+        run: echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > foreclosure-agent/credentials.json
+
+      - name: Refresh deals from REsimpli
+        run: python finance-sync/refresh.py
