@@ -10,6 +10,8 @@ leads; this keeps it current. Per row it owns ONLY:
   F assignment fee        /
   W REsimpli status / X REsimpli lead id
 
+Columns are found by their row-20 header text, so the partners can insert
+columns (as they did for the Jorge / Adrian splits) without breaking this.
 Everything else (escrow, advances, JV, costs, splits, notes, Include?) is the
 partners' and is never touched. A deal that leaves Under Contract is not
 deleted; W shows its new status and the Flag column (T) asks for a review.
@@ -31,6 +33,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import gspread
+from gspread.utils import rowcol_to_a1
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "weekly-acq-report"))
@@ -39,10 +42,12 @@ from pull import THROTTLE, log, post  # noqa: E402
 CREDS = Path(os.environ.get("GOOGLE_CREDENTIALS_PATH") or HERE.parent / "foreclosure-agent" / "credentials.json")
 TAB = "Finance Revised"
 UNDER_CONTRACT = "6aa4dc81d18014f8fc5e535e"
-FIRST, LAST = 21, 40        # deal rows
+HEADER, FIRST, LAST = 20, 21, 40   # deal table header row + deal rows
 ET = ZoneInfo("America/New_York")
-# column letters -> 0-based index in an A:X read
-COL = {c: i for i, c in enumerate("ABCDEFGHIJKLMNOPQRSTUVWX")}
+# key -> its row-20 header (exact; Lock matches on its first word)
+HEADERS = {"include": "Include?", "seller": "Seller", "property": "Property",
+           "uc": "Under contract", "close": "Expected close", "fee": "Assignment fee",
+           "lock": "Lock", "status": "REsimpli status", "id": "REsimpli ID"}
 
 
 def day(ms):
@@ -68,9 +73,9 @@ def under_contract():
         time.sleep(THROTTLE)
         ld = post("lead/details", {"leadId": x["_id"]})["data"]["leadData"]
         a = ld.get("analyticsInfo") or {}
-        out[x["_id"]] = {"B": seller(ld), "C": ld.get("address") or "",
-                         "D": day(a.get("underContractDate")), "E": day(a.get("closingDate")),
-                         "F": a.get("assignmentFee") or ""}
+        out[x["_id"]] = {"seller": seller(ld), "property": ld.get("address") or "",
+                         "uc": day(a.get("underContractDate")), "close": day(a.get("closingDate")),
+                         "fee": a.get("assignmentFee") or ""}
     return out
 
 
@@ -96,30 +101,42 @@ def main():
     live = under_contract()
     log("under contract in REsimpli: %d" % len(live))
 
-    rows = ws.get(f"A{FIRST}:X{LAST}", value_render_option="UNFORMATTED_VALUE")
+    header = ws.row_values(HEADER)
+    col = {}
+    for key, text in HEADERS.items():
+        hits = [i for i, h in enumerate(header)
+                if (h.strip().startswith(text) if key == "lock" else h.strip() == text)]
+        if len(hits) != 1:
+            sys.exit("header %r found %d times in row %d - refusing to write" % (text, len(hits), HEADER))
+        col[key] = hits[0]
+    if not (col["uc"] + 1 == col["close"] and col["close"] + 1 == col["fee"]):
+        sys.exit("Under contract / Expected close / Assignment fee must stay side by side")
+    a1 = lambda r, key: rowcol_to_a1(r, col[key] + 1)
+
+    rows = ws.get(f"A{FIRST}:{rowcol_to_a1(LAST, len(header))}", value_render_option="UNFORMATTED_VALUE")
     rows += [[]] * (LAST - FIRST + 1 - len(rows))
-    cell = lambda row, c: row[COL[c]] if len(row) > COL[c] else ""
+    cell = lambda row, key: row[col[key]] if len(row) > col[key] else ""
 
     updates, seen, n_upd, n_locked, n_gone = [], set(), 0, 0, 0
     empty = []
     for i, row in enumerate(rows):
         r = FIRST + i
-        lid = str(cell(row, "X")).strip()
+        lid = str(cell(row, "id")).strip()
         if not lid:
-            if not str(cell(row, "B")).strip():
+            if not str(cell(row, "seller")).strip():
                 empty.append(r)
             continue
         seen.add(lid)
         if lid in live:
-            if cell(row, "V") is True:
+            if cell(row, "lock") is True:
                 n_locked += 1
             else:
                 d = live[lid]
-                updates.append({"range": f"D{r}:F{r}", "values": [[d["D"], d["E"], d["F"]]]})
+                updates.append({"range": f"{a1(r, 'uc')}:{a1(r, 'fee')}", "values": [[d["uc"], d["close"], d["fee"]]]})
                 n_upd += 1
-            updates.append({"range": f"W{r}", "values": [["Under Contract"]]})
+            updates.append({"range": a1(r, "status"), "values": [["Under Contract"]]})
         else:
-            updates.append({"range": f"W{r}", "values": [[status_title(lid)]]})
+            updates.append({"range": a1(r, "status"), "values": [[status_title(lid)]]})
             n_gone += 1
 
     new = [lid for lid in live if lid not in seen]
@@ -127,8 +144,10 @@ def main():
         log("WARNING: %d new deals but only %d empty rows - add rows to the deals table" % (len(new), len(empty)))
     for lid, r in zip(new, empty):
         d = live[lid]
-        updates.append({"range": f"A{r}:F{r}", "values": [[True, d["B"], d["C"], d["D"], d["E"], d["F"]]]})
-        updates.append({"range": f"V{r}:X{r}", "values": [[False, "Under Contract", lid]]})
+        for key, v in (("include", True), ("seller", d["seller"]), ("property", d["property"]),
+                       ("uc", d["uc"]), ("close", d["close"]), ("fee", d["fee"]),
+                       ("lock", False), ("status", "Under Contract"), ("id", lid)):
+            updates.append({"range": a1(r, key), "values": [[v]]})
 
     stamp = dt.datetime.now(ET).strftime("%m/%d/%Y %I:%M %p ET")
     updates.append({"range": "A3", "values": [[f"Deals last refreshed from REsimpli: {stamp} (daily, automatic)"]]})
