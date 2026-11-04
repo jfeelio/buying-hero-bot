@@ -13,7 +13,8 @@ REF_DIR = "D:/Carousels/_source-photos"
 IDENTITY = ("Use the man in the reference photos as the subject. Keep his face, hairline, beard, skin tone, "
             "eye color and build exactly as in the references; it must be clearly recognizable as the same person. "
             "Photorealistic, natural lighting, shot on a modern phone or DSLR, no text, no logos, no watermarks. "
-            "Vertical 4:5 composition with room in the top third for headline text.")
+            "Vertical 4:5 photo that fills the entire frame edge to edge (no borders, blank areas or empty bands). "
+            "Keep his head below the top third so the upper area is calm real background (wall, sky) that can sit under headline text.")
 
 
 def b64img(path, max_side=1280):
@@ -27,7 +28,7 @@ def generate(prompt, out, model="gemini-3-pro-image", refs=None):
     refs = refs or sorted(glob.glob(os.path.join(REF_DIR, "*.*")))
     parts = [b64img(r) for r in refs] + [{"text": f"{IDENTITY}\n\nScene: {prompt}"}]
     body = {"contents": [{"parts": parts}],
-            "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": "4:5"}}}
+            "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": "4:5", **({"imageSize": "2K"} if "pro" in model else {})}}}
     req = urllib.request.Request(
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
         data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-goog-api-key": KEY})
