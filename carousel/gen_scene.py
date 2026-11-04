@@ -1,0 +1,53 @@
+"""Generate an AI scene of Jorge from reference photos with Gemini image editing.
+
+Usage: python gen_scene.py <out.png> "<scene prompt>" [--model gemini-3-pro-image] [--refs a.jpg b.jpg]
+Reference photos default to D:/Carousels/_source-photos/*. Output is 4:5 (1080x1350 friendly).
+"""
+import argparse, base64, glob, io, json, os, sys, urllib.request
+from PIL import Image
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+KEY = open(os.path.join(HERE, ".gemini_key")).read().strip()
+REF_DIR = "D:/Carousels/_source-photos"
+
+IDENTITY = ("Use the man in the reference photos as the subject. Keep his face, hairline, beard, skin tone, "
+            "eye color and build exactly as in the references; it must be clearly recognizable as the same person. "
+            "Photorealistic, natural lighting, shot on a modern phone or DSLR, no text, no logos, no watermarks. "
+            "Vertical 4:5 composition with room in the top third for headline text.")
+
+
+def b64img(path, max_side=1280):
+    im = Image.open(path).convert("RGB")
+    im.thumbnail((max_side, max_side))
+    buf = io.BytesIO(); im.save(buf, "JPEG", quality=90)
+    return {"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(buf.getvalue()).decode()}}
+
+
+def generate(prompt, out, model="gemini-3-pro-image", refs=None):
+    refs = refs or sorted(glob.glob(os.path.join(REF_DIR, "*.*")))
+    parts = [b64img(r) for r in refs] + [{"text": f"{IDENTITY}\n\nScene: {prompt}"}]
+    body = {"contents": [{"parts": parts}],
+            "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": "4:5"}}}
+    req = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-goog-api-key": KEY})
+    try:
+        res = json.load(urllib.request.urlopen(req, timeout=180))
+    except urllib.error.HTTPError as e:
+        sys.exit(f"HTTP {e.code}: {e.read().decode()[:600]}")
+    for c in res.get("candidates", []):
+        for p in c.get("content", {}).get("parts", []):
+            d = p.get("inline_data") or p.get("inlineData")
+            if d:
+                os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+                open(out, "wb").write(base64.b64decode(d["data"]))
+                print("saved", out); return out
+    sys.exit("no image returned: " + json.dumps(res)[:600])
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("out"); ap.add_argument("prompt")
+    ap.add_argument("--model", default="gemini-3-pro-image"); ap.add_argument("--refs", nargs="*")
+    a = ap.parse_args()
+    generate(a.prompt, a.out, a.model, a.refs)
