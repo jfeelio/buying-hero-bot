@@ -42,6 +42,10 @@ def generate(prompt, out, model="gemini-3-pro-image", refs=None):
             if d:
                 os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
                 open(out, "wb").write(base64.b64decode(d["data"]))
+                from trim import trim
+                cut = trim(out)
+                if any(cut):
+                    print("trimmed padding band (top, bottom px):", cut)
                 print("saved", out); return out
     sys.exit("no image returned: " + json.dumps(res)[:600])
 

@@ -9,6 +9,8 @@ Types:
   stats      kicker?, title, rows: [[label, value], ...]  (last row = hero, blue)
   checklist  kicker?, title, items: [...]
   cta        title, body?
+  tweet      text  (X-post style card; light or dark follows the theme)
+Top-level "theme": navy (default) | light | black | blue  -- rotate per carousel.
 """
 import json, os, sys
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
@@ -29,6 +31,28 @@ BLUE = (0, 131, 202)
 WHITE = (255, 255, 255)
 SOFT = (196, 205, 220)
 DIM = (120, 134, 158)
+TEXT, HI, ACCENT, ON_ACCENT = WHITE, BLUE, BLUE, WHITE
+
+# Background themes for the non-photo slides. Rotate per carousel so the feed doesn't look the same.
+# bg/glow = background, text/soft/dim = title/body/labels, hi = *highlight* words,
+# accent = numbers, kickers, boxes; on_accent = ink drawn on top of accent.
+THEMES = {
+    "navy":  dict(bg=(11, 18, 34), glow=(20, 32, 56), text=WHITE, soft=(196, 205, 220), dim=(120, 134, 158),
+                  hi=BLUE, accent=BLUE, on_accent=WHITE),
+    "light": dict(bg=(246, 244, 239), glow=(228, 236, 246), text=(14, 22, 40), soft=(70, 80, 100), dim=(130, 138, 150),
+                  hi=BLUE, accent=BLUE, on_accent=WHITE),
+    "black": dict(bg=(6, 6, 7), glow=(24, 26, 30), text=WHITE, soft=(190, 192, 198), dim=(120, 122, 130),
+                  hi=BLUE, accent=BLUE, on_accent=WHITE),
+    "blue":  dict(bg=(0, 118, 186), glow=(0, 142, 216), text=WHITE, soft=(222, 238, 250), dim=(170, 210, 236),
+                  hi=(11, 18, 34), accent=WHITE, on_accent=(0, 118, 186)),
+}
+
+
+def set_theme(name):
+    global NAVY, NAVY2, TEXT, SOFT, DIM, HI, ACCENT, ON_ACCENT
+    t = THEMES[name]
+    NAVY, NAVY2, TEXT, SOFT, DIM = t["bg"], t["glow"], t["text"], t["soft"], t["dim"]
+    HI, ACCENT, ON_ACCENT = t["hi"], t["accent"], t["on_accent"]
 
 
 def F(size, w="Black"):
@@ -82,7 +106,9 @@ def fit(text, width, max_h, start, minimum, w="Black", lh=1.08):
     return F(minimum, w), minimum
 
 
-def draw_rich(d, text, x, y, font, size, width, color=WHITE, hi=BLUE, lh=1.08, align="left", shadow=False, pill=False):
+def draw_rich(d, text, x, y, font, size, width, color=None, hi=None, lh=1.08, align="left", shadow=False, pill=False):
+    color = TEXT if color is None else color
+    hi = HI if hi is None else hi
     lines = layout(text, font, width)
     space = font.getlength(" ")
     for ln in lines:
@@ -139,21 +165,23 @@ def circle(path, d):
     return out
 
 
-def chrome(img, i, n, dark=True, swipe=False):
+def chrome(img, i, n, photo=False, swipe=False):
     d = ImageDraw.Draw(img, "RGBA")
+    ink = WHITE if photo else TEXT
+    acc = BLUE if photo else ACCENT
     # top: brand + page counter
-    d.text((M, 64), BRAND, font=F(24, "ExtraBold"), fill=(*WHITE, 230), anchor="lm")
-    d.rectangle((M, 84, M + 46, 89), fill=BLUE)
-    d.text((W - M, 64), f"{i}/{n}", font=F(24, "ExtraBold"), fill=(*WHITE, 200), anchor="rm")
+    d.text((M, 64), BRAND, font=F(24, "ExtraBold"), fill=(*ink, 230), anchor="lm")
+    d.rectangle((M, 84, M + 46, 89), fill=acc)
+    d.text((W - M, 64), f"{i}/{n}", font=F(24, "ExtraBold"), fill=(*ink, 200), anchor="rm")
     # bottom: mini headshot + handle, swipe hint
     av = circle(HEADSHOT, 56)
     img.paste(av, (M, H - 96), av)
-    d.text((M + 72, H - 68), HANDLE, font=F(26, "BodyBold"), fill=(*WHITE, 235), anchor="lm")
+    d.text((M + 72, H - 68), HANDLE, font=F(26, "BodyBold"), fill=(*ink, 235), anchor="lm")
     if swipe:
-        d.rounded_rectangle((W - M - 190, H - 96, W - M, H - 40), 28, fill=BLUE)
-        d.text((W - M - 95, H - 68), "SWIPE  →", font=F(24, "ExtraBold"), fill=WHITE, anchor="mm")
+        d.rounded_rectangle((W - M - 190, H - 96, W - M, H - 40), 28, fill=acc)
+        d.text((W - M - 95, H - 68), "SWIPE  →", font=F(24, "ExtraBold"), fill=WHITE if photo else ON_ACCENT, anchor="mm")
     elif i < n:
-        d.text((W - M, H - 68), "→", font=F(40, "Black"), fill=(*BLUE, 255), anchor="rm")
+        d.text((W - M, H - 68), "→", font=F(40, "Black"), fill=acc, anchor="rm")
 
 
 def navy_bg():
@@ -181,9 +209,9 @@ def s_photo(s, base):
         kt = s["kicker"].upper()
         d.rounded_rectangle((M, y, M + kf.getlength(kt) + 36, y + 56), 12, fill=BLUE)
         d.text((M + 18, y + 28), kt, font=kf, fill=WHITE, anchor="lm"); y += k_h
-    y = draw_rich(d, s["title"], M, y, f, size, tw, shadow=True, pill=True)
+    y = draw_rich(d, s["title"], M, y, f, size, tw, color=WHITE, hi=BLUE, shadow=True, pill=True)
     if s.get("body"):
-        draw_rich(d, s["body"], M, y + 24, bf, 38, tw, color=SOFT, lh=1.3, shadow=True)
+        draw_rich(d, s["body"], M, y + 24, bf, 38, tw, color=(220, 226, 236), lh=1.3, shadow=True)
     return img
 
 
@@ -210,10 +238,10 @@ def s_text(s, base):
     total = num_h + k_h + th + bh
     y = top + max(0, (bottom - top - total) / 2 - 30)
     if s.get("num"):
-        d.text((M - 6, y - 40), f"{int(s['num']):02d}", font=F(210, "Black"), fill=BLUE)
+        d.text((M - 6, y - 40), f"{int(s['num']):02d}", font=F(210, "Black"), fill=ACCENT)
         y += num_h
     if s.get("kicker"):
-        d.text((M, y), s["kicker"].upper(), font=F(32, "ExtraBold"), fill=BLUE); y += k_h
+        d.text((M, y), s["kicker"].upper(), font=F(32, "ExtraBold"), fill=ACCENT); y += k_h
     y = draw_rich(d, s["title"], M, y, f, size, tw)
     if has_body:
         draw_rich(d, s["body"], M, y + 40, bf, bsize, tw, color=SOFT, lh=1.32)
@@ -234,19 +262,19 @@ def s_stats(s, base):
     total = (64 if s.get("kicker") else 0) + block_h(s["title"], f, size, tw, 1.08) + 50 + 180 * (len(rows) - 1) + 240
     y = 150 + max(0, (H - 310 - total) / 2)
     if s.get("kicker"):
-        d.text((M, y), s["kicker"].upper(), font=F(32, "ExtraBold"), fill=BLUE); y += 64
+        d.text((M, y), s["kicker"].upper(), font=F(32, "ExtraBold"), fill=ACCENT); y += 64
     y = draw_rich(d, s["title"], M, y, f, size, tw) + 50
     for k, (label, value) in enumerate(rows):
         hero = k == len(rows) - 1
         if hero:
-            d.rounded_rectangle((M - 20, y - 10, W - M + 20, y + 230), 30, fill=BLUE)
-            d.text((M + 14, y + 24), label.upper(), font=F(30, "ExtraBold"), fill=WHITE)
-            d.text((M + 10, y + 70), value, font=F(124, "Black"), fill=WHITE)
+            d.rounded_rectangle((M - 20, y - 10, W - M + 20, y + 230), 30, fill=ACCENT)
+            d.text((M + 14, y + 24), label.upper(), font=F(30, "ExtraBold"), fill=ON_ACCENT)
+            d.text((M + 10, y + 70), value, font=F(124, "Black"), fill=ON_ACCENT)
             y += 260
         else:
             d.text((M, y), label.upper(), font=F(28, "ExtraBold"), fill=DIM)
-            d.text((M, y + 38), value, font=F(84, "Black"), fill=WHITE)
-            d.line((M, y + 150, W - M, y + 150), fill=(*WHITE, 40), width=2)
+            d.text((M, y + 38), value, font=F(84, "Black"), fill=TEXT)
+            d.line((M, y + 150, W - M, y + 150), fill=(*TEXT, 40), width=2)
             y += 180
     return img
 
@@ -261,12 +289,12 @@ def s_checklist(s, base):
     total = (64 if s.get("kicker") else 0) + block_h(s["title"], f, size, tw, 1.08) + 60 + step * len(items)
     y = 150 + max(0, (H - 310 - total) / 2)
     if s.get("kicker"):
-        d.text((M, y), s["kicker"].upper(), font=F(32, "ExtraBold"), fill=BLUE); y += 64
+        d.text((M, y), s["kicker"].upper(), font=F(32, "ExtraBold"), fill=ACCENT); y += 64
     y = draw_rich(d, s["title"], M, y, f, size, tw) + 60
     itf, isz = fit(max(items, key=len), tw - 110, step - 40, 42, 26, "BodyBold", 1.2)
     for it in items:
-        d.rounded_rectangle((M, y + 4, M + 60, y + 64), 14, fill=BLUE)
-        d.line([(M + 15, y + 35), (M + 26, y + 47), (M + 46, y + 21)], fill=WHITE, width=7, joint="curve")
+        d.rounded_rectangle((M, y + 4, M + 60, y + 64), 14, fill=ACCENT)
+        d.line([(M + 15, y + 35), (M + 26, y + 47), (M + 46, y + 21)], fill=ON_ACCENT, width=7, joint="curve")
         draw_rich(d, it, M + 90, y + 6, itf, isz, tw - 90, lh=1.2)
         y += step
     return img
@@ -278,7 +306,7 @@ def s_cta(s, base):
     tw = W - 2 * M
     dia = 300
     ring = Image.new("RGBA", (dia + 24, dia + 24))
-    ImageDraw.Draw(ring).ellipse((0, 0, dia + 23, dia + 23), fill=BLUE)
+    ImageDraw.Draw(ring).ellipse((0, 0, dia + 23, dia + 23), fill=ACCENT)
     img.paste(ring, ((W - dia - 24) // 2, 170), ring)
     av = circle(HEADSHOT, dia)
     img.paste(av, ((W - dia) // 2, 182), av)
@@ -291,12 +319,36 @@ def s_cta(s, base):
     return img
 
 
-TYPES = {"photo": s_photo, "text": s_text, "stats": s_stats, "checklist": s_checklist, "cta": s_cta}
+def s_tweet(s, base):
+    """X-post style card. Light themes get a white card, dark themes a dark card. No verified badge."""
+    img = navy_bg()
+    d = ImageDraw.Draw(img, "RGBA")
+    light = sum(NAVY) > 400
+    card, ink, sub = (((255, 255, 255), (15, 20, 25), (83, 100, 113)) if light
+                      else ((22, 24, 28), (231, 233, 234), (113, 118, 123)))
+    cw = W - 2 * 60
+    tw = cw - 120
+    tf, tsize = fit(s["text"], tw, 640, 64, 34, "BodyBold", 1.28)
+    th = block_h(s["text"], tf, tsize, tw, 1.28)
+    ch = 60 + 104 + 44 + th + 50
+    y0 = (H - ch) / 2
+    d.rounded_rectangle((60, y0, W - 60, y0 + ch), 36, fill=card,
+                        outline=(225, 228, 232) if light else (47, 51, 54), width=2)
+    av = circle(HEADSHOT, 104)
+    img.paste(av, (120, int(y0 + 60)), av)
+    d.text((244, y0 + 88), s.get("name", "Jorge Siverio"), font=F(38, "BodyBold"), fill=ink, anchor="lm")
+    d.text((244, y0 + 134), HANDLE, font=F(32, "Body"), fill=sub, anchor="lm")
+    draw_rich(d, s["text"], 120, y0 + 60 + 104 + 44, tf, tsize, tw, color=ink, hi=BLUE, lh=1.28)
+    return img
+
+
+TYPES = {"tweet": s_tweet, "photo": s_photo, "text": s_text, "stats": s_stats, "checklist": s_checklist, "cta": s_cta}
 
 
 def render(base):
     spec = json.load(open(os.path.join(base, "slides.json"), encoding="utf-8"))
     slides = spec["slides"]
+    set_theme(spec.get("theme", "navy"))
     out = os.path.join(base, "output")
     os.makedirs(out, exist_ok=True)
     for f in os.listdir(out):
@@ -305,7 +357,7 @@ def render(base):
     paths = []
     for i, s in enumerate(slides, 1):
         img = TYPES[s["type"]](s, base).convert("RGB")
-        chrome(img, i, len(slides), swipe=s.get("swipe", i == 1))
+        chrome(img, i, len(slides), photo=s["type"] == "photo", swipe=s.get("swipe", i == 1))
         p = os.path.join(out, f"slide_{i:02d}.png")
         img.save(p); paths.append(p)
     # contact sheet for review
