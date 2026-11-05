@@ -23,7 +23,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SA_KEY = os.path.join(HERE, "..", "foreclosure-agent", "credentials.json")
 SHEET_ID = "1wO6LhEfmwL96dnoCTgKda7ck5d2I0yyYchUNgo5a8Co"
 TAB = "Content Tracker"
-REELS, POSTS = "D:/Reels", "D:/Posts"
+REELS, POSTS, CAROUSELS = "D:/Reels", "D:/Posts", "D:/Carousels"
+PIPELINE_TAB = "Carousel Pipeline"      # idea backlog; its Status mirrors Posted from here
 TZ = ZoneInfo("America/New_York")
 
 GHL = "https://services.leadconnectorhq.com"
@@ -44,7 +45,8 @@ DATE_FMT = "%a %b %d, %Y"          # how the date picker cells display, e.g. "Fr
 # Default slots (ET) when Post Time is Auto. Jorge wants late morning / lunch (2026-10-15), so
 # reels and posts are staggered 11 AM / 12 PM. Tune with his IG insights after ~20 posts.
 BEST_TIME = {("Reel", "weekday"): "11:00 AM", ("Reel", "weekend"): "11:00 AM",
-             ("Sold Post", "weekday"): "12:00 PM", ("Sold Post", "weekend"): "12:00 PM"}
+             ("Sold Post", "weekday"): "12:00 PM", ("Sold Post", "weekend"): "12:00 PM",
+             ("Carousel", "weekday"): "11:30 AM", ("Carousel", "weekend"): "11:30 AM"}
 FROZEN = {"Scheduled", "Posted", "Post Manually", "Skip"}
 
 
@@ -75,6 +77,11 @@ def latest_reel_file(folder):
     return None, None
 
 
+def carousel_slides(out_dir):
+    """Rendered carousel slides in order (render.py writes output/slide_01.png ...). Instagram max = 10."""
+    return sorted(glob.glob(os.path.join(out_dir, "slide_*.png")))
+
+
 def scan():
     items = []
     for d in sorted(glob.glob(os.path.join(REELS, "*"))):
@@ -86,6 +93,14 @@ def scan():
         if os.path.exists(f):
             ver = dt.datetime.fromtimestamp(os.path.getmtime(f)).strftime("%m/%d %H:%M")
             items.append({"id": os.path.basename(d), "type": "Sold Post", "dir": d, "file": f, "version": ver})
+    for d in sorted(glob.glob(os.path.join(CAROUSELS, "*"))):
+        if os.path.basename(d).startswith("_") or not os.path.isdir(d):
+            continue
+        slides = carousel_slides(os.path.join(d, "output"))
+        if slides:
+            ver = dt.datetime.fromtimestamp(max(map(os.path.getmtime, slides))).strftime("%m/%d %H:%M")
+            items.append({"id": os.path.basename(d), "type": "Carousel", "dir": d, "file": os.path.join(d, "output"),
+                          "version": f"{ver} ({len(slides)} slides)"})
     for it in items:
         cap = os.path.join(it["dir"], "caption.txt")
         it["caption"] = open(cap, encoding="utf-8").read().strip() if os.path.exists(cap) else ""
@@ -247,14 +262,21 @@ def collab_list(cell):
 
 def schedule(row, when, token):
     is_reel = row[C["Type"]] == "Reel"
-    url, mtype = upload_media(row[C["File"]], token)
+    if row[C["Type"]] == "Carousel":
+        slides = carousel_slides(row[C["File"]])
+        if not 2 <= len(slides) <= 10:
+            raise RuntimeError(f"carousel needs 2-10 slides, found {len(slides)} in {row[C['File']]}")
+        media = [dict(zip(("url", "type"), upload_media(f, token))) for f in slides]
+    else:
+        url, mtype = upload_media(row[C["File"]], token)
+        media = [{"url": url, "type": mtype}]
     ig = {"type": "reel" if is_reel else "post"}
     if is_reel:
         ig["showOnFeed"] = True
     collabs = collab_list(row[C["Collab"]])
     if collabs:
         ig["collaborators"] = {IG_ACCOUNT: collabs[:5]}     # Instagram allows up to 5
-    body = {"accountIds": [IG_ACCOUNT], "summary": row[C["Caption"]], "media": [{"url": url, "type": mtype}],
+    body = {"accountIds": [IG_ACCOUNT], "summary": row[C["Caption"]], "media": media,
             "status": "scheduled", "scheduleDate": when.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
             "type": "reel" if is_reel else "post", "userId": USER_ID, "createdBy": USER_ID,
             "instagramPostDetails": ig}
@@ -335,7 +357,7 @@ def run(dry):
         if it["id"] not in by_id:
             r = [""] * len(HEADERS)
             r[C["ID"]], r[C["Type"]], r[C["Title"]], r[C["Status"]] = it["id"], it["type"], it["title"], "Draft"
-            r[C["Reel Audio"]] = "Auto-post" if it["type"] == "Reel" else ""
+            r[C["Reel Audio"]] = {"Reel": "Auto-post", "Carousel": "Manual (trending audio)"}.get(it["type"], "")
             r[C["Post Time (ET)"]] = AUTO_TIME
             r[C["Collab"]], r[C["Caption"]] = DEFAULT_COLLAB, it["caption"]
             r[C["File"]], r[C["Version"]], r[C["Last Sync / Notes"]] = it["file"].replace("\\", "/"), it["version"], f"Added {now}"
@@ -377,6 +399,14 @@ def run(dry):
     # 2. publish approved
     for i, r in enumerate(rows):
         if r[C["Status"]] != "Approved":
+            continue
+        if r[C["Type"]] == "Carousel":
+            # GHL's API trims scheduled Instagram posts to ONE image (drafts keep all; verified 2026-11-05
+            # with 5 payload variants), so carousels can't auto-post. They live here as calendar reminders.
+            setcell(i, "Status", "Post Manually")
+            setcell(i, "Last Sync / Notes", f"{now}: post from the IG app on {r[C['Post Date']] or '(pick a date)'} "
+                    f"{resolve_time('Carousel', r[C['Post Date']], r[C['Post Time (ET)']])} - slides in {r[C['File']]} "
+                    "(GHL can only auto-post 1 slide)")
             continue
         if r[C["Type"]] == "Reel" and r[C["Reel Audio"]].startswith("Manual"):
             setcell(i, "Status", "Post Manually")
@@ -433,6 +463,25 @@ def run(dry):
             elif status == "failed":
                 setcell(i, "Status", "Failed")
                 setcell(i, "Last Sync / Notes", f"{now}: GHL failed - {str(err)[:250]}")
+
+    # 4. carousel ideas that went live -> Posted in the Carousel Pipeline tab (folder idea-NN-slug -> row #NN)
+    posted_ideas = {}
+    for r in rows:
+        m = re.match(r"idea-(\d+)-", r[C["ID"]])
+        if r[C["Type"]] == "Carousel" and r[C["Status"]] == "Posted" and m:
+            posted_ideas[str(int(m.group(1)))] = r[C["Post Link"]]
+    if posted_ideas and not dry:
+        try:
+            pws = sh.worksheet(PIPELINE_TAB)
+            prow = pws.get_all_values()
+            hdr = prow[0]
+            sc = hdr.index("Status")
+            for k, pr in enumerate(prow[1:], start=2):
+                if pr and pr[0] in posted_ideas and pr[sc] != "Posted":
+                    pws.update_cell(k, sc + 1, "Posted")
+                    log(f"pipeline idea #{pr[0]} -> Posted")
+        except Exception as e:
+            log(f"pipeline mirror failed: {e}")
 
     # write back
     if dry:

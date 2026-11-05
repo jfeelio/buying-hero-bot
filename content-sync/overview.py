@@ -74,7 +74,7 @@ def build_overview(sh, rebuild=False):
             cells.append((f"{col}{date_row}", f"=TODAY()-WEEKDAY(TODAY(),3)+{off}"))
             d = f"{col}{date_row}"
             cells.append((f"{col}{body_row}",
-                          f'=IFERROR(TEXTJOIN(CHAR(10),TRUE,FILTER(IF({TYPE}="Reel","🎬 ","🏠 ")&LEFT({TITLE},34)'
+                          f'=IFERROR(TEXTJOIN(CHAR(10),TRUE,FILTER(IF({TYPE}="Reel","🎬 ",IF({TYPE}="Carousel","🖼️ ","🏠 "))&LEFT({TITLE},34)'
                           f'&IF({STATUS}="Posted"," ✓",""),{DATE}={d},{ON_CAL})),"—")'))
 
     ws.batch_update([{"range": a, "values": [[v]]} for a, v in cells], value_input_option="USER_ENTERED")
