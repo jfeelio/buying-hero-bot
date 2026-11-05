@@ -240,15 +240,20 @@ def find_key(obj, *keys):
     return None
 
 
+def collab_list(cell):
+    """'officialbhproperties, @permitbusters' -> ['officialbhproperties', 'permitbusters']"""
+    return [c.strip().lstrip("@") for c in re.split(r"[,\s]+", cell or "") if c.strip().lstrip("@")]
+
+
 def schedule(row, when, token):
     is_reel = row[C["Type"]] == "Reel"
     url, mtype = upload_media(row[C["File"]], token)
     ig = {"type": "reel" if is_reel else "post"}
     if is_reel:
         ig["showOnFeed"] = True
-    collab = row[C["Collab"]].strip().lstrip("@")
-    if collab:
-        ig["collaborators"] = {IG_ACCOUNT: [collab]}
+    collabs = collab_list(row[C["Collab"]])
+    if collabs:
+        ig["collaborators"] = {IG_ACCOUNT: collabs[:5]}     # Instagram allows up to 5
     body = {"accountIds": [IG_ACCOUNT], "summary": row[C["Caption"]], "media": [{"url": url, "type": mtype}],
             "status": "scheduled", "scheduleDate": when.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
             "type": "reel" if is_reel else "post", "userId": USER_ID, "createdBy": USER_ID,
@@ -262,11 +267,29 @@ def schedule(row, when, token):
     return pid
 
 
+def published_child(pid, sched, token):
+    """When GHL publishes a scheduled post it soft-deletes it and creates a NEW 'published' post whose
+    parentPostId is the scheduled post's id (verified 2026-11-05). previewLink on the child = IG URL."""
+    when = dt.datetime.fromisoformat(sched.replace("Z", "+00:00"))
+    body = {"type": "all", "accounts": IG_ACCOUNT, "skip": "0", "limit": "50", "includeUsers": "false",
+            "fromDate": (when - dt.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "toDate": (when + dt.timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.000Z")}
+    res = ghl("POST", f"/social-media-posting/{LOCATION}/posts/list", token, json=body)
+    for p in (res.get("results") or {}).get("posts") or []:
+        if p.get("parentPostId") == pid:
+            return p
+    return None
+
+
 def check(pid, token):
     res = ghl("GET", f"/social-media-posting/{LOCATION}/posts/{pid}", token)
     post = find_key(res, "post") or res
+    if isinstance(post, dict) and post.get("deleted") and post.get("scheduleDate"):
+        child = published_child(pid, post["scheduleDate"], token)
+        if child:
+            post, res = child, child
     status = (post.get("status") if isinstance(post, dict) else None) or find_key(res, "status")
-    link = find_key(res, "permalink", "postUrl", "publishedUrl", "publishedPostUrl")
+    link = find_key(res, "previewLink", "permalink", "postUrl", "publishedUrl", "publishedPostUrl")
     err = find_key(res, "error", "errorMessage", "failedReason")
     return status, link, err
 
@@ -385,7 +408,7 @@ def run(dry):
             setcell(i, "Last Sync / Notes", f"{now}: scheduled for {when:%a %b %d %I:%M %p} ET"
                     + (" (auto best time)" if slot != r[C["Post Time (ET)"]].strip() else "")
                     + (f" - heads-up: {', '.join(same_day)} also posts that day" if same_day else "")
-                    + (f" - collab invite to @{r[C['Collab']].lstrip('@')} (accept it from that account)" if r[C["Collab"]].strip() else ""))
+                    + (f" - collab invites to {', '.join('@' + c for c in collab_list(r[C['Collab']]))} (each accepts from its own account)" if r[C["Collab"]].strip() else ""))
             log(f"scheduled {r[C['ID']]} -> {pid}")
         except Exception as e:
             setcell(i, "Status", "Failed")
