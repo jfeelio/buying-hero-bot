@@ -10,8 +10,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 KEY = open(os.path.join(HERE, ".gemini_key")).read().strip()
 REF_DIR = "D:/Carousels/_source-photos"
 
+# Front-facing refs only: the two side-profile photos pulled the nose narrow/pointed (Jorge flagged it 2026-11-05).
+DEFAULT_REFS = ["10C89F39-A053-4860-981F-E24E2B709092.png", "IMG_0943_00.jpeg"]
 IDENTITY = ("Use the man in the reference photos as the subject. Keep his face, hairline, beard, skin tone, "
             "eye color and build exactly as in the references; it must be clearly recognizable as the same person. "
+            "Copy his NOSE exactly: medium-wide with a soft, rounded, slightly bulbous tip and wide nostrils, straight "
+            "bridge - never narrow, pointed or slim. Fuller round cheeks; do not beautify or slim his face. "
             "Photorealistic, natural lighting, shot on a modern phone or DSLR, no text, no logos, no watermarks. "
             "Vertical 4:5 photo that fills the entire frame edge to edge (no borders, blank areas or empty bands). "
             "Keep his head below the top third so the upper area is calm real background (wall, sky) that can sit under headline text.")
@@ -25,7 +29,7 @@ def b64img(path, max_side=1280):
 
 
 def generate(prompt, out, model="gemini-3-pro-image", refs=None):
-    refs = refs or sorted(glob.glob(os.path.join(REF_DIR, "*.*")))
+    refs = refs or [os.path.join(REF_DIR, f) for f in DEFAULT_REFS]
     parts = [b64img(r) for r in refs] + [{"text": f"{IDENTITY}\n\nScene: {prompt}"}]
     body = {"contents": [{"parts": parts}],
             "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": "4:5", **({"imageSize": "2K"} if "pro" in model else {})}}}
