@@ -13,8 +13,11 @@ leads; this keeps it current. Per row it owns ONLY:
 Columns are found by their row-20 header text, so the partners can insert
 columns (as they did for the Jorge / Adrian splits) without breaking this.
 Everything else (escrow, advances, JV, costs, splits, notes, Include?) is the
-partners' and is never touched. A deal that leaves Under Contract is not
-deleted; W shows its new status and the Flag column (T) asks for a review.
+partners' and is never touched. The tab is a FORECAST, so a deal that turns
+Sold in REsimpli is removed (Jorge 2026-11-09): the rows below it move up and
+a blank row goes at the bottom (formula columns stay put). A deal that leaves
+Under Contract for anything else stays; the status column shows the new status
+and the Flag column asks for a review.
 
 Source fields: lead/details -> leadData.analyticsInfo.{underContractDate,
 closingDate, assignmentFee} (epoch ms / dollars).
@@ -25,6 +28,7 @@ Usage:  python refresh.py            # write the sheet
         python refresh.py --dry-run
 """
 import argparse
+import re
 import datetime as dt
 import os
 import sys
@@ -88,6 +92,48 @@ def status_title(lead_id):
         return "Not found"
 
 
+def drop_sold(ws, header, col, live, dry):
+    """Remove Sold deals from the table by moving the input cells of the rows below them up.
+
+    Formula columns (they reference their own row in the bottom row) are never written, so
+    every row keeps its own formulas. Returns {lead id: status} for non-live rows already looked up."""
+    last_col = rowcol_to_a1(LAST, len(header)).rstrip("0123456789")
+    rows = ws.get(f"A{FIRST}:{last_col}{LAST}", value_render_option="FORMULA")
+    rows = [r + [""] * (len(header) - len(r)) for r in rows]
+    rows += [[""] * len(header) for _ in range(LAST - FIRST + 1 - len(rows))]
+    own_row = re.compile(r"[A-Z]+%d(?!\d)" % LAST)
+    movable = [c for c in range(len(header))
+               if not (isinstance(rows[-1][c], str) and rows[-1][c].startswith("=") and own_row.search(rows[-1][c]))]
+    statuses, keep, sold = {}, [], 0
+    for r in rows:
+        lid = str(r[col["id"]]).strip()
+        if lid and lid not in live:
+            statuses[lid] = status_title(lid)
+            if statuses[lid] == "Sold":
+                sold += 1
+                continue
+        keep.append(r)
+    if not sold:
+        return statuses
+
+    def blank(c, v):
+        if isinstance(v, bool):
+            return False
+        if isinstance(v, str) and v.startswith("="):
+            return v                                  # default formulas like =$E$14 (Albert %)
+        return 0 if header[c].strip().endswith("%") else ""
+    template = rows[-1]
+    keep += [[blank(c, template[c]) for c in range(len(header))] for _ in range(sold)]
+    updates = []
+    for c in movable:
+        letter = rowcol_to_a1(1, c + 1).rstrip("1")
+        updates.append({"range": f"{letter}{FIRST}:{letter}{LAST}", "values": [[r[c]] for r in keep]})
+    log("removing %d Sold deal(s) from the forecast" % sold)
+    if not dry:
+        ws.batch_update(updates, value_input_option="USER_ENTERED")
+    return statuses
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -113,6 +159,7 @@ def main():
         sys.exit("Under contract / Expected close / Assignment fee must stay side by side")
     a1 = lambda r, key: rowcol_to_a1(r, col[key] + 1)
 
+    statuses = drop_sold(ws, header, col, live, args.dry_run)
     rows = ws.get(f"A{FIRST}:{rowcol_to_a1(LAST, len(header))}", value_render_option="UNFORMATTED_VALUE")
     rows += [[]] * (LAST - FIRST + 1 - len(rows))
     cell = lambda row, key: row[col[key]] if len(row) > col[key] else ""
@@ -136,7 +183,7 @@ def main():
                 n_upd += 1
             updates.append({"range": a1(r, "status"), "values": [["Under Contract"]]})
         else:
-            updates.append({"range": a1(r, "status"), "values": [[status_title(lid)]]})
+            updates.append({"range": a1(r, "status"), "values": [[statuses.get(lid) or status_title(lid)]]})
             n_gone += 1
 
     new = [lid for lid in live if lid not in seen]
