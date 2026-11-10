@@ -45,9 +45,21 @@ straight from the homeowner". Frame everything as what the buyer gets.
    "📍 City, FL" / ARV / Sold for / Equity spread for our investor, each on its own line, 1 short paragraph on how the deal happened (only facts Jorge
    gave or the standard model: locked up off-market → title/liens/condition checked → sent to
    a buyer on our list), a three-arrow "what our buyers get" block (vary
-   the wording each time), then **one CTA**: investors comment "DEALS" to join the buyers list. 5–7 hashtags. Never invent days-to-close, rehab budgets,
+   the wording each time), then **one CTA** from the rotation below (not always "DEALS"). 5–7 hashtags. Never invent days-to-close, rehab budgets,
    ARVs, or buyer quotes he didn't provide.
-6. Deliver: path to sold_post.png and the caption.
+   **CTA rotation (Jorge 2026-11-10: "not always comment DEALS").** One CTA per caption, buyers only. Before
+   writing, check the Caption column of the last 3 rows in the Content Tracker (and the Carousel Pipeline) and pick
+   one they didn't use. Use "DEALS" no more than about 1 post in 4. Bank (reword it freely so it fits the post):
+     - Comment "DEALS" and we'll add you to the buyers list.
+     - DM us your buy box (area, price range, flip or hold) and we'll send deals that match.
+     - Comment the area you're buying in 👇 and we'll reach out when we have one there.
+     - Follow @officialbhproperties so you see the next deal before it's gone.
+     - DM us "LIST" and we'll get you our off-market deals first.
+     - Want deals vetted like this one? Send us a DM and we'll add you to the buyers list.
+     - Send this to the partner or lender you buy with 👇 / Tag a buyer who closes like a pro 👇
+6. Run `python "C:/Users/jsive/Dropbox/J Feels/Dev/content-sync/content_sync.py" --scan` so the Content
+   Tracker row exists and the image is uploaded to GHL media (the cloud scheduler posts from there).
+7. Deliver: path to sold_post.png and the caption.
 
 ## Design (approved 2026-10-15)
 Photo top ~56% with a fade into brand black · **city tag at the top** (dark pill, blue map-pin

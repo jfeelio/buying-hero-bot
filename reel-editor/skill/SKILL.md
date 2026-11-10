@@ -67,8 +67,17 @@ Every reel gets a long Instagram caption saved to `<reel>/caption.txt` and paste
 - **Audience is investors, buyers and wholesalers, never sellers.** Jorge doesn't want sellers
   finding him on IG: no "want to sell / we buy houses / DM us your property" CTAs or seller-benefit
   copy. Sellers can appear in the *story* ("a seller tried to back out"), never as the reader.
-- End with a CTA that starts conversations with investors: comment a word/emoji (e.g. "DEALS" for
-  the buyers list), or "follow for part 2".
+- End with ONE CTA that starts conversations with investors, rotated (or "follow for part 2").
+  **CTA rotation (Jorge 2026-11-10: "not always comment DEALS").** One CTA per caption, buyers only. Before
+  writing, check the Caption column of the last 3 rows in the Content Tracker (and the Carousel Pipeline) and pick
+  one they didn't use. Use "DEALS" no more than about 1 post in 4. Bank (reword it freely so it fits the post):
+    - Comment "DEALS" and we'll add you to the buyers list.
+    - DM us your buy box (area, price range, flip or hold) and we'll send deals that match.
+    - Comment the area you're buying in 👇 and we'll reach out when we have one there.
+    - Follow @officialbhproperties so you see the next deal before it's gone.
+    - DM us "LIST" and we'll get you our off-market deals first.
+    - Want deals vetted like this one? Send us a DM and we'll add you to the buyers list.
+    - Send this to the partner or lender you buy with 👇 / Tag a buyer who closes like a pro 👇
   Then 5–7 hashtags max.
 - **Never invent facts** (hours slept, dollar figures, anecdotes he didn't say). Pull details
   only from the transcript, this reel's screenshots, or what he's said in earlier reels. If a
@@ -76,6 +85,9 @@ Every reel gets a long Instagram caption saved to `<reel>/caption.txt` and paste
 - Don't round numbers up past what the screenshot shows (a "~" is fine: $595,906 → ~$600K).
 
 ### 7. Deliver
+Run `python "C:/Users/jsive/Dropbox/J Feels/Dev/content-sync/content_sync.py" --scan` once the version
+and caption.txt are final. That adds/updates the Content Tracker row and uploads the MP4 to GHL media, which is
+what the cloud scheduler posts from. Re-run it after every new version (v2, v3…).
 Tell him the Downloads path and summarize what was added (with timestamps) and anything you
 chose not to do and why. Paste the caption. Iterate as v2, v3… in the same folder.
 
@@ -118,6 +130,13 @@ treatment across reels.
 **Screenshot cards:** when his face fills the upper frame, place cards at `"y": 420` with
 `"max_h": 560` (logo ~520) so they sit above his eyes. Wide documents (permit records, forms)
 render as strips but stay readable at full size — check at phone scale, crop to the key rows.
+
+**Headshot stickers** (shoutouts): `"mode": "sticker"` with a cut-out PNG (flood-fill the white
+page off first), `"label"`, optional `"sub"`, `"x"`/`"y"`. In the wide desk shot, x≈230 / 850,
+y≈760, `max_w` 330 keeps both clear of his face. **Edge safety:** Edits/IG trim a few px off the
+edges. On the 10-30 reel the pills hung 6px past the frame and the "V" and "ES" got cut on the live
+post. render.py now keeps every card/sticker pixel 60px (`SAFE`) inside the frame and prints when
+it moves one. If it moves a sticker onto his face, shrink `max_w` rather than ignoring it.
 
 **Icons:** 3–4 Lucide badges per reel beside his head (x=900, y=960), on concrete nouns
 (contract → file-text, attorney → scale, money → dollar-sign, legal → shield-check, house,
