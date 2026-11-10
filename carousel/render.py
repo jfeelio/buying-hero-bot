@@ -372,3 +372,7 @@ def render(base):
 
 if __name__ == "__main__":
     render(sys.argv[1])
+    # register/upload to the Content Tracker (GHL media) so the cloud scheduler can post it
+    import subprocess
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "content-sync",
+                    "content_sync.py"), "--scan"], check=False)
