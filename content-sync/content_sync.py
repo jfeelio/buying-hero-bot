@@ -12,7 +12,7 @@ Runs every 15 min (Windows Task Scheduler, see install_task.ps1). Each run:
   python content_sync.py            # full run
   python content_sync.py --dry-run  # show what would happen, change nothing
 """
-import argparse, datetime as dt, glob, json, mimetypes, os, re, sys, traceback
+import argparse, datetime as dt, glob, json, mimetypes, os, re, sys, time, traceback
 from zoneinfo import ZoneInfo
 
 import gspread
@@ -31,6 +31,13 @@ GHL = "https://services.leadconnectorhq.com"
 LOCATION = "ib5jEnyqqq06FIEqlVGs"                                   # Buying Hero sub-account
 IG_ACCOUNT = "6ad13233873d2c41e704101d_ib5jEnyqqq06FIEqlVGs_17841401750000052"  # @jorgesiverio.rei
 USER_ID = "Zr9vmjZQ5YnqQ5dz3HHa"                                     # Jorge (GHL user)
+# Carousels go straight to Instagram's Graph API (GHL's API trims scheduled carousels to 1 slide).
+# .ig_token = never-expiring system-user token (Meta app "BH Content Sync", Business Settings -> System users
+# -> content-sync), scopes instagram_basic + instagram_content_publish. Created 2026-11-10.
+IG_GRAPH = "https://graph.facebook.com/v21.0"
+IG_USER = "17841401750000052"                                        # @jorgesiverio.rei
+IG_QUEUED = "IG-QUEUED"          # GHL Post ID placeholder: approved carousel waiting for its slot
+IG_LATE_LIMIT = dt.timedelta(hours=3)   # PC was off past the slot by more than this -> don't post late, ask
 DEFAULT_COLLAB = open(os.path.join(HERE, "collab.txt")).read().strip() if os.path.exists(
     os.path.join(HERE, "collab.txt")) else ""                        # BH Properties IG handle
 
@@ -289,6 +296,49 @@ def schedule(row, when, token):
     return pid
 
 
+def ig_token():
+    p = os.path.join(HERE, ".ig_token")
+    return open(p).read().strip() if os.path.exists(p) else None
+
+
+def ig(method, path, token, **params):
+    r = requests.request(method, f"{IG_GRAPH}/{path}", params={**params, "access_token": token}, timeout=120)
+    data = r.json() if r.text else {}
+    if r.status_code >= 300 or "error" in data:
+        raise RuntimeError(f"Instagram {path} -> {r.status_code}: {json.dumps(data.get('error', data))[:300]}")
+    return data
+
+
+def ig_publish_carousel(row, ghl_tok, ig_tok):
+    """Upload slides to GHL media (public URLs Instagram can fetch), build the carousel container, publish.
+    Returns (media_id, permalink). Instagram publishes immediately - the caller handles timing."""
+    slides = carousel_slides(row[C["File"]])
+    if not 2 <= len(slides) <= 10:
+        raise RuntimeError(f"carousel needs 2-10 slides, found {len(slides)} in {row[C['File']]}")
+    kids = [ig("POST", f"{IG_USER}/media", ig_tok, image_url=upload_media(f, ghl_tok)[0], is_carousel_item="true")["id"]
+            for f in slides]
+    params = {"media_type": "CAROUSEL", "children": ",".join(kids), "caption": row[C["Caption"]]}
+    collabs = collab_list(row[C["Collab"]])
+    if collabs:
+        params["collaborators"] = json.dumps(collabs[:3])          # IG API allows up to 3 on feed posts
+    cid = ig("POST", f"{IG_USER}/media", ig_tok, **params)["id"]
+    for _ in range(24):                                             # container processing, usually seconds
+        st = ig("GET", cid, ig_tok, fields="status_code,status")
+        if st.get("status_code") == "FINISHED":
+            break
+        if st.get("status_code") in ("ERROR", "EXPIRED"):
+            raise RuntimeError(f"Instagram rejected the carousel: {st.get('status')}")
+        time.sleep(5)
+    else:
+        raise RuntimeError("Instagram carousel container still processing after 2 min")
+    mid = ig("POST", f"{IG_USER}/media_publish", ig_tok, creation_id=cid)["id"]
+    try:
+        link = ig("GET", mid, ig_tok, fields="permalink").get("permalink", "")
+    except Exception:
+        link = ""
+    return mid, link
+
+
 def published_child(pid, sched, token):
     """When GHL publishes a scheduled post it soft-deletes it and creates a NEW 'published' post whose
     parentPostId is the scheduled post's id (verified 2026-11-05). previewLink on the child = IG URL."""
@@ -380,6 +430,12 @@ def run(dry):
         pid = r[C["GHL Post ID"]]
         if r[C["Status"]] not in ("Draft", "Skip") or not pid or not token:
             continue
+        if pid == IG_QUEUED:
+            setcell(i, "GHL Post ID", "")
+            setcell(i, "Last Sync / Notes", f"{now}: taken off the Instagram queue (set Approved again to reschedule)")
+            continue
+        if pid.startswith("ig:"):
+            continue                                   # already live on Instagram
         if dry:
             log(f"[dry-run] would unschedule {r[C['ID']]} ({pid})")
             continue
@@ -401,12 +457,26 @@ def run(dry):
         if r[C["Status"]] != "Approved":
             continue
         if r[C["Type"]] == "Carousel":
-            # GHL's API trims scheduled Instagram posts to ONE image (drafts keep all; verified 2026-11-05
-            # with 5 payload variants), so carousels can't auto-post. They live here as calendar reminders.
-            setcell(i, "Status", "Post Manually")
-            setcell(i, "Last Sync / Notes", f"{now}: post from the IG app on {r[C['Post Date']] or '(pick a date)'} "
-                    f"{resolve_time('Carousel', r[C['Post Date']], r[C['Post Time (ET)']])} - slides in {r[C['File']]} "
-                    "(GHL can only auto-post 1 slide)")
+            # GHL's API trims scheduled Instagram posts to ONE image (verified 2026-11-05 and 11-10), so carousels
+            # are queued here and published through Instagram's own API by step 3a when their slot arrives.
+            slot = resolve_time("Carousel", r[C["Post Date"]], r[C["Post Time (ET)"]])
+            try:
+                when = parse_when(r[C["Post Date"]], slot)
+            except ValueError:
+                when = None
+            problem = validate(r, when) or (None if ig_token() else "Instagram token missing (content-sync/.ig_token)")
+            if problem:
+                setcell(i, "Last Sync / Notes", f"{now}: NOT scheduled - {problem}")
+                continue
+            if dry:
+                log(f"[dry-run] would queue carousel {r[C['ID']]} for {when:%a %b %d %I:%M %p} ET")
+                continue
+            setcell(i, "GHL Post ID", IG_QUEUED)
+            setcell(i, "Status", "Scheduled")
+            setcell(i, "Last Sync / Notes", f"{now}: queued - posts to Instagram {when:%a %b %d %I:%M %p} ET (within 15 min; "
+                    "PC must be on + D: connected)" + (f" - collab invite to {', '.join('@' + c for c in collab_list(r[C['Collab']])[:3])}"
+                                                      if r[C["Collab"]].strip() else ""))
+            log(f"queued carousel {r[C['ID']]} for {when}")
             continue
         if r[C["Type"]] == "Reel" and r[C["Reel Audio"]].startswith("Manual"):
             setcell(i, "Status", "Post Manually")
@@ -445,10 +515,46 @@ def run(dry):
             setcell(i, "Last Sync / Notes", f"{now}: {str(e)[:300]}")
             log(f"FAILED {r[C['ID']]}: {e}")
 
+    # 3a. queued carousels whose slot has arrived -> publish via Instagram API
+    igt = ig_token()
+    for i, r in enumerate(rows):
+        if r[C["Status"]] != "Scheduled" or r[C["GHL Post ID"]] != IG_QUEUED:
+            continue
+        try:
+            when = parse_when(r[C["Post Date"]], resolve_time("Carousel", r[C["Post Date"]], r[C["Post Time (ET)"]]))
+        except ValueError:
+            when = None
+        nowdt = dt.datetime.now(TZ)
+        if when is None or nowdt < when:
+            continue
+        if nowdt - when > IG_LATE_LIMIT:
+            setcell(i, "Status", "Failed")
+            setcell(i, "Last Sync / Notes", f"{now}: missed its slot ({when:%a %b %d %I:%M %p}) - PC was off? "
+                    "Pick a new date and set Approved again")
+            log(f"missed slot {r[C['ID']]}")
+            continue
+        if dry:
+            log(f"[dry-run] would publish carousel {r[C['ID']]} now")
+            continue
+        try:
+            if not (igt and token):
+                raise RuntimeError("Instagram or GHL token missing")
+            mid, link = ig_publish_carousel(r, token, igt)
+            setcell(i, "GHL Post ID", f"ig:{mid}")
+            setcell(i, "Status", "Posted")
+            setcell(i, "Post Link", link)
+            setcell(i, "Last Sync / Notes", f"{now}: live on Instagram (posted via IG API)")
+            log(f"posted carousel {r[C['ID']]} -> {mid}")
+        except Exception as e:
+            setcell(i, "Status", "Failed")
+            setcell(i, "Last Sync / Notes", f"{now}: {str(e)[:300]}")
+            log(f"FAILED carousel {r[C['ID']]}: {e}")
+
     # 3. track scheduled
     if token:
         for i, r in enumerate(rows):
-            if r[C["Status"]] != "Scheduled" or not r[C["GHL Post ID"]]:
+            if r[C["Status"]] != "Scheduled" or not r[C["GHL Post ID"]] or r[C["GHL Post ID"]] == IG_QUEUED \
+                    or r[C["GHL Post ID"]].startswith("ig:"):
                 continue
             try:
                 status, link, err = check(r[C["GHL Post ID"]], token)
