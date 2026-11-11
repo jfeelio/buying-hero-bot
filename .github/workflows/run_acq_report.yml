@@ -66,7 +66,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r weekly-acq-report/requirements.txt
-          python -m playwright install chromium --with-deps
+          timeout 300 python -m playwright install-deps chromium || echo "::warning::playwright install-deps failed - continuing"
+          python -m playwright install chromium
 
       - name: Build and send the report
         working-directory: weekly-acq-report

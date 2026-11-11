@@ -60,7 +60,10 @@ jobs:
         run: pip install -r foreclosure-agent/requirements.txt
 
       - name: Install Playwright browser
-        run: python -m playwright install chromium --with-deps
+        # OS deps are best-effort: Ubuntu mirrors were unreachable 2026-11-11; the failing packages were optional fonts.
+        run: |
+          timeout 300 python -m playwright install-deps chromium || echo "::warning::playwright install-deps failed - continuing"
+          python -m playwright install chromium
 
       - name: Write credentials & .env
         run: |
