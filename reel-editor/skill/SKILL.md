@@ -146,7 +146,7 @@ says it; captions are auto-muted underneath. Rotate across reels:
   `numbered` (1-2-3 — steps, reasons)
 - `entrance`: `slide` · `pop` · `drop`
 - `panel`: `dim` (whole frame darkens) · `pills` (dark pill behind each row, face stays bright)
-Keep item text short (2–4 words). Default y=1150 keeps his face visible; in wide shots where he
+Keep item text short (2–4 words). **Rapid-fire lists:** when he rattles off a long string (6-8 things), list EVERY item, each popping on its word: `"row_h": 112, "y": 1230` keeps 7 rows under his face (Jorge 11-15: "listed them all really fast... drives the point home"). Default y=1150 keeps his face visible; in wide shots where he
 stands back from the camera, push it lower (y≈1350) so it stays under his face — check the frame.
 
 **Stats:** big brand-blue count-up for a headline number (`value`, `prefix`/`suffix`,

@@ -196,15 +196,17 @@ def make_list_frames(ls, outdir):
     style:    x | check | numbered        (what the badge says)
     entrance: slide | pop | drop          (how each row arrives)
     panel:    dim | pills                 (darken the whole frame, or a dark pill behind each row)
+    row_h:    row height (default 170 for 2-4 items; ~115 for a rapid-fire 6-8 item list) - badge/text scale with it
     """
     from PIL import ImageFont
     os.makedirs(outdir, exist_ok=True)
     st, en, items = ls["start"], ls["end"], ls["items"]
     style, entrance, panel = ls.get("style", "x"), ls.get("entrance", "slide"), ls.get("panel", "dim")
-    row_h, x0, bs = 170, 90, 110
+    row_h = int(ls.get("row_h", 170))
+    x0, bs = 90, int(row_h * 110 / 170)
     fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
-    size = 76   # shrink until the longest row fits inside a 60px right margin
-    while size > 44 and bs + 70 + ImageFont.truetype(fpath, size).getlength(
+    size = int(76 * row_h / 170)   # shrink until the longest row fits inside a 60px right margin
+    while size > 30 and bs + 70 + ImageFont.truetype(fpath, size).getlength(
             max((it["text"].upper() for it in items), key=len)) > W - x0 - 60:
         size -= 2
     font = ImageFont.truetype(fpath, size)
@@ -217,7 +219,8 @@ def make_list_frames(ls, outdir):
         im = Image.new("RGBA", (bs + 60 + tw + 40, row_h), (0, 0, 0, 0))
         d = ImageDraw.Draw(im)
         if panel == "pills":
-            d.rounded_rectangle((bs // 2, 22, im.width - 1, row_h - 22), (row_h - 44) // 2, fill=(0, 0, 0, 215))
+            pad = row_h * 22 // 170
+            d.rounded_rectangle((bs // 2, pad, im.width - 1, row_h - pad), (row_h - 2 * pad) // 2, fill=(0, 0, 0, 215))
         im.paste(badge, (0, (row_h - bs) // 2), badge)
         d.text((bs + 30, row_h // 2), txt, font=font, fill="white", anchor="lm",
                stroke_width=0 if panel == "pills" else 5, stroke_fill="black")
