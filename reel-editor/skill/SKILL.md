@@ -103,7 +103,8 @@ Every reel gets a long Instagram caption saved to `<reel>/caption.txt` and paste
     - Follow @officialbhproperties so you see the next deal before it's gone.
     - DM us "LIST" and we'll get you our off-market deals first.
     - Want deals vetted like this one? Send us a DM and we'll add you to the buyers list.
-    - Send this to the partner or lender you buy with 👇 / Tag a buyer who closes like a pro 👇
+    - Send this to the partner or lender you buy with 👇
+    - NEVER "tag a buyer" (Jorge 11-15: people will never tag their buyers)
   Then 5–7 hashtags max.
 - **Never invent facts** (hours slept, dollar figures, anecdotes he didn't say). Pull details
   only from the transcript, this reel's screenshots, or what he's said in earlier reels. If a
