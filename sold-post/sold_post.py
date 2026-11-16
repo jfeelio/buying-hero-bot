@@ -12,6 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FONTS = os.path.join(HERE, "..", "reel-editor", "fonts")
 POSTS = "D:/Posts"
 BRAND = "BH PROPERTIES"   # Jorge's DBA for the buyer side + the channel (not "Buying Hero"); logo pending
+SIGN_LINES = ("CLOSED &", "FUNDED")   # sign panel text; never "SOLD" (not realtors/brokers)
 # Rotated so the feed never shows the same line twice in a row (see `--headline auto`)
 HEADLINES = [
     "Another investor just got the keys.",
@@ -81,7 +82,11 @@ def hanging_sign(scale=1.0):
            fill=WHITE, anchor="mm")
     py0 = sy + S(66)
     d.rounded_rectangle((sx0, py0, sx1, py0 + S(170)), S(10), fill=WHITE, outline=BLUE, width=S(8))
-    d.text(((sx0 + sx1) // 2, py0 + S(88)), "SOLD", font=fit("SOLD", S(104), inner - S(56)), fill=BLUE, anchor="mm")
+    # Not "SOLD": we're not realtors/brokers (Jorge 2026-11-15) -> two-line CLOSED & / FUNDED
+    room = inner - S(48)
+    f = min(fit(t, S(64), room).size for t in SIGN_LINES)
+    for i, t in enumerate(SIGN_LINES):
+        d.text(((sx0 + sx1) // 2, py0 + S(52) + i * S(70)), t, font=font(f), fill=BLUE, anchor="mm")
     return im
 
 

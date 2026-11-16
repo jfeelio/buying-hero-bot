@@ -1,6 +1,6 @@
 ---
 name: sold-post
-description: Make the standardized BH Properties "SOLD" social post (Buying Hero's buyer-side DBA) — property photo with a branded hanging SOLD yard sign, Jorge's headshot, sale price, investor equity spread, a rotating BH Properties headline, plus a long Instagram caption. Use whenever Jorge sends a property photo and says it sold / closed / assigned and wants a post, graphic, "just sold" image, deal announcement, win post, or "another satisfied investor" style post — even if he only gives a photo and two numbers like "sold for $500k, $220k spread".
+description: Make the standardized BH Properties "SOLD" social post (Buying Hero's buyer-side DBA) — property photo with a branded hanging "CLOSED & FUNDED" yard sign, Jorge's headshot, sale price, investor equity spread, a rotating BH Properties headline, plus a long Instagram caption. Use whenever Jorge sends a property photo and says it sold / closed / assigned and wants a post, graphic, "just sold" image, deal announcement, win post, or "another satisfied investor" style post — even if he only gives a photo and two numbers like "sold for $500k, $220k spread".
 ---
 
 # SOLD Post
@@ -64,7 +64,7 @@ straight from the homeowner". Frame everything as what the buyer gets.
 ## Design (approved 2026-10-15)
 Photo top ~56% with a fade into brand black · **city tag at the top** (dark pill, blue map-pin
 badge, opposite the sign) · white post-and-arm yard sign with a blue
-"BH PROPERTIES" rider and white SOLD panel in blue (#0083CA) · small head-and-shoulders headshot
+"BH PROPERTIES" rider and white panel reading "CLOSED & / FUNDED" in blue (#0083CA) — never "SOLD" on the sign: we are not realtors or brokers (Jorge 2026-11-15) · small head-and-shoulders headshot
 (160px, thin white ring + soft shadow — Jorge found the thick blue ring and tight face crop
 too strong) on the photo/panel seam · ARV and SOLD FOR side by side (white), EQUITY SPREAD FOR
 OUR INVESTOR as the big blue hero number · rotating headline · footer "BH PROPERTIES ·
