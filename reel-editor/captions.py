@@ -70,6 +70,7 @@ def build(words_path, edit_path, out_path):
     emph, hero = set(edit.get("emphasis", [])), set(edit.get("hero", []))
     lead_in = {int(k): v for k, v in edit.get("lead_in", {}).items()}
     lead_words = {i for v in lead_in.values() for i in v}
+    lead_y = edit.get("lead_in_y", Y - 150)   # per reel: push the stack lower when it hits his chin
     toks = tokens(words, edit)
     by_i = {t["i"]: t for t in toks}
     chunks = chunk(toks, hero, lead_words)
@@ -100,14 +101,14 @@ def build(words_path, edit_path, out_path):
         for t in c:
             col = BLUE if (t["i"] in emph or t["i"] in hero) else WHITE
             parts.append(rf"{{\c{col}}}{clean(t['w'])}")
-        y = Y - 150 if all(t["i"] in lead_words for t in c) else Y
+        y = lead_y if all(t["i"] in lead_words for t in c) else Y
         text = rf"{{\pos({W // 2},{y}){size}{pop}}}" + " ".join(parts)
         if is_hero and c[0]["i"] in lead_in:
             # lead-in stays put (no pop) on the line above; only the hero punches in
             lead = " ".join(clean(by_i[i]["w"]) for i in lead_in[c[0]["i"]])
             lines.append(f"Dialogue: 0,{ts(start)},{ts(end)},Cap,,0,0,0,,"
-                         rf"{{\pos({W // 2},{Y - 150})}}{lead}")
-            text = rf"{{\pos({W // 2},{Y + 40}){size}{pop}}}" + " ".join(parts)
+                         rf"{{\pos({W // 2},{lead_y})}}{lead}")
+            text = rf"{{\pos({W // 2},{lead_y + 190}){size}{pop}}}" + " ".join(parts)
         lines.append(f"Dialogue: 0,{ts(start)},{ts(end)},Cap,,0,0,0,,{text}")
     open(out_path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     print(f"{len(chunks)} caption chunks -> {out_path}")

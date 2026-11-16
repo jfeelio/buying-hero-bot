@@ -102,7 +102,7 @@ up because they then cover his face. Keep the positions below.
 black outline, centered on the chest (y≈1300). Keywords → brand blue via `emphasis`
 (roughly one per sentence: numbers, money, pain words, roles, key nouns). 3–6 `hero` words per
 reel shown alone and big. Use `lead_in` to stack set-up words over a hero number
-("WE ALMOST LOST" / "$115,000") — he specifically liked that.
+("WE ALMOST LOST" / "$115,000") — he specifically liked that. The default stack (lead-in y=1150) can land on his chin/mouth, worse under a zoom: check the frame and set `"lead_in_y": 1260` (hero follows 190px below) and stat `"y": 1360` when it does (11-15 reel).
 
 **Zooms:** max 3–4 per reel, never two within ~8s, eased (render.py does the easing). He
 called out "a lot of zooming jumps" when there were 6. Save them for the hook and the
