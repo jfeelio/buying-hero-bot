@@ -5,7 +5,7 @@ description: Edit Jorge's Instagram Reels / TikToks / Shorts after he's cut them
 
 # Reel Editor
 
-Jorge films and cuts the reel himself in CapCut. You do the "editor" pass: captions,
+Jorge films and usually cuts the reel himself in CapCut (sometimes he sends raw takes instead; see 1b). You do the "editor" pass: captions,
 emphasis, B-roll, screenshots, graphics, zooms, SFX. Output is an MP4 he opens in CapCut
 for music (trending audio must be added in-app) and posts.
 
@@ -25,6 +25,32 @@ edit.json, captions.ass, output/, build/. D: is NOT backed up and is outside Dro
   indexed transcript `i:word@start`.
 - Read the transcript properly. Fix Whisper splits with `merge`/`replace`
   (e.g. `$115` + `,000` → `$115,000`).
+
+### 1b. RAW mode — when Jorge sends uncut takes instead of a final cut
+Jorge sends two kinds of input: usually a **final cut** (one video he cut in CapCut → step 1 above), sometimes
+**raw takes** (a folder or several clips, repeats, restarts, multiple locations). Raw mode builds the cut
+first, then everything from step 2 on is the same. Code: `raw.py` (approved 2026-11-15, "dude thats actually
+pretty awesome").
+1. `python reel.py raw <slug> "<folder or clips>"` moves the clips to `<reel>/clips/`, transcribes each one, and
+   prints each transcript with `[Ns gap]` markers plus a contact sheet per clip. **Look at the sheets** (locations,
+   framing, where he stands).
+2. Map the story: which lines exist, and which have **competing takes** (same line said 2+ times). Write
+   `<reel>/cuts.json` (format in raw.py's docstring): a `compare` group per contested line, then the `cuts`
+   list in story order. Ordering rules: hook first; you can reorder lines for flow (put payoffs and funny bits
+   where they land); mix locations in the middle.
+3. `python reel.py score <reel>` gives the delivery scorecard (pace, dead air, loudness, end-fade, pitch
+   variation) and Gemini's blind A/B listen (gemini-3.1-pro-preview, audio only, cents per reel, key
+   `Dev/carousel/.gemini_key`). Pick the winner. When the scorecard and Gemini disagree, say so and let Jorge decide.
+4. **Crop:** the clips are 4K, so punch in with `"crop": {"zoom", "cx", "cy"}` on wide shots so his face reads
+   on a phone (head at ~25-30% from the top; lake wide shots used 1.4-1.9). Leave walk-to-camera and already-close
+   shots at 1.0. Cut OUT to wide on a scenery moment ("look at this").
+5. `python reel.py assemble <reel>` writes raw.mov (1080x1920@30 from the originals) + words.json and prints
+   the pieces, the seams and a **QA transcript**. Read it. Every line must end on a full word. Whisper end-times
+   run early (cut ends snap to the waveform's real silence) and Whisper can invent words at the end of a take
+   (check the waveform before "fixing" one). Lines that run back-to-back from the same take must be ONE cut.
+   Trimmed pauses inside a take auto-punch-in 12% to hide the jump.
+6. Show Jorge the cut list (time · clip · line · why this take) with the rough cut if he wants to review.
+   If he said "finalize", go straight on to step 2.
 
 ### 2. Check what recent reels used — then do something different
 `python reel.py history` — Jorge explicitly wants graphics to **change per reel so they're

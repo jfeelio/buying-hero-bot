@@ -5,6 +5,11 @@
   python reel.py build <reel> <name>                  captions + render + copy to Downloads
   python reel.py frames <reel> <name> <t> [t ...]     contact strip of output frames for visual QA
   python reel.py history [n]                          graphic styles used by the last n reels (vary them!)
+
+Raw mode (uncut takes; see raw.py):
+  python reel.py raw <slug> <clip|folder> [...]       create the reel, move clips in, transcribe each take
+  python reel.py score <reel>                         scorecard + blind Gemini A/B for cuts.json "compare" groups
+  python reel.py assemble <reel>                      cuts.json "cuts" -> raw.mov + words.json, then build as usual
 """
 import datetime, glob, json, os, shutil, subprocess, sys
 
@@ -30,6 +35,21 @@ def new(slug, video, *shots):
                     os.path.join(reel, "words.json")], check=True)
     print(reel)
     words(reel)
+
+
+def raw(slug, *paths):
+    import raw as rawmode
+    rawmode.raw(os.path.join(REELS, f"{datetime.date.today():%Y-%m-%d}-{slug}"), *paths)
+
+
+def score(reel):
+    import raw as rawmode
+    rawmode.score(reel)
+
+
+def assemble(reel):
+    import raw as rawmode
+    rawmode.assemble(reel)
 
 
 def words(reel):
@@ -80,4 +100,5 @@ def history(n=5):
 
 if __name__ == "__main__":
     cmd, args = sys.argv[1], sys.argv[2:]
-    {"new": new, "words": words, "build": build, "frames": frames, "history": history}[cmd](*args)
+    {"new": new, "words": words, "build": build, "frames": frames, "history": history,
+     "raw": raw, "score": score, "assemble": assemble}[cmd](*args)
