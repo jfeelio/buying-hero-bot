@@ -283,7 +283,8 @@ def make_stat_frames(stt, outdir):
         frame.save(os.path.join(outdir, f"f_{f:04d}.png"), compress_level=1)
 
 
-def build(reel, name):
+def build(reel, name, premium=False):
+    """premium=True -> clean pass for premium.py: no captions/lists, higher bitrate."""
     edit = json.load(open(os.path.join(reel, "edit.json"), encoding="utf-8"))
     video = os.path.join(reel, "raw.mov")
     work = os.path.join(reel, "build")
@@ -354,7 +355,7 @@ def build(reel, name):
             chains.append(f"[{last}][{tag}]overlay=0:0:eof_action=pass:enable='between(t,{st},{en})'[v{n}]")
         last = f"v{n}"
 
-    for k, ls in enumerate(edit.get("lists", [])):
+    for k, ls in enumerate([] if premium else edit.get("lists", [])):
         n += 1
         d = os.path.join(work, f"list_{k}")
         make_list_frames(ls, d)
@@ -389,7 +390,10 @@ def build(reel, name):
         chains.append(f"[{last}][{n}:v]overlay=x='-w+w*t/{total:.3f}':y={H - 12}:shortest=1[v{n}]")
         last = f"v{n}"
 
-    chains.append(f"[{last}]subtitles=captions.ass:fontsdir={filter_path(os.path.join(HERE, 'fonts'))}[vout]")
+    if premium:
+        chains.append(f"[{last}]null[vout]")
+    else:
+        chains.append(f"[{last}]subtitles=captions.ass:fontsdir={filter_path(os.path.join(HERE, 'fonts'))}[vout]")
 
     # audio: voice + SFX (voice untouched; SFX ducked well under it)
     amix = ["[0:a]aformat=sample_rates=48000:channel_layouts=stereo[a0]"]
@@ -426,7 +430,7 @@ def build(reel, name):
     out = os.path.join(reel, "output", f"{name}.mp4")
     cmd = ([ffmpeg_bin(), "-v", "error", "-y"] + inputs +
            ["-filter_complex", ";".join(chains + amix), "-map", "[vout]", "-map", "[aout]",
-            "-c:v", "h264_nvenc", "-preset", "p5", "-cq", "23", "-maxrate", "8M", "-bufsize", "16M",
+            "-c:v", "h264_nvenc", "-preset", "p5"] + (["-cq", "14"] if premium else ["-cq", "23", "-maxrate", "8M", "-bufsize", "16M"]) + [
             "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out])
     subprocess.run(cmd, check=True, cwd=reel)
     print(f"rendered -> {out}")

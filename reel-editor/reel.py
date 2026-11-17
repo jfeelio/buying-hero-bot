@@ -60,9 +60,17 @@ def words(reel):
 
 def build(reel, name):
     from render import build as render
-    subprocess.run([sys.executable, os.path.join(HERE, "captions.py"), os.path.join(reel, "words.json"),
-                    os.path.join(reel, "edit.json"), os.path.join(reel, "captions.ass")], check=True)
-    out = render(reel, name)
+    edit = json.load(open(os.path.join(reel, "edit.json"), encoding="utf-8"))
+    if edit.get("style") == "premium":
+        # clean pass (B-roll, zooms, music, SFX; no captions) -> premium text + text-behind-speaker pass
+        import premium
+        clean = render(reel, "_clean", premium=True)
+        out = premium.render(reel, clean, os.path.join(reel, "output", f"{name}.mp4"))
+        os.replace(clean, os.path.join(reel, "build", "clean.mp4"))   # keep output/ to real versions only
+    else:
+        subprocess.run([sys.executable, os.path.join(HERE, "captions.py"), os.path.join(reel, "words.json"),
+                        os.path.join(reel, "edit.json"), os.path.join(reel, "captions.ass")], check=True)
+        out = render(reel, name)
     dst = os.path.join(DOWNLOADS, f"{os.path.basename(reel)}_{name}.mp4")
     shutil.copy(out, dst)
     print(f"copied -> {dst}")

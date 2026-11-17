@@ -1,6 +1,6 @@
 ---
 name: reel-editor
-description: Edit Jorge's Instagram Reels / TikToks / Shorts after he's cut them in CapCut — Hormozi-style animated captions in Buying Hero brand (Montserrat Black, #0083CA keywords), B-roll from Pixabay, screenshot cards (dashboards, results), list graphics, count-up stats, eased punch-in zooms, icon pops, sound effects and a progress bar — rendered to a finished MP4. Use whenever Jorge sends a video/reel file (usually a path in Downloads) and asks to edit it, caption it, "add captions", "add b-roll", "make this pop", "edit the reel", "do your thing on this video", or sends screenshots to drop into a reel. Also use to re-edit or tweak a reel already in D:\Reels. Pairs with reel-script-writer (script → film → cut → this skill).
+description: Edit Jorge's Instagram Reels / TikToks / Shorts after he's cut them in CapCut — Hormozi-style animated captions in Buying Hero brand (Montserrat Black, #0083CA keywords) OR the Premium style (mixed-font kinetic captions with big words behind the speaker), B-roll from Pixabay, screenshot cards (dashboards, results), list graphics, count-up stats, eased punch-in zooms, icon pops, sound effects and a progress bar — rendered to a finished MP4. Use whenever Jorge sends a video/reel file (usually a path in Downloads) and asks to edit it, caption it, "add captions", "add b-roll", "make this pop", "edit the reel", "do your thing on this video", or sends screenshots to drop into a reel. Also use to re-edit or tweak a reel already in D:\Reels. Pairs with reel-script-writer (script → film → cut → this skill).
 ---
 
 # Reel Editor
@@ -51,6 +51,17 @@ pretty awesome").
    Trimmed pauses inside a take auto-punch-in 12% to hide the jump.
 6. Show Jorge the cut list (time · clip · line · why this take) with the rough cut if he wants to review.
    If he said "finalize", go straight on to step 2.
+
+### 1c. Ask: Classic or Premium style? (every reel)
+Jorge wants the choice per reel (2026-11-17: "I really like this one but the previous style might be good sometimes").
+Ask once, with a one-line recommendation:
+- **Classic**: Hormozi captions (Montserrat Black ALL CAPS, 1-3 words), list/stat graphics, icons. Fast (~15s render).
+  Best for screenshot-proof reels, deal numbers, desk/indoor shots, busy backgrounds.
+- **Premium**: mixed-font kinetic captions, big words BEHIND him, whip-in lists, light color grade. ~4.5 min/min
+  of video. Best when there's open sky/wall above his head (outdoor, wide or mid shots) and a story/mindset reel.
+  Approved on the 11-17 nature reel ("dude that shit came out sick").
+Set `"style": "premium"` in edit.json for Premium (see the Premium section). Everything else (B-roll, cards,
+zooms, music, SFX) works the same in both.
 
 ### 2. Check what recent reels used — then do something different
 `python reel.py history` — Jorge explicitly wants graphics to **change per reel so they're
@@ -178,6 +189,41 @@ dominate. Whooshes (`whoosh_fast`/`whoosh_air`/`whoosh_transition`, use `peak:tr
 
 **Progress bar:** on by default (`"progress": true`).
 
+## Premium style (`"style": "premium"`)
+`reel.py build` renders a clean pass (B-roll, cards, stickers, zooms, music, SFX, progress, and icons if
+listed; no captions and no classic lists), then `premium.py` cuts him out of every frame (RVM matting,
+CPU ~9 fps, cached in build/matte.mp4, so caption-only re-renders are ~1.5 min) and draws the text. Spec goes in
+`edit.json` → `"premium"` (full reference in premium.py's docstring):
+```json
+"style": "premium",
+"premium": {
+  "serif": [3, 19], "serif_blue": [57], "key": [9, 34], "big": [80],
+  "lists": [{"words": [37, 39, 41, 43]}],
+  "heroes": [
+    {"lines": [{"text": "HOARDER", "word": 21}, {"text": "HOUSE.", "word": 22}], "x_at": 6.85},
+    {"lines": [{"text": "GET YOUR", "word": 166}, {"text": "MIND", "word": 168}, {"text": "RIGHT.", "word": 169}],
+     "glitch": true, "end": 99}
+  ]
+}
+```
+Captions auto-chunk (punctuation, gaps, 5 words max). Use `"breaks": [i]` to force a split.
+Jorge-approved rules (11-17):
+- **Heroes (behind him): 4-6 per reel**, on the punch words of the hook, the turn and the close. ALWAYS white
+  Anton (brand blue disappeared on sky/lake). They hold ≥1.9s after the last line (automatic). He said 0.8-1.4s
+  "goes away way too quickly". The last hero can hold to the end (`"end": 99`) with `glitch`.
+- A crossed-out idea gets `x_at`. The X draws BEHIND him too. He called out an X in front of his face, so never
+  draw anything over his face.
+- Heroes only work when there's space above his head. Check the strip: a close-up with his head at the top of
+  the frame leaves no room, so skip heroes there or put them on wider shots.
+- Captions: sentence case Montserrat ExtraBold. `key` = bright brand-blue UPPERCASE (about 1 per sentence),
+  `serif` = elegant italic on feeling/abstract words (wondering, beautiful, challenges), `serif_blue` on a few
+  payoff words, `big` = one oversized serif word alone (1-2 per reel).
+- Lists (`premium.lists`): rapid-fire enumerations. Each word whips in big, alternating Anton/serif, all white.
+  Keep the classic list's pop SFX timed to each word.
+- Grade `"light"` is the default. The first grade was too dark ("whole reel looks too dark"), so don't go moodier.
+- Classic `icons` usually clash with the premium look; leave them out unless Jorge asks.
+- Delivery is the same: highest vN (or final*) in output/ is what content-sync posts.
+
 ## edit.json reference
 ```json
 {
@@ -216,7 +262,12 @@ Don't put a hero caption and a stat on the same moment — pick one.
   Pixabay asks that searches be cached 24h (broll.py does this in `.cache/`).
 - ffmpeg isn't on PATH in older shells; render.py/reel.py locate the WinGet install themselves.
   For ad-hoc ffmpeg in bash: `export PATH="$PATH:$(ls -d /c/Users/jsive/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg*/ffmpeg-*/bin | head -1)"`.
-- Rendering uses `h264_nvenc` (RTX 4070). ~15s for a 90s reel.
+- Rendering uses `h264_nvenc` (RTX 4070). ~15s for a 90s reel (classic). Premium: matte ~3 min/min, render ~1.5 min/min.
+- Premium needs `onnxruntime` (CPU; installed) and downloads the 15 MB RVM model to `.cache/` on first use
+  (github.com/PeterL1n/RobustVideoMatting releases, GPL-3.0; it's used as a tool, not redistributed).
+- A **Scheduled** tracker row is frozen: a new version won't replace it. To swap the file: set Status = Draft →
+  `content_sync.py` (unschedules) → `--scan` (uploads) → Status = Approved → `content_sync.py`, then verify the
+  GHL post's media URL.
 - Code changes: commit from a scratchpad clone of github.com/jfeelio/buying-hero-bot with
   `-c user.name=Jorge -c user.email=jorge@buyinghero.com`; never commit sfx/, .pixabay_key,
   node_modules/, work/ or any reel content.
