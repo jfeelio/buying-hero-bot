@@ -7,11 +7,11 @@
     "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/44100317897"
   },
   "probate": {
-    "last_run": "2026-11-17T07:23:45Z",
+    "last_run": "2026-11-18T07:26:33Z",
     "status": "success",
-    "records_added": 0,
-    "run_id": "44038268560",
-    "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/44038268560"
+    "records_added": 14,
+    "run_id": "44258440891",
+    "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/44258440891"
   },
   "tax_deed": {
     "last_run": "2026-11-17T15:16:59Z",
