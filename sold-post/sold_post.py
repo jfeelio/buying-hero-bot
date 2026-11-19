@@ -158,6 +158,9 @@ def compose(args, W, H, photo_h):
     av = avatar(args.headshot, 160)
     ax = W - av.width - 40 if args.sign == "left" else 40
     ay = photo_h - av.height // 2 - 40
+    if args.sign == "right" and args.arv:
+        # left side: keep clear of the "ARV" label that starts at photo_h + 24
+        ay = photo_h + 24 - av.height - 14
     canvas.paste(av, (ax, ay), av)
 
     # numbers: ARV + sale price side by side, the investor's spread as the hero
