@@ -63,6 +63,26 @@ Ask once, with a one-line recommendation:
 Set `"style": "premium"` in edit.json for Premium (see the Premium section). Everything else (B-roll, cards,
 zooms, music, SFX) works the same in both.
 
+### 1d. Three hooks, one winner (every reel)
+Jorge 2026-11-22: borrowed from a short-form agency playbook he liked (@loganforsyth): every video gets **3 hooks**
+and only the winner ships. The first ~3 seconds decide the reel, so don't bet them on one guess.
+- **Write 3 hooks that each take a different angle**, not three rewordings of one line. Use one of each:
+  **number** ("$260K of equity, and the house never hit the MLS"), **contrarian** ("Most bad flips aren't bad
+  buys"), and **story/curiosity** ("I almost walked away from this one"). Spoken hooks stay under ~3s / 10 words.
+  Facts come from the transcript or real deals only, the same rule as captions.
+- **Raw mode (1b):** ask Jorge to film all 3 hook lines, so he'd film 3 opening lines instead of 1. Put them in one
+  `compare` group (`"Hook"`) in cuts.json. `reel.py score` gives the delivery read and Gemini's blind pick. Show
+  Jorge the 3 with the scores and let him choose. The scores are only a pre-screen; a real audience is the test.
+- **Final-cut mode (1):** the spoken opening is fixed, so vary what's ON SCREEN in the first 3s instead: hook
+  text (lead_in + hero over the first words, or a text card), and a cold-open B-roll or screenshot vs. his face.
+  Render the variants as `output/hook_A.mp4`, `hook_B.mp4` and `hook_C.mp4`. Content-sync ignores non-vN names,
+  so they won't post by accident. Copy the winner to the next vN.
+- **Caption line 1 is a 4th hook.** Make it a different angle from the spoken hook that ships.
+- Log the 3 hooks and which one won in `<reel>/hooks.json` (`{"A": "...", "B": "...", "C": "...", "winner": "A",
+  "why": "..."}`), so we learn which angle wins for this audience over time.
+- Real-audience testing with Instagram **Trial Reels** (shown to non-followers first) is NOT built yet. See the
+  Hook Lab tab in the Content Ideas sheet for idea-level hooks.
+
 ### 2. Check what recent reels used — then do something different
 `python reel.py history` — Jorge explicitly wants graphics to **change per reel so they're
 never the same**. If the last reel used an `x/slide/dim` list, use another style/entrance/panel
