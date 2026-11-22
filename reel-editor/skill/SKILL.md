@@ -82,6 +82,11 @@ and only the winner ships. The first ~3 seconds decide the reel, so don't bet th
   "why": "..."}`), so we learn which angle wins for this audience over time.
 - Real-audience testing with Instagram **Trial Reels** (shown to non-followers first) is NOT built yet. See the
   Hook Lab tab in the Content Ideas sheet for idea-level hooks.
+- **Reel Radar** (same sheet; code in the private repo jfeelio/bh-content-sync, `reel_radar.py`). Each week it
+  finds reels on the Radar Watchlist accounts running 2.5x or more above that creator's typical plays. Gemini then
+  watches each one and writes up the hook, format, structure, editing, why it worked, and a BH version with 3 hooks.
+  Before planning an edit, check Reel Radar for rows Jorge marked "Use" and borrow those techniques. Any link pasted
+  into Radar Inbox is analysed within about 2 hours.
 
 ### 2. Check what recent reels used — then do something different
 `python reel.py history` — Jorge explicitly wants graphics to **change per reel so they're
