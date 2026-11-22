@@ -17,8 +17,19 @@ edit.json "premium" block (word indices from `reel.py words`):
              "end"?: secs, "color"?: "white"|"blue" per line}]
            big Anton words BEHIND the speaker; stacked lines; each line enters at its word.
            Stays up >= HOLD s after the last line (Jorge 11/17: "doesn't stay long enough").
+           "front"?: true draws it IN FRONT of him (use when his head is too high for the stack to fit
+           above it); "y"?: px sets the block top (e.g. 1150 = across the chest).
            x_at draws a red X (also behind him). Keep heroes white — blue vanishes on sky/water.
   grade:   "light" (default) | "none"
+  composites: [{"start", "end", "file": "screenshots/slide.png", "scale"?: 0.56, "x"?: 540}]
+           CHECK each slide's text layout: move him off the key text with x (left/right) + smaller scale.
+           the cut-out speaker (live, matte from this pass) is shrunk and stood bottom-centre in front of a
+           1080x1920 slide. Consecutive composites swap with a quick pop; 0.2s crossfade from/to the talking
+           head. Captions + heroes are hidden while a composite is up (the slide carries the words).
+  tiles:   [{"start", "end", "y"?: 1290, "items": [{"label": "COST PER DEAL", "t": 1.5,
+             "fill_t"?: 29.06, "value"?: 8000, "prefix"?: "$", "suffix"?: ""}]}]
+           cream kraft-style "$?" tiles side by side; each pops in at t showing "$?", then at fill_t the
+           ? counts up to value. fill_t <= start -> already filled. Captions hidden underneath.
 Words used by heroes/lists are not repeated as captions.
 """
 import json, math, os, subprocess, sys, urllib.request
@@ -182,7 +193,8 @@ def plan(reel):
             im, _, _ = text_img(ln["text"], font("anton", size), col, shadow=110, blur=22, sy=10)
             lines.append(dict(im=im, start=ts(ln["word"]), word=ln["word"]))
         heroes.append(dict(imgs=lines, start=lines[0]["start"], end=h.get("end", te(lines[-1]["word"]) + 0.15),
-                           x_at=h.get("x_at"), glitch=h.get("glitch", False), gap=h.get("gap", -16), y=None))
+                           x_at=h.get("x_at"), glitch=h.get("glitch", False), gap=h.get("gap", -16), y=None,
+                           front=h.get("front", False), top=h.get("y")))
     heroes.sort(key=lambda h: h["start"])
     for k, h in enumerate(heroes):
         nxt = heroes[k + 1]["start"] - 0.25 if k + 1 < len(heroes) else 1e9
@@ -252,7 +264,85 @@ def plan(reel):
         out.append(dict(start=start, end=end, items=items))
 
     full = [(o["start"], o["end"]) for o in edit.get("overlays", []) if o.get("mode", "full") == "full"]
-    return dict(chunks=out, heroes=heroes, lists=lists, full=full, grade=GRADES[p.get("grade", "light")])
+    comps = []
+    for c in p.get("composites", []):
+        im = Image.open(os.path.join(reel, c["file"])).convert("RGB").resize((W, H), Image.LANCZOS)
+        comps.append(dict(c, bg=np.asarray(im).astype(np.float32)))
+    comps.sort(key=lambda c: c["start"])
+    tiles = p.get("tiles", [])
+    mute = [(c["start"], c["end"]) for c in comps] + [(T["start"], T["end"]) for T in tiles]
+    mute += [(h["start"], h["end"]) for h in heroes if h["front"]]   # front heroes replace the captions
+    return dict(chunks=out, heroes=heroes, lists=lists, full=full, comps=comps, tiles=tiles, mute=mute,
+                grade=GRADES[p.get("grade", "light")])
+
+# ------------------------------------------------------------------ composites + tiles
+CREAM, NAVY, BRICK = (246, 241, 230), (27, 42, 84), (190, 38, 34)
+
+def composite(g, m, c, t):
+    """Speaker cut out of frame g (matte m), shrunk, standing bottom-centre on the slide."""
+    s = c.get("scale", 0.56)
+    sw, sh = int(W * s), int(H * s)
+    fg = np.asarray(Image.fromarray(g).resize((sw, sh), Image.BILINEAR)).astype(np.float32)
+    ma = np.asarray(Image.fromarray((m * 255).astype(np.uint8)).resize((sw, sh), Image.BILINEAR)).astype(np.float32)[..., None] / 255
+    out = c["bg"].copy()
+    # soft shadow so he sits on the paper instead of floating
+    sh_a = np.asarray(Image.fromarray((ma[..., 0] * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(18))).astype(np.float32)[..., None] / 255 * 0.45
+    x0 = int(c.get("x", W // 2) - sw / 2); y0 = H - sh
+    for a, src, dx, dy in ((sh_a, np.zeros_like(fg), 14, 10), (ma, fg, 0, 0)):
+        xa, ya = x0 + dx, y0 + dy
+        xs0, ys0 = max(0, -xa), max(0, -ya)
+        xe, ye = min(sw, W - xa), min(sh, H - ya)
+        reg = out[ya + ys0:ya + ye, xa + xs0:xa + xe]
+        aa = a[ys0:ye, xs0:xe]
+        reg[:] = reg * (1 - aa) + src[ys0:ye, xs0:xe] * aa
+    # quick settle-in when the slide appears
+    p = ease_out((t - c["start"]) / 0.3)
+    return out.clip(0, 255).astype(np.uint8), p
+
+_tile_cache = {}
+def tile_img(label, value_txt, q_wiggle=0.0):
+    k = (label, value_txt, round(q_wiggle, 2))
+    if k in _tile_cache: return _tile_cache[k]
+    tw, th = 440, 300
+    im = Image.new("RGBA", (tw + 60, th + 60), (0, 0, 0, 0))
+    sh = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    ImageDraw.Draw(sh).rounded_rectangle((30, 38, 30 + tw, 38 + th), 10, fill=(0, 0, 0, 150))
+    im.alpha_composite(sh.filter(ImageFilter.GaussianBlur(14)))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle((30, 30, 30 + tw, 30 + th), 10, fill=CREAM + (255,))
+    d.line((60, 98, 30 + tw - 30, 98), fill=(200, 190, 170, 255), width=3)
+    lf = font("black", 34)
+    d.text((30 + tw / 2, 72), label, font=lf, fill=NAVY + (255,), anchor="mm")
+    col = BRICK if "?" in value_txt else NAVY
+    vf = font("anton", fit_size(value_txt, "anton", tw - 70, 170))
+    d.text((30 + tw / 2, 30 + 200 + q_wiggle), value_txt, font=vf, fill=col + (255,), anchor="mm")
+    _tile_cache[k] = im
+    return im
+
+def draw_tiles(front, T, t):
+    if not (T["start"] <= t < T["end"]): return
+    fade = 1 - ease_out((t - (T["end"] - 0.2)) / 0.2) if t > T["end"] - 0.2 else 1
+    items = T["items"]; n = len(items)
+    y = T.get("y", 1290)
+    for k, it in enumerate(items):
+        t0 = max(it.get("t", T["start"]), T["start"])
+        dt = t - t0
+        if dt < 0: continue
+        ft = it.get("fill_t")
+        if ft is not None and t >= ft:
+            q = 1.0 if ft <= T["start"] else min((t - ft) / 0.7, 1)
+            v = it["value"] * ease_out(q)
+            txt = f"{it.get('prefix', '$')}{int(round(v / 100) * 100) if q < 1 else it['value']:,}{it.get('suffix', '')}"
+            bump = 1 + 0.12 * math.sin(min((t - ft) / 0.35, 1) * math.pi) if ft > T["start"] else 1
+            im = tile_img(it["label"], txt)
+        else:
+            im = tile_img(it["label"], f"{it.get('prefix', '$')}?", 6 * math.sin(t * 5))
+            bump = 1
+        sc = (0.6 + 0.4 * spring(dt)) * bump
+        rot = (-3 if k % 2 == 0 else 3) if n > 1 else -2
+        im2 = xform(im, sc).rotate(rot, Image.BICUBIC, expand=True)
+        cx = W / 2 if n == 1 else (W / 2 + (k - (n - 1) / 2) * 470)
+        paste(front, im2, cx - im2.width / 2, y - im2.height / 2, min(dt / 0.08, 1) * fade)
 
 # ------------------------------------------------------------------ draw
 def head_top(m):
@@ -264,7 +354,7 @@ def draw_hero(behind, h, t, m):
     if h["y"] is None:
         heights = [d["im"].height - 66 + h["gap"] for d in h["imgs"]]
         # block bottom ~100px below the top of the head, so the head occludes the last line
-        y = max(120, head_top(m) + 100 - sum(heights)) - 33
+        y = h["top"] if h["top"] is not None else max(120, head_top(m) + 100 - sum(heights)) - 33
         h["ys"] = []
         for hh in heights: h["ys"].append(y); y += hh
         h["y"] = h["ys"][0]
@@ -308,7 +398,12 @@ def render(reel, clean, out):
     pl = plan(reel)
     matte = os.path.join(reel, "build", "matte.mp4")
     stamp = matte + ".src"
-    sig = f"{os.path.getsize(clean)}"
+    # key on what changes the PICTURE only (source + B-roll + zooms), not audio/sfx, so hook variants
+    # that only differ in sfx/graphics reuse one matte instead of re-cutting every frame
+    ed = json.load(open(os.path.join(reel, "edit.json"), encoding="utf-8"))
+    raws = [f for f in os.listdir(reel) if f.lower().startswith("raw.")]
+    sig = json.dumps({"raw": [(f, os.path.getsize(os.path.join(reel, f))) for f in sorted(raws)],
+                      "overlays": ed.get("overlays", []), "zooms": ed.get("zooms", [])}, sort_keys=True)
     if not (os.path.exists(matte) and os.path.exists(stamp) and open(stamp).read() == sig):
         print("cutting the speaker out of every frame (~3 min/min of video)...")
         make_matte(clean, matte)
@@ -332,16 +427,39 @@ def render(reel, clean, out):
             m = np.zeros((H, W), np.float32)
         else:
             m = np.frombuffer(mb, np.uint8).reshape(H, W).astype(np.float32) / 255
+        comp = next((c for c in pl["comps"] if c["start"] <= t < c["end"]), None)
         behind = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        for h in pl["heroes"]: draw_hero(behind, h, t, m)
+        if comp is None:
+            for h in pl["heroes"]:
+                if not h["front"]: draw_hero(behind, h, t, m)
         if behind.getbbox():
             bg = Image.fromarray(g).convert("RGBA"); bg.alpha_composite(behind)
             m3 = m[..., None]
             frame = (np.asarray(bg)[..., :3] * (1 - m3) + g * m3).astype(np.uint8)
         else:
             frame = g
+        if comp is not None:
+            cf, p = composite(g, m, comp, t)
+            # crossfade from/to the talking head unless the neighbouring composite is back-to-back
+            prev_adj = any(abs(c["end"] - comp["start"]) < 0.05 for c in pl["comps"])
+            next_adj = any(abs(c["start"] - comp["end"]) < 0.05 for c in pl["comps"])
+            a = 1.0
+            if not prev_adj: a = min(a, (t - comp["start"]) / 0.2)
+            if not next_adj: a = min(a, (comp["end"] - t) / 0.2)
+            a = max(0.0, min(a, 1.0))
+            if prev_adj and t - comp["start"] < 0.12:   # quick swap pop between slides
+                z = 1.04 - 0.04 * ease_out((t - comp["start"]) / 0.12)
+                zi = Image.fromarray(cf).resize((int(W * z), int(H * z)), Image.BILINEAR)
+                cf = np.asarray(zi.crop(((zi.width - W) // 2, (zi.height - H) // 2,
+                                         (zi.width - W) // 2 + W, (zi.height - H) // 2 + H)))
+            frame = (frame * (1 - a) + cf * a).astype(np.uint8)
         front = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        for c in pl["chunks"]: draw_chunk(front, c, t)
+        muted = any(a0 <= t < e0 for a0, e0 in pl["mute"])
+        if comp is None:
+            for h in pl["heroes"]:
+                if h["front"]: draw_hero(front, h, t, m)
+        for T in pl["tiles"]: draw_tiles(front, T, t)
+        for c in ([] if muted else pl["chunks"]): draw_chunk(front, c, t)
         for L in pl["lists"]: draw_list(front, L, t)
         if front.getbbox():
             img = Image.fromarray(frame).convert("RGBA"); img.alpha_composite(front)
