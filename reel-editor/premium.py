@@ -22,7 +22,8 @@ edit.json "premium" block (word indices from `reel.py words`):
            x_at draws a red X (also behind him). Keep heroes white — blue vanishes on sky/water.
   grade:   "light" (default) | "none"
   composites: [{"start", "end", "file": "screenshots/slide.png", "scale"?: 0.56, "x"?: 540}]
-           CHECK each slide's text layout: move him off the key text with x (left/right) + smaller scale.
+           "cut_in"/"cut_out": true = hard cut on that edge (use when the edge sits on HIS jump cut, else the
+           0.2s crossfade shows the clip he cut away). CHECK each slide's text layout: move him off the key text with x (left/right) + smaller scale.
            the cut-out speaker (live, matte from this pass) is shrunk and stood bottom-centre in front of a
            1080x1920 slide. Consecutive composites swap with a quick pop; 0.2s crossfade from/to the talking
            head. Captions + heroes are hidden while a composite is up (the slide carries the words).
@@ -210,7 +211,10 @@ def plan(reel):
             end = ts(ws[k + 1]) if k + 1 < len(ws) else te(i) + 0.05
             lists.append(dict(im=im, start=ts(i), end=end, side=1 if k % 2 else -1))
 
-    hidden = {ln["word"] for h in p.get("heroes", []) for ln in h["lines"]}
+    # a hero line hides every spoken word it covers (one per word of its text), not just the first,
+    # so "HERE'S THE KICKER." @102 doesn't leave "the kicker" captioned underneath (Jorge 11-22)
+    hidden = {ln["word"] + k for h in p.get("heroes", []) for ln in h["lines"]
+              for k in range(len(ln["text"].split()))}
     hidden |= {i for L in p.get("lists", []) for i in L["words"]}
     # words between list items ("the") are hidden too, so the list reads clean
     for L in p.get("lists", []):
@@ -226,7 +230,8 @@ def plan(reel):
             if cur: chunks.append(cur); cur = []
             continue
         if cur and (i in breaks or style.get(i) == "big" or style.get(cur[-1]["i"]) == "big"
-                    or len(cur) >= 5 or t["s"] - cur[-1]["e"] > 0.35):
+                    or (len(cur) >= 5 and not (len(cur) == 5 and t["w"].rstrip()[-1:] in ".,?!"))
+                    or t["s"] - cur[-1]["e"] > 0.35):   # a sentence-ending 6th word stays (no lone "you." flash)
             chunks.append(cur); cur = []
         cur.append(t)
         if t["w"].rstrip()[-1:] in ".,?!":
@@ -261,7 +266,7 @@ def plan(reel):
                 it["x"] = x - it["pad"]; it["y"] = y + asc - it["base"] + it["pad"]
                 x += it["im"].width - 2 * it["pad"] + 22
             y += max(it["im"].height - 2 * it["pad"] for it in ln) + 6
-        out.append(dict(start=start, end=end, items=items))
+        out.append(dict(start=start, end=end, items=items, words=[t["w"].strip() for t in ch]))
 
     full = [(o["start"], o["end"]) for o in edit.get("overlays", []) if o.get("mode", "full") == "full"]
     comps = []
@@ -398,16 +403,27 @@ def render(reel, clean, out):
     pl = plan(reel)
     matte = os.path.join(reel, "build", "matte.mp4")
     stamp = matte + ".src"
-    # key on what changes the PICTURE only (source + B-roll + zooms), not audio/sfx, so hook variants
+    # key on what changes the PICTURE under him (source + card B-roll + zooms; full-screen B-roll uses no matte), not audio/sfx, so hook variants
     # that only differ in sfx/graphics reuse one matte instead of re-cutting every frame
     ed = json.load(open(os.path.join(reel, "edit.json"), encoding="utf-8"))
     raws = [f for f in os.listdir(reel) if f.lower().startswith("raw.")]
     sig = json.dumps({"raw": [(f, os.path.getsize(os.path.join(reel, f))) for f in sorted(raws)],
-                      "overlays": ed.get("overlays", []), "zooms": ed.get("zooms", [])}, sort_keys=True)
+                      "overlays": [o for o in ed.get("overlays", []) if o.get("mode", "full") != "full"], "zooms": ed.get("zooms", [])}, sort_keys=True)
     if not (os.path.exists(matte) and os.path.exists(stamp) and open(stamp).read() == sig):
         print("cutting the speaker out of every frame (~3 min/min of video)...")
         make_matte(clean, matte)
         open(stamp, "w").write(sig)
+    # private objects (family photo on the shelf): edit.json "redact": true -> redact.py boxes, blurred below
+    red = None
+    if ed.get("redact"):
+        rj = os.path.join(reel, "build", "redact.json")
+        if not (os.path.exists(rj) and os.path.exists(rj + ".src") and open(rj + ".src").read() == sig):
+            import redact
+            print("finding private objects to blur...")
+            raw = redact.detect(clean, sorted(__import__("glob").glob("D:/Reels/_redact/*.png")))
+            json.dump({"boxes": redact.boxes(raw), "scores": [round(r[0], 3) for r in raw]}, open(rj, "w"))
+            open(rj + ".src", "w").write(sig)
+        red = json.load(open(rj))["boxes"]
     dec = subprocess.Popen([ffmpeg_bin(), "-v", "error", "-i", clean, "-vf", pl["grade"],
                             "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE)
     mdec = subprocess.Popen([ffmpeg_bin(), "-v", "error", "-i", matte, "-f", "rawvideo", "-pix_fmt", "gray", "-"],
@@ -427,6 +443,13 @@ def render(reel, clean, out):
             m = np.zeros((H, W), np.float32)
         else:
             m = np.frombuffer(mb, np.uint8).reshape(H, W).astype(np.float32) / 255
+        if red and n < len(red) and red[n]:
+            x0, y0, x1, y1 = red[n]
+            g = g.copy(); reg = g[y0:y1, x0:x1]
+            sm = Image.fromarray(reg).resize((max(1, (x1 - x0) // 14), max(1, (y1 - y0) // 14)), Image.BILINEAR)
+            bl = np.asarray(sm.resize((x1 - x0, y1 - y0), Image.BILINEAR).filter(ImageFilter.GaussianBlur(10))).astype(np.float32)
+            mm = m[y0:y1, x0:x1, None]                    # keep him sharp, blur only the background
+            g[y0:y1, x0:x1] = (bl * (1 - mm) + reg * mm).astype(np.uint8)
         comp = next((c for c in pl["comps"] if c["start"] <= t < c["end"]), None)
         behind = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         if comp is None:
@@ -444,8 +467,8 @@ def render(reel, clean, out):
             prev_adj = any(abs(c["end"] - comp["start"]) < 0.05 for c in pl["comps"])
             next_adj = any(abs(c["start"] - comp["end"]) < 0.05 for c in pl["comps"])
             a = 1.0
-            if not prev_adj: a = min(a, (t - comp["start"]) / 0.2)
-            if not next_adj: a = min(a, (comp["end"] - t) / 0.2)
+            if not prev_adj and not comp.get("cut_in"): a = min(a, (t - comp["start"]) / 0.2)
+            if not next_adj and not comp.get("cut_out"): a = min(a, (comp["end"] - t) / 0.2)
             a = max(0.0, min(a, 1.0))
             if prev_adj and t - comp["start"] < 0.12:   # quick swap pop between slides
                 z = 1.04 - 0.04 * ease_out((t - comp["start"]) / 0.12)

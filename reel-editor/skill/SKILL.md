@@ -66,6 +66,11 @@ zooms, music, SFX) works the same in both.
 ### 1d. Three hooks, one winner (every reel)
 Jorge 2026-11-22: borrowed from a short-form agency playbook he liked (@loganforsyth): every video gets **3 hooks**
 and only the winner ships. The first ~3 seconds decide the reel, so don't bet them on one guess.
+- **Jorge 11-22 clarification: he MEANT 3 SPOKEN hooks to film (scripting stage).** Always offer 3 spoken hook
+  lines when scripting/planning. The on-screen A/B/C render variants below are on trial (Cost per deal reel);
+  ask before making them a default.
+- **Previews only (Jorge 11-22):** never render 3 full reels. Render just the first ~6s of each hook variant
+  (trim the clean pass/edit to 0-6s), send the 3 short clips, let him pick, THEN render the full reel once.
 - **Write 3 hooks that each take a different angle**, not three rewordings of one line. Use one of each:
   **number** ("$260K of equity, and the house never hit the MLS"), **contrarian** ("Most bad flips aren't bad
   buys"), and **story/curiosity** ("I almost walked away from this one"). Spoken hooks stay under ~3s / 10 words.
@@ -114,10 +119,23 @@ cheap (~15s) but a wrong concept wastes his review time. Wait for "go" / edits.
   tighter or ask for a redacted screenshot. Reputation compounds.
 
 ### 5. Write `edit.json`, build, QA
-`python reel.py build <reel> v1` → captions + render + copies `<reel-folder>_v1.mp4` to Downloads.
-Then `python reel.py frames <reel> v1 <t> <t> ...` and **look at the strip** at every graphic,
-card, hero and B-roll moment. Check: nothing covering his eyes, text inside the frame,
-captions not colliding with graphics. Fix and re-render before handing it over.
+**Jorge 11-22: "are you actually watching these?" It took 5 rounds of his notes to fix the Cost per deal reel.
+The goal is ONE round of taste notes, never mechanical mistakes.**
+- **Before the first render, show him a storyboard**: one screen listing every slide, B-roll, big-text and tile
+  moment with its timestamp and the words he's saying then. Pacing calls like "too quick, keep raw video here"
+  are cheap to make there and cost a 5-minute render later.
+- **Private objects (opt-in, only when needed):** `"redact": true` blurs every `D:/Reels/_redact/*.png` template
+  found in the frame, on background pixels only. Used on the Cost per deal reel for his son's photo on the shelf.
+  Jorge is moving the photo, so DON'T add it by default. Use it only if a private item shows up or he asks. Templates
+  stay on D:, NEVER in this public repo.
+- `python reel.py build <reel> v1` renders, then runs **qa.py automatically**, which writes build/qa.txt and
+  output/qa/sheet_NN.jpg (a frame every 0.5s). It flags: slide/B-roll edges off his jump cuts or crossfading on
+  them, gaps between slides, slides under 2.5s, caption flashes under 0.5s (orphans), captions that repeat the
+  big text, cards or big text over his face, behind-the-head text over 25% hidden or used more than once, and
+  sound-alike typos.
+- **Fix every QA flag** (or tell Jorge why one is intentional). Then **open and look at EVERY sheet**, not just
+  the moments you changed: stray captions, flashes, the wrong clip, anything ugly. Only then deliver.
+- For classic style, `python reel.py frames <reel> v1 <t> ...` is still the spot-check.
 
 ### 6. Write the post caption
 Every reel gets a long Instagram caption saved to `<reel>/caption.txt` and pasted in chat
@@ -233,7 +251,10 @@ CPU ~9 fps, cached in build/matte.mp4, so caption-only re-renders are ~1.5 min) 
 ```
 Captions auto-chunk (punctuation, gaps, 5 words max). Use `"breaks": [i]` to force a split.
 Jorge-approved rules (11-17):
-- **Heroes (behind him): 4-6 per reel**, on the punch words of the hook, the turn and the close. ALWAYS white
+- **UPDATE 11-22 (Cost per deal reel): behind-the-head text ONCE per reel**, on the single biggest turn. With his
+  head filling the frame "you can't really tell what it says". Other stat moments: a `"front": true, "y": 1180`
+  hero across his chest (readable, never over his face) or just `key` captions.
+- (Old 11-17 rule, superseded above) Heroes (behind him): 4-6 per reel, on the punch words of the hook, the turn and the close. ALWAYS white
   Anton (brand blue disappeared on sky/lake). They hold ≥1.9s after the last line (automatic). He said 0.8-1.4s
   "goes away way too quickly". The last hero can hold to the end (`"end": 99`) with `glitch`.
 - A crossed-out idea gets `x_at`. The X draws BEHIND him too. He called out an X in front of his face, so never
@@ -248,6 +269,15 @@ Jorge-approved rules (11-17):
 - Grade `"light"` is the default. The first grade was too dark ("whole reel looks too dark"), so don't go moodier.
 - Classic `icons` usually clash with the premium look; leave them out unless Jorge asks.
 - Delivery is the same: highest vN (or final*) in output/ is what content-sync posts.
+- **Snap every slide/composite/B-roll edge to HIS jump cuts** (Jorge 11-22: "bad cut" x4). Find them first:
+  `ffmpeg -i raw.mov -vf "select='gt(scene,0.08)',showinfo" -an -f null - 2>&1 | grep -oE "pts_time:[0-9.]+"`.
+  An edge 0.1-0.4s off a cut flashes a sliver of the wrong clip. Back-to-back slides must share one boundary
+  (no 0.2s gap showing his face). Snap B-roll `start`/`end` to cuts too (shift `from` by the same amount).
+- **Composites:** check each slide's text layout and set `scale`/`x` so his cutout stays off the key text.
+- **Tiles go below his chin** (`"y": 1470`); at 1290 they covered his face when he leaned in.
+- **Proofread captions for homophones** (Whisper wrote "guests" for "guess"). Fix with `replace`.
+- If the first word sounds clipped, check the source: if "can" starts at 0.0s it was cut in CapCut, so ask him
+  to re-export with ~0.3s of head room. The render can't recover it.
 
 ## edit.json reference
 ```json

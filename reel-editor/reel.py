@@ -5,6 +5,8 @@
   python reel.py build <reel> <name>                  captions + render + copy to Downloads
   python reel.py frames <reel> <name> <t> [t ...]     contact strip of output frames for visual QA
   python reel.py history [n]                          graphic styles used by the last n reels (vary them!)
+  python reel.py qa <reel> [video]                    auto QA (cuts, orphan captions, face overlap...) + 0.5s sheets
+  python redact.py <reel>                             find private objects (D:/Reels/_redact/*.png) to blur
 
 Raw mode (uncut takes; see raw.py):
   python reel.py raw <slug> <clip|folder> [...]       create the reel, move clips in, transcribe each take
@@ -52,6 +54,11 @@ def assemble(reel):
     rawmode.assemble(reel)
 
 
+def qa_cmd(reel, video=None):
+    import qa
+    qa.run(reel, video)
+
+
 def words(reel):
     w = json.load(open(os.path.join(reel, "words.json"), encoding="utf-8"))["words"]
     print(" ".join(f"{i}:{x['w']}@{x['s']}" for i, x in enumerate(w)))
@@ -71,6 +78,11 @@ def build(reel, name):
         subprocess.run([sys.executable, os.path.join(HERE, "captions.py"), os.path.join(reel, "words.json"),
                         os.path.join(reel, "edit.json"), os.path.join(reel, "captions.ass")], check=True)
         out = render(reel, name)
+    if edit.get("style") == "premium":
+        try:
+            import qa; qa.run(reel, out)
+        except Exception as ex:                       # QA must never block a render
+            print(f"QA failed to run: {ex}")
     dst = os.path.join(DOWNLOADS, f"{os.path.basename(reel)}_{name}.mp4")
     shutil.copy(out, dst)
     print(f"copied -> {dst}")
@@ -109,4 +121,4 @@ def history(n=5):
 if __name__ == "__main__":
     cmd, args = sys.argv[1], sys.argv[2:]
     {"new": new, "words": words, "build": build, "frames": frames, "history": history,
-     "raw": raw, "score": score, "assemble": assemble}[cmd](*args)
+     "raw": raw, "score": score, "assemble": assemble, "qa": qa_cmd}[cmd](*args)
