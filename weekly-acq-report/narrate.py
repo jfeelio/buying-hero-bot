@@ -25,6 +25,8 @@ Rules:
 - Use only numbers that appear in the JSON, or simple arithmetic on them. Never invent
   a figure, a name or an event.
 - Be specific and name names. "Andrew called back in 4 minutes" beats "speed was good".
+- When you mention a specific seller or property, use the lead's "label" field
+  (seller name + street address, e.g. "Maria Lopez · 123 NW 5th St"), never the address alone.
 - Lead with the one thing that most explains the week. If data hygiene makes a metric
   unreadable, say so.
 - Do not draw conclusions from one or two cases. Say plainly when something is a

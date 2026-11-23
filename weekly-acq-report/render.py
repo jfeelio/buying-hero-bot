@@ -172,12 +172,12 @@ def page(m, narr, author):
         if not c["n"]:
             return "<p class='dim'>%s: none.</p>" % title
         yes = lambda b: '<span class="up">Yes</span>' if b else '<span class="dim">No</span>'
-        rows = [[e(r["qualified"]), e(r["by"] or "?"), e(r["short"] or "no address"), e(r["status"]),
+        rows = [[e(r["qualified"]), e(r["by"] or "?"), e(r.get("label") or r["short"] or "no address"), e(r["status"]),
                  yes(r["appointment"]), yes(r["kept"]), yes(r["offer"])] for r in c["leads"]]
         head = "<p><strong>%s:</strong> %d qualified &rarr; %d got an appointment &rarr; %d kept &rarr; %d offer%s. Qualified by %s.</p>" % (
             title, c["n"], c["appointment"], c["kept"], c["offer"], "" if c["offer"] == 1 else "s",
             ", ".join("%s %d" % x for x in c["by"]))
-        return head + table(["Qualified", "By", "Property", "Status now", "Appt", "Kept", "Offer"], rows)
+        return head + table(["Qualified", "By", "Seller · property", "Status now", "Appt", "Kept", "Offer"], rows)
     coh = m["qualified_cohorts"]
     cohort_block = cohort_html(coh["prior"], "Last week’s qualified leads, followed to today") +         cohort_html(coh["this"], "This week’s qualified leads so far")
 
@@ -197,7 +197,7 @@ def page(m, narr, author):
     appt_rows = []
     for a in m["appointments"]:
         nxt = ("%s: %s" % (a["next"]["day"], a["next"]["to"])) if a["next"] else "No status change logged"
-        appt_rows.append([e(a["when"]), "%s<br><span class='dim'>%s · %s</span>" % (e(a["title"]), e(a["lead"]["short"] or "no address"), e(a["lead"]["market"])),
+        appt_rows.append([e(a["when"]), "<strong>%s</strong><br><span class='dim'>%s · %s</span>" % (e(a["lead"].get("seller") or a["title"]), e(a["lead"]["short"] or "no address"), e(a["lead"]["market"])),
                           '<span class="wn">Blank</span>' if a["format"] == "Not set" else e(a["format"]),
                           outcome_pill(a["outcome"]) if a["occurred"] else '<span class="dim">Upcoming</span>',
                           a["calls"], '<span class="dim">%s</span>' % e(nxt)])
@@ -213,11 +213,11 @@ def page(m, narr, author):
                     numeric=(1, 2, 3, 4)) if fmt_rows else ""
 
     # --- offers
-    off_rows = [[e(o["when"]), e(o["address"] or "no address"), e(o["by"]), e(o["source"]),
+    off_rows = [[e(o["when"]), "<strong>%s</strong><br><span class='dim'>%s</span>" % (e(o.get("seller") or "Name not on file"), e(o["address"] or "no address")), e(o["by"]), e(o["source"]),
                  e(o["market"]) if o["in_market"] else '<span class="wn">%s</span>' % (
                      "Likely mailing address" if o.get("likely_mailing_address") else e(o["market"])),
                  "Yes" if o["from_appointment"] else "No"] for o in m["offers"]]
-    off_tbl = table(["When", "Property", "By", "Source", "Market", "From an appt"], off_rows) if off_rows else "<p class='dim'>No offers logged this week.</p>"
+    off_tbl = table(["When", "Seller · property", "By", "Source", "Market", "From an appt"], off_rows) if off_rows else "<p class='dim'>No offers logged this week.</p>"
 
     # --- hygiene
     hy_rows = []
@@ -238,7 +238,7 @@ def page(m, narr, author):
     if ppc["n"]:
         ppc_line = "<p><strong>PPC:</strong> %d leads, %d out of market%s, %d with an address we can't place.</p>" % (
             ppc["n"], len(ppc["out_of_market"]),
-            (" (%s)" % "; ".join(e(r["short"]) for r in ppc["out_of_market"])) if ppc["out_of_market"] else "",
+            (" (%s)" % "; ".join(e(r.get("label") or r["short"]) for r in ppc["out_of_market"])) if ppc["out_of_market"] else "",
             len(ppc["unknown"]))
     speed_rows = [[e(s["label"]), s["n"], '<span class="dim">%s</span>' % e(", ".join(("%s ×%d" % w) if w[1] > 1 else w[0] for w in s["who"]))]
                   for s in m["speed"]]
@@ -254,12 +254,12 @@ def page(m, narr, author):
     if m["real_misses"]:
         miss_html += "<p><strong>Real misses</strong> (in market or unplaceable, still at New Leads, no call):</p><ul class='plain'>%s</ul>" % "".join(
             "<li>%s &middot; %s &middot; came in %s &middot; seller called in %d time%s</li>" % (
-                e(r["short"] or "no address"), e(r["source"]), e(r["created"]), r["inbound_calls"], "" if r["inbound_calls"] == 1 else "s")
+                e(r.get("label") or r["short"] or "no address"), e(r["source"]), e(r["created"]), r["inbound_calls"], "" if r["inbound_calls"] == 1 else "s")
             for r in m["real_misses"])
     if m["slow"]:
         miss_html += "<p><strong>Waited over 40 hours for a first call:</strong></p><ul class='plain'>%s</ul>" % "".join(
             "<li>%s &middot; %s hours &middot; seller called in %d time%s &middot; now %s</li>" % (
-                e(r["short"] or "no address"), r["first_call_hours"], r["inbound_calls"], "" if r["inbound_calls"] == 1 else "s", e(r["status"]))
+                e(r.get("label") or r["short"] or "no address"), r["first_call_hours"], r["inbound_calls"], "" if r["inbound_calls"] == 1 else "s", e(r["status"]))
             for r in m["slow"])
 
     # --- follow-up

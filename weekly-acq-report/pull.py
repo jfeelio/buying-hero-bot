@@ -126,6 +126,28 @@ def activity(lead_id, since_ms):
     return list(rows.values())
 
 
+def seller_names(lead_ids):
+    """/lead/list carries no contact data, so read the seller's name from
+    /lead/details -- only for leads the report can actually show."""
+    out = {}
+    for i, lid in enumerate(sorted(lead_ids), 1):
+        try:
+            ld = post("lead/details", {"leadId": lid})["data"]["leadData"]
+        except Exception as e:  # a name is nice-to-have; never fail the report over it
+            log("  details %s failed: %s" % (lid, e))
+            continue
+        c = ld.get("contactData") or {}
+        c = c[0] if isinstance(c, list) and c else c
+        if isinstance(c, dict):
+            n = " ".join(x for x in ((c.get("firstName") or "").strip(), (c.get("lastName") or "").strip()) if x)
+            if n:
+                out[lid] = n.title() if n.isupper() or n.islower() else n
+        time.sleep(THROTTLE)
+        if i % 50 == 0:
+            log("  names %d/%d" % (i, len(lead_ids)))
+    return out
+
+
 def pull(since_ms, appt_window):
     """since_ms: earliest activity worth keeping (start of the comparison week).
     appt_window: (start_ms, end_ms) -- leads with an appointment starting in it
@@ -152,8 +174,11 @@ def pull(since_ms, appt_window):
             acts[lid] = rows
         if i % 50 == 0:
             log("  %d/%d" % (i, len(sweep)))
+    shown = set(acts) | appt_leads | fresh
+    log("reading seller names for %d leads" % len(shown))
+    sellers = seller_names(shown)
     return {
-        "leads": leads, "lead_count": count, "statuses": statuses,
+        "leads": leads, "lead_count": count, "statuses": statuses, "sellers": sellers,
         "scope_status_ids": sorted(scope_ids), "appointments": appts,
         "activities": acts, "swept": sweep,
     }

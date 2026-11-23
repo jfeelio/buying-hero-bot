@@ -57,6 +57,22 @@ def short_addr(a):
     return ", ".join(parts[:2]) if len(parts) > 1 else parts[0]
 
 
+def seller_name(l):
+    c = l.get("contactData") or {}
+    c = c[0] if isinstance(c, list) and c else c
+    if not isinstance(c, dict):
+        return None
+    n = " ".join(x for x in ((c.get("firstName") or "").strip(), (c.get("lastName") or "").strip()) if x)
+    if n.isupper() or n.islower():
+        n = n.title()
+    return n or None
+
+
+def deal_label(name, short):
+    """'Maria Lopez · 123 NW 5th St, Miami' -- how a deal is named everywhere in the report."""
+    return " · ".join(x for x in (name, short or "no address") if x)
+
+
 def analyze(raw, week_start, now=None):
     ws, we, pws = week_bounds(week_start)
     now_ms = int((now or datetime.datetime.now(ET)).timestamp() * 1000)
@@ -72,7 +88,8 @@ def analyze(raw, week_start, now=None):
         l = leads.get(lid, {})
         mkt, inm = market_of(l.get("address"))
         src = l.get("marketingTitle") or ""
-        return {"address": l.get("address"), "short": short_addr(l.get("address")),
+        sn, sh = raw.get("sellers", {}).get(lid) or seller_name(l), short_addr(l.get("address"))
+        return {"address": l.get("address"), "short": sh, "seller": sn, "label": deal_label(sn, sh),
                 "status": status_title(l.get("mainStatusTitle")), "source": src,
                 "market": mkt, "in_market": inm,
                 # Mail goes to Miami-area properties, so an out-of-state address on a
@@ -292,13 +309,13 @@ def analyze(raw, week_start, now=None):
 
     hygiene = [
         {"gap": "Appointment outcome blank", "n": sum(1 for a in done if a["outcome"] == "No outcome"), "of": len(done),
-         "detail": ", ".join(a["title"] or "?" for a in done if a["outcome"] == "No outcome"), "hides": "Kept rate"},
+         "detail": "; ".join(a["lead"]["label"] for a in done if a["outcome"] == "No outcome"), "hides": "Kept rate"},
         {"gap": "Qualification not set", "n": sum(1 for a in done if not a["qualification_set"]), "of": len(done),
-         "detail": ", ".join(a["title"] or "?" for a in done if not a["qualification_set"]), "hides": "Lead-to-qualified rate"},
+         "detail": "; ".join(a["lead"]["label"] for a in done if not a["qualification_set"]), "hides": "Lead-to-qualified rate"},
         {"gap": "Appointment format blank", "n": sum(1 for a in appts if a["format"] == "Not set"), "of": len(appts),
-         "detail": ", ".join(a["title"] or "?" for a in appts if a["format"] == "Not set"), "hides": "Phone vs in-person"},
+         "detail": "; ".join(a["lead"]["label"] for a in appts if a["format"] == "Not set"), "hides": "Phone vs in-person"},
         {"gap": "“Appt Set” logged, nothing on calendar", "n": len(appt_set_missing), "of": None,
-         "detail": "; ".join(x["short"] or "no address" for x in appt_set_missing), "hides": "The appointment count"},
+         "detail": "; ".join(x["label"] for x in appt_set_missing), "hides": "The appointment count"},
         {"gap": "Call outcome logged as “Other”", "n": other_outcomes, "of": len(outbound),
          "detail": "", "hides": "What the call achieved"},
         {"gap": "New lead with no address", "n": sum(1 for r in new_rows if r["no_address"]), "of": len(new_rows),
@@ -307,7 +324,7 @@ def analyze(raw, week_start, now=None):
          "detail": "%d arrived in the last 12 hours" % sum(1 for r in new_rows if r["still_new"] and r["arrived_late"]),
          "hides": "Lead-to-discovery rate"},
         {"gap": "Offer on an address outside Miami-Dade/Broward", "n": len(offers_bad_addr), "of": len(offers),
-         "detail": "; ".join(o["short"] or "no address" for o in offers_bad_addr), "hides": "Which property is under offer"},
+         "detail": "; ".join(o["label"] for o in offers_bad_addr), "hides": "Which property is under offer"},
         {"gap": "Inbound calls with no rep attached", "n": unrouted_in, "of": len(inbound),
          "detail": "Logged as N/A", "hides": "Who answers the phone"},
     ]
