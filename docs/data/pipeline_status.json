@@ -1,10 +1,10 @@
 {
   "foreclosures": {
-    "last_run": "2026-11-20T14:14:30Z",
+    "last_run": "2026-11-23T14:14:39Z",
     "status": "success",
     "records_added": 0,
-    "run_id": "44750996641",
-    "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/44750996641"
+    "run_id": "45191441964",
+    "run_url": "https://github.com/jfeelio/buying-hero-bot/actions/runs/45191441964"
   },
   "probate": {
     "last_run": "2026-11-23T07:25:54Z",
