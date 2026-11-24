@@ -183,6 +183,15 @@ chose not to do and why. Paste the caption. Iterate as v2, v3… in the same fol
 
 ## Style rules (Jorge-approved — keep these)
 
+**Caption height is PER FRAMING. Check it against his chin every reel** (Jorge 11-24: "did you do proper QA, most
+of the captions are over the bottom part of my face"). y=1300 was tuned for wider desk shots. In a close selfie his
+beard reaches y≈1450 (lower on punch-ins), so 1300 lands on his mouth. Before the first render, grab a frame with
+`drawgrid` and find the beard bottom. Set `"caption_y"` about 150px below it (1600 for close selfies), with
+`"lead_in_y": 1545, "hero_gap": 165` so the hero stack stays above IG's bottom UI. In QA, any caption touching his
+beard is a FAIL, never a "standard position".
+**Endings:** never end on the last syllable. Leave 0.4-0.6s after the final word (snap the last cut end into the
+silence), no SFX on the last word, and `"music": {"fade_out": 3.0}` so the closing line sits on top.
+
 **Caption height — don't "fix" for Instagram's overlay.** GHL's Social Planner preview draws the
 post caption over several lines and makes burned-in captions look covered. That preview is NOT
 accurate: on Jorge's live Reels the post caption shows only one line. He rejected moving captions
