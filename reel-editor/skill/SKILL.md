@@ -85,8 +85,17 @@ and only the winner ships. The first ~3 seconds decide the reel, so don't bet th
 - **Caption line 1 is a 4th hook.** Make it a different angle from the spoken hook that ships.
 - Log the 3 hooks and which one won in `<reel>/hooks.json` (`{"A": "...", "B": "...", "C": "...", "winner": "A",
   "why": "..."}`), so we learn which angle wins for this audience over time.
-- Real-audience testing with Instagram **Trial Reels** (shown to non-followers first) is NOT built yet. See the
-  Hook Lab tab in the Content Ideas sheet for idea-level hooks.
+- **Trial Reels A/B test (built 2026-11-24, first run = lien-title reel).** When Jorge wants the variants tested on
+  a real audience, render each variant as a full reel in its OWN folder (`<date>-<slug>-A-broll`, `-B-text`, ...).
+  Use raw mode's `cuts.json` + `reel.py assemble` with the original clip hard-linked into each `clips/` to give
+  each one a different spoken cold open (lift a line from later in the take). Use `"snap": false` on a cut that
+  ends mid-sentence. Drop a `trial.json` in each folder: `--scan` then creates a **Trial Reel** row. When approved,
+  the cloud posts it through the IG API with `trial_params` MANUAL (non-followers first; Jorge graduates the winner
+  in the IG app). Use the SAME caption on every variant so only the video differs. Have Gemini listen to every
+  cold-open splice (clipped first syllables, "uh"s) before rendering.
+- **Hook headline card:** overlay `{"mode": "title", "start": 0, "end": 2.8, "y": 330, "lines": [{"text": "12 months
+  in.", "size": 100}, {"text": "1 lesson.", "blue": true, "size": 130}]}` sits above his head for the first ~3s.
+- See the Hook Lab tab in the Content Ideas sheet for idea-level hooks.
 - **Reel Radar** (same sheet; code in the private repo jfeelio/bh-content-sync, `reel_radar.py`). Each week it
   finds reels on the Radar Watchlist accounts running 2.5x or more above that creator's typical plays. Gemini then
   watches each one and writes up the hook, format, structure, editing, why it worked, and a BH version with 3 hooks.

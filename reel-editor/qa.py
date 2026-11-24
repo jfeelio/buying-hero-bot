@@ -95,6 +95,8 @@ def run(reel, video=None):
         if k + 1 < len(comps) and 0.05 <= comps[k + 1]["start"] - c["end"] < 0.8:
             flag(c["end"], "GAP", f"{comps[k + 1]['start'] - c['end']:.2f}s of his face flashes between two slides")
     for o in edit.get("overlays", []):
+        if o.get("mode", "full") != "full":   # cards/stickers/titles float over him; only full-frame B-roll needs cut-snapping
+            continue
         hard = o.get("transition", "fade") == "cut"; nm = os.path.basename(o["file"])
         edges += [(o["start"], hard, f"B-roll {nm} in"), (o["end"], hard, f"B-roll {nm} out")]
     for e, hard, what in edges:

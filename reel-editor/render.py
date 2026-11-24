@@ -9,6 +9,8 @@ edit.json keys used here:
       full -> covers the frame (scale-to-fill), stills get a slow push-in; 0.25s crossfade
               in/out by default ("transition": "cut" for a hard cut)
       card -> screenshot cropped, rounded, blue border + shadow, slides up into the upper frame
+      title -> hook headline, no file: "lines": [{"text", "blue"?, "size"?}], Montserrat Black, white/blue with a
+              black outline on a dark rounded panel; centred on "x"/"y" (above his head ~y 280), slides up like a card
       sticker -> transparent cut-out PNG (headshot) + shadow + blue name pill ("label", "sub"?),
               centred on "x"/"y", slides up like a card
   zooms:    [{"start", "end", "scale"?: 1.08}]     eased push-in on the talking head
@@ -96,6 +98,37 @@ def make_card(src, crop, out, max_h=820):
     ImageDraw.Draw(inner_mask).rounded_rectangle((0, 0, im.width - 1, im.height - 1), r - border, fill=255)
     frame.paste(im, (border, border), inner_mask)
     canvas.paste(frame, (pad, pad), mask)
+    canvas.save(out)
+    return canvas.size
+
+
+def make_title(lines, out, max_w=W - 2 * SAFE):
+    """Hook headline: stacked ALL CAPS lines, white (or brand blue) with a black outline, on a dark panel."""
+    from PIL import ImageFont
+    fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
+    rows = []
+    for ln in lines:
+        text, size = ln["text"].upper(), ln.get("size", 96)
+        f = ImageFont.truetype(fpath, size)
+        while f.getlength(text) > max_w - 100 and size > 40:
+            size -= 4
+            f = ImageFont.truetype(fpath, size)
+        rows.append((text, f, BLUE if ln.get("blue") else (255, 255, 255)))
+    pad, gap = 40, 14
+    tw = int(max(f.getlength(t) for t, f, _ in rows)) + 2 * pad
+    th = sum(f.size for _, f, _ in rows) + gap * (len(rows) - 1) + 2 * pad
+    m = 30
+    canvas = Image.new("RGBA", (tw + 2 * m, th + 2 * m), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle((m, m + 10, m + tw, m + th + 10), 30, fill=(0, 0, 0, 150))
+    canvas = Image.alpha_composite(canvas, shadow.filter(ImageFilter.GaussianBlur(14)))
+    d = ImageDraw.Draw(canvas)
+    d.rounded_rectangle((m, m, m + tw, m + th), 30, fill=(12, 12, 14, 215), outline=BLUE + (255,), width=6)
+    y = m + pad
+    for text, f, col in rows:
+        d.text((canvas.width // 2, y + f.size // 2), text, font=f, fill=col, anchor="mm",
+               stroke_width=max(3, f.size // 16), stroke_fill="black")
+        y += f.size + gap
     canvas.save(out)
     return canvas.size
 
@@ -309,13 +342,15 @@ def build(reel, name, premium=False):
 
     for o in edit.get("overlays", []):
         n += 1
-        src = os.path.join(reel, o["file"])
+        src = os.path.join(reel, o["file"]) if "file" in o else None
         st, en = o["start"], o["end"]
         dur = en - st
         tag = f"o{n}"
-        if o.get("mode", "full") in ("card", "sticker"):
+        if o.get("mode", "full") in ("card", "sticker", "title"):
             card = os.path.join(work, f"card_{n}.png")
-            if o["mode"] == "sticker":
+            if o["mode"] == "title":
+                cw, ch = make_title(o["lines"], card)
+            elif o["mode"] == "sticker":
                 cw, ch = make_sticker(src, o.get("label", ""), o.get("sub"), card,
                                       o.get("max_h", 520), o.get("max_w", 380))
             else:
@@ -331,7 +366,7 @@ def build(reel, name, premium=False):
             else:
                 left = min(max(left, SAFE - bx0), W - SAFE - bx1)
             if "x" in o and left != o["x"] - cw // 2:
-                print(f"  {o['file']}: x {o['x']} -> {left + cw // 2} to stay inside the frame")
+                print(f"  {o.get('file', 'title')}: x {o['x']} -> {left + cw // 2} to stay inside the frame")
             x0 = f"{left}"
             ypos = f"{y0}+120*max(0\\,1-(t-{st})/0.18)"
             chains.append(f"[{last}][{tag}]overlay=x={x0}:y='{ypos}':enable='between(t,{st},{en})'[v{n}]")

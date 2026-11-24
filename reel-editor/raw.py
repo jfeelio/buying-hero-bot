@@ -10,6 +10,7 @@ cuts.json:
    "cuts": [{"clip": "IMG_0823", "start": 3.75, "end": 27.75, "note": "hook",
              "crop": {"zoom": 1.3, "cx": 0.45, "cy": 0.42}}, ...]}
   crop (optional): punch into the 4K source (zoom 1 = full frame); cx/cy = centre of the kept area, 0-1.
+  "snap": false on a cut keeps its end exactly (use when splicing mid-sentence, where the voice never goes quiet).
   Where a long pause is trimmed inside one take, the next piece punches in 12% to hide the jump cut
   ("hide_jumps": false on a cut to turn that off).
 
@@ -205,7 +206,8 @@ def assemble(reel):
         for gi, g in enumerate(groups):
             ps = s if gi == 0 else max(s, g[0][1] - PRE)
             pe = e if gi == len(groups) - 1 else g[-1][2] + POST
-            pe = _snap_end(reel, cid, pe)
+            if gi < len(groups) - 1 or c.get("snap", True):   # "snap": false keeps a hand-picked end (mid-sentence splice)
+                pe = _snap_end(reel, cid, pe)
             if gi < len(groups) - 1:
                 pe = min(pe, groups[gi + 1][0][1] - 0.05)
             crop = dict(c.get("crop") or {"zoom": 1.0, "cx": 0.5, "cy": 0.45})
