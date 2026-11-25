@@ -22,6 +22,8 @@ edit.json keys used here:
   sfx:      [{"t", "file": sfx/<name>.mp3, "vol"?: 0.35, "peak"?: true}]
             peak=true lines the loudest moment of the sound up with t (for whooshes)
   progress: true|false (default true)       thin brand-blue bar along the bottom
+  remotion: [{"comp", "start", "end", "props", "mute"?}]   React/Remotion graphics (remotion/src): Scoreboard (month
+            table + rolling total), GoalMeter, Card. Rendered transparent, cached in build/. "mute" hides captions.
 """
 import json, os, shutil, subprocess, sys
 import numpy as np
@@ -316,6 +318,26 @@ def make_stat_frames(stt, outdir):
         frame.save(os.path.join(outdir, f"f_{f:04d}.png"), compress_level=1)
 
 
+def render_remotion(rm, work):
+    """edit.json "remotion": [{"comp": "Scoreboard"|"GoalMeter"|"Card", "start", "end", "props": {...}, "mute"?: true}]
+    -> transparent ProRes 4444 clip rendered by remotion/ (React graphics). Cached by comp + props + length."""
+    import hashlib
+    props = dict(rm.get("props", {}), dur=round(rm["end"] - rm["start"], 3))
+    key = hashlib.sha1(json.dumps([rm["comp"], props], sort_keys=True).encode()).hexdigest()[:12]
+    out = os.path.join(work, f"rm_{rm['comp']}_{key}.mov")
+    if os.path.exists(out):
+        return out
+    pf = os.path.join(work, f"rm_{key}.json")
+    json.dump(props, open(pf, "w"))
+    rdir = os.path.join(HERE, "remotion")
+    npx = "npx.cmd" if os.name == "nt" else "npx"
+    subprocess.run([npx, "remotion", "render", "src/index.ts", rm["comp"], out, f"--props={pf}",
+                    "--codec=prores", "--prores-profile=4444", "--pixel-format=yuva444p10le", "--image-format=png",
+                    "--log=error"], check=True, cwd=rdir)
+    print(f"  remotion {rm['comp']} -> {os.path.basename(out)}")
+    return out
+
+
 def build(reel, name, premium=False):
     """premium=True -> clean pass for premium.py: no captions/lists, higher bitrate."""
     edit = json.load(open(os.path.join(reel, "edit.json"), encoding="utf-8"))
@@ -406,6 +428,14 @@ def build(reel, name, premium=False):
         inputs += ["-framerate", str(FPS), "-i", os.path.join(d, "f_%04d.png")]
         chains.append(f"[{n}:v]format=rgba,setpts=PTS-STARTPTS+{stt['start']}/TB[st{n}]")
         chains.append(f"[{last}][st{n}]overlay=0:0:eof_action=pass:enable='between(t,{stt['start']},{stt['end']})'[v{n}]")
+        last = f"v{n}"
+
+    for k, rm in enumerate([] if premium else edit.get("remotion", [])):
+        n += 1
+        mov = render_remotion(rm, work)
+        inputs += ["-i", mov]
+        chains.append(f"[{n}:v]format=yuva420p,setpts=PTS-STARTPTS+{rm['start']}/TB[rm{n}]")
+        chains.append(f"[{last}][rm{n}]overlay=0:0:eof_action=pass:enable='between(t,{rm['start']},{rm['end']})'[v{n}]")
         last = f"v{n}"
 
     for k, ic in enumerate(edit.get("icons", [])):

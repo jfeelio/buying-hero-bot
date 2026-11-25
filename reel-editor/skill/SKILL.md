@@ -93,6 +93,15 @@ and only the winner ships. The first ~3 seconds decide the reel, so don't bet th
   the cloud posts it through the IG API with `trial_params` MANUAL (non-followers first; Jorge graduates the winner
   in the IG app). Use the SAME caption on every variant so only the video differs. Have Gemini listen to every
   cold-open splice (clipped first syllables, "uh"s) before rendering.
+- **Remotion graphics (built 2026-11-24, Jorge: "are we using remotion to make sure we have good graphics?").**
+  `reel-editor/remotion/` (Remotion 4.0.542 pinned, free tier: BH has only contractors) renders React motion
+  graphics as transparent ProRes overlays. Use them for any data or number visual: edit.json `"remotion": [{"comp",
+  "start", "end", "props", "mute"?}]`. Comps: **Scoreboard** (month table that grows a row per spoken cue, running
+  total rolls up and flashes green, a highlight glides between rows, a $1M goal bar, and a mystery "??" row),
+  **GoalMeter** (pinned headline, big total, bar, 12 month chips), **Card** (spring-in headline lines). Add new
+  comps in remotion/src and register them in Root.tsx. `npx remotion studio src/index.ts` previews live. Renders
+  are cached by props in build/. Take spoken cue times from the WAVEFORM, not Whisper (Whisper put "November"
+  0.3s early and the cut dropped it). `"caption_mute": [[a, b]]` hides captions while the graphic carries the info.
 - **Hook headline card:** overlay `{"mode": "title", "start": 0, "end": 2.8, "y": 330, "lines": [{"text": "12 months
   in.", "size": 100}, {"text": "1 lesson.", "blue": true, "size": 130}]}` sits above his head for the first ~3s.
 - See the Hook Lab tab in the Content Ideas sheet for idea-level hooks.

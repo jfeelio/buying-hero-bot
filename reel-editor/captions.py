@@ -85,6 +85,8 @@ def build(words_path, edit_path, out_path):
     ]
     # list / stat graphics replace the captions while they're on screen
     mutes = [(g["start"], g["end"]) for g in edit.get("lists", []) + edit.get("stats", [])]
+    mutes += [(r["start"], r["end"]) for r in edit.get("remotion", []) if r.get("mute")]
+    mutes += [tuple(m) for m in edit.get("caption_mute", [])]
     for n, c in enumerate(chunks):
         start = c[0]["s"]
         nxt = chunks[n + 1][0]["s"] if n + 1 < len(chunks) else c[-1]["e"] + 0.6
