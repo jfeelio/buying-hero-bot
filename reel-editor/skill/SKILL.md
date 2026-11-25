@@ -159,6 +159,9 @@ The goal is ONE round of taste notes, never mechanical mistakes.**
 Every reel gets a long Instagram caption saved to `<reel>/caption.txt` and pasted in chat
 (Jorge asked for "a nice and long caption that will keep folks reading"):
 - **Line 1 is a second hook** that stands alone above "…more" (a bet, a number, a contrarian claim).
+  **Never the payoff** (Jorge 11-24: "u are revealing the juice up front"). On reveal, countdown or "can I hit X?"
+  reels, line 1 asks the question and the totals go below the fold. Check before posting: the IG API can't edit a
+  posted caption.
 - 200–350 words of short paragraphs (1–3 lines each) with white space: story → proof
   (numbers exactly as the video/screenshot supports them) → the messy/real part → the lesson.
 - Use → arrows or 1️⃣2️⃣3️⃣ to mirror any list in the video.
