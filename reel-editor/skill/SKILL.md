@@ -198,6 +198,16 @@ beard reaches y≈1450 (lower on punch-ins), so 1300 lands on his mouth. Before 
 `drawgrid` and find the beard bottom. Set `"caption_y"` about 150px below it (1600 for close selfies), with
 `"lead_in_y": 1545, "hero_gap": 165` so the hero stack stays above IG's bottom UI. In QA, any caption touching his
 beard is a FAIL, never a "standard position".
+**Instagram safe zones: check every reel** (Jorge 11-24: "did we QA and make sure everything fits well on frame
+for IG?"). Run `python igsafe.py output/vN.mp4 output/qa/igsafe.jpg 0.5`. It shades the top bar (y<220), the
+bottom caption/username strip (y>1540) and the right-side button column (x>950, y 1000-1540). No caption, title or
+graphic edge may sit in the red. Widths: `"caption_size": 98, "hero_size": 170, "hero_w": 800` keep long lines and
+heroes off the buttons. In wide or standing shots his face sits around y 900-1100, so captions go on the chest at
+`caption_y` ~1360 (`lead_in_y` 1270, `hero_gap` 150). Close selfies use ~1600 (see below). Never let captions
+overlap a graphic. Mute them (`caption_mute`) while a panel sits in that area.
+**Remotion hook title:** `"comp": "HookTitle"` makes the spoken hook's set-up words pop in on their cues, then the
+big number counts up and slams in (e.g. CAN I MAKE IT TO / $1,000,000?). Mute the normal captions for that line;
+they resume after it (Jorge's idea, 11-24).
 **Endings:** never end on the last syllable. Leave 0.4-0.6s after the final word (snap the last cut end into the
 silence), no SFX on the last word, and `"music": {"fade_out": 3.0}` so the closing line sits on top.
 

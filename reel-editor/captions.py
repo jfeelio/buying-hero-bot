@@ -70,6 +70,7 @@ def build(words_path, edit_path, out_path):
     emph, hero = set(edit.get("emphasis", [])), set(edit.get("hero", []))
     lead_in = {int(k): v for k, v in edit.get("lead_in", {}).items()}
     lead_words = {i for v in lead_in.values() for i in v}
+    size_cap, hero_max, hero_w = edit.get("caption_size", SIZE), edit.get("hero_size", HERO_SIZE), edit.get("hero_w", 980)
     cap_y = edit.get("caption_y", Y)          # per reel: close selfie framing puts his chin near 1450 -> ~1640
     lead_y = edit.get("lead_in_y", cap_y - 150)   # per reel: push the stack lower when it hits his chin
     toks = tokens(words, edit)
@@ -80,7 +81,7 @@ def build(words_path, edit_path, out_path):
         "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {W}", f"PlayResY: {H}", "WrapStyle: 2", "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Cap,{FONT},{SIZE},{WHITE},{WHITE},&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,7,4,5,40,40,0,1",
+        f"Style: Cap,{FONT},{size_cap},{WHITE},{WHITE},&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,7,4,5,40,40,0,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
     # list / stat graphics replace the captions while they're on screen
@@ -98,7 +99,7 @@ def build(words_path, edit_path, out_path):
         pop = (r"\fscx70\fscy70\t(0,90,\fscx112\fscy112)\t(90,160,\fscx100\fscy100)" if is_hero
                else r"\fscx85\fscy85\t(0,80,\fscx100\fscy100)")
         # long hero words shrink to stay inside the frame (~0.47 * size px per glyph)
-        hero_size = min(HERO_SIZE, int(980 / (0.47 * len(clean(c[0]["w"]))))) if is_hero else 0
+        hero_size = min(hero_max, int(hero_w / (0.47 * len(clean(c[0]["w"]))))) if is_hero else 0
         size = rf"\fs{hero_size}" if is_hero else ""
         parts = []
         for t in c:

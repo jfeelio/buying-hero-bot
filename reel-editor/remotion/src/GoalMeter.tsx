@@ -3,7 +3,8 @@ import {AbsoluteFill, spring, useCurrentFrame, useVideoConfig} from 'remotion';
 import {BLUE, GREEN, RED, PANEL, money, easeOut, totalAt, fadeInOut, useFonts} from './theme';
 
 type Step = {t: number; label: string; value: number};
-export type MeterProps = {dur: number; y: number; goal: number; title: string; pinned?: string[]; steps: Step[]};
+export type MeterProps = {dur: number; y: number; goal: number; title: string; pinned?: string[]; steps: Step[];
+  chipsAt?: number};  // chipsAt: seconds when the month grid grows in (compact meter before that keeps his face clear)
 
 export const meterDefaults: MeterProps = {
   dur: 14, y: 250, goal: 1000000, title: 'ROAD TO $1M', pinned: ['$826K IN 11 MONTHS', 'CAN I HIT $1M?'],
@@ -26,6 +27,7 @@ export const GoalMeter: React.FC<MeterProps> = (p) => {
   const rolling = steps.some((s) => s.value && frame >= s.f && frame < s.f + 21);
   const frac = Math.min(1, total / p.goal);
   const enter = spring({frame, fps, config: {damping: 15, stiffness: 140}});
+  const grow = p.chipsAt ? spring({frame: frame - Math.round(p.chipsAt * fps), fps, config: {damping: 18, stiffness: 150}}) : 1;
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   return (
     <AbsoluteFill style={{opacity}}>
@@ -34,11 +36,12 @@ export const GoalMeter: React.FC<MeterProps> = (p) => {
                      lineHeight: 1.08, textShadow: '0 5px 0 #000, 0 0 16px rgba(0,0,0,0.6)', WebkitTextStroke: '3px black',
                      transform: `translateY(${(1 - enter) * -30}px)`}}>
           {p.pinned.map((l, i) => (
-            <div key={i} style={{fontSize: i === 0 ? 64 : 76, color: i === 0 ? 'white' : '#FFD23C'}}>{l}</div>
+            <div key={i} style={{fontSize: i === 0 ? 64 : 76, color: i === 0 ? 'white' : '#FFD23C', whiteSpace: 'nowrap'}}>{l}</div>
           ))}
         </div>
       ) : null}
-      <div style={{position: 'absolute', top: p.y, left: 60, right: 60, height: 470, borderRadius: 34, background: PANEL,
+      <div style={{position: 'absolute', top: p.y, left: 60, right: 60, height: 290 + 180 * grow, borderRadius: 34, background: PANEL,
+                   overflow: 'hidden',
                    border: `4px solid ${BLUE}`, boxShadow: '0 18px 50px rgba(0,0,0,0.5)',
                    transform: `scale(${0.92 + 0.08 * enter})`}}>
         <div style={{position: 'absolute', top: 20, width: '100%', textAlign: 'center', fontFamily: 'MontBlack', fontSize: 34,
@@ -60,7 +63,7 @@ export const GoalMeter: React.FC<MeterProps> = (p) => {
             {last.label} {last.value ? '+' + money(last.value) : '$0'}
           </div>
         ) : null}
-        <div style={{position: 'absolute', left: 30, right: 30, top: 290, display: 'grid',
+        <div style={{position: 'absolute', left: 30, right: 30, top: 290 - 24 * (1 - grow), opacity: grow, display: 'grid',
                      gridTemplateColumns: 'repeat(6, 1fr)', gap: 10}}>
           {months.map((m, i) => {
             const s = steps.find((x) => x.label === m);
