@@ -208,6 +208,13 @@ graphic edge may sit in the red. Widths: `"caption_size": 98, "hero_size": 170, 
 heroes off the buttons. In wide or standing shots his face sits around y 900-1100, so captions go on the chest at
 `caption_y` ~1360 (`lead_in_y` 1270, `hero_gap` 150). Close selfies use ~1600 (see below). Never let captions
 overlap a graphic. Mute them (`caption_mute`) while a panel sits in that area.
+**TikTok cut (every reel; Jorge 11-26: "each post that I tell you to posted on both IG and tiktok").** Reels go to
+the Deal Lab TikTok (@officialdeallab) through content-sync (TikTok=Yes is the default). TikTok's UI covers more than
+IG's: run `python igsafe.py output/vN.mp4 out.jpg 1 --tiktok`. If anything lands in its zones (bottom y>1440, right
+rail x>900 / y 760-1440, top y<160), render a TikTok cut in `<reel>/tiktok/` (hard-link raw.mov, copy words.json, and
+an edit.json with captions about 70px higher plus `"left"/"right"` on GoalMeter) as `reel.py build <reel>/tiktok
+tiktok`. Write `caption_tiktok.txt` (short: question hook, one line, follow CTA, 5-6 hashtags, no spoilers). --scan
+uploads both. Trial reels never cross-post; send the winner with TikTok = "Post now".
 **Remotion hook title:** `"comp": "HookTitle"` makes the spoken hook's set-up words pop in on their cues, then the
 big number counts up and slams in (e.g. CAN I MAKE IT TO / $1,000,000?). Mute the normal captions for that line;
 they resume after it (Jorge's idea, 11-24).

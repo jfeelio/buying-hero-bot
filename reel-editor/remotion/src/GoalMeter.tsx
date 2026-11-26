@@ -4,7 +4,7 @@ import {BLUE, GREEN, RED, PANEL, money, easeOut, totalAt, fadeInOut, useFonts} f
 
 type Step = {t: number; label: string; value: number};
 export type MeterProps = {dur: number; y: number; goal: number; title: string; pinned?: string[]; steps: Step[];
-  chipsAt?: number};  // chipsAt: seconds when the month grid grows in (compact meter before that keeps his face clear)
+  chipsAt?: number; left?: number; right?: number};  // left/right: panel margins (TikTok: right 190 clears its button rail)  // chipsAt: seconds when the month grid grows in (compact meter before that keeps his face clear)
 
 export const meterDefaults: MeterProps = {
   dur: 14, y: 250, goal: 1000000, title: 'ROAD TO $1M', pinned: ['$826K IN 11 MONTHS', 'CAN I HIT $1M?'],
@@ -28,11 +28,12 @@ export const GoalMeter: React.FC<MeterProps> = (p) => {
   const frac = Math.min(1, total / p.goal);
   const enter = spring({frame, fps, config: {damping: 15, stiffness: 140}});
   const grow = p.chipsAt ? spring({frame: frame - Math.round(p.chipsAt * fps), fps, config: {damping: 18, stiffness: 150}}) : 1;
+  const L = p.left ?? 60, R = p.right ?? 60, panelW = 1080 - L - R;
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   return (
     <AbsoluteFill style={{opacity}}>
       {p.pinned ? (
-        <div style={{position: 'absolute', top: p.y - 190, left: 40, right: 40, textAlign: 'center', fontFamily: 'MontBlack',
+        <div style={{position: 'absolute', top: p.y - 190, left: L - 20, right: R - 20, textAlign: 'center', fontFamily: 'MontBlack',
                      lineHeight: 1.08, textShadow: '0 5px 0 #000, 0 0 16px rgba(0,0,0,0.6)', WebkitTextStroke: '3px black',
                      transform: `translateY(${(1 - enter) * -30}px)`}}>
           {p.pinned.map((l, i) => (
@@ -40,7 +41,7 @@ export const GoalMeter: React.FC<MeterProps> = (p) => {
           ))}
         </div>
       ) : null}
-      <div style={{position: 'absolute', top: p.y, left: 60, right: 60, height: 290 + 180 * grow, borderRadius: 34, background: PANEL,
+      <div style={{position: 'absolute', top: p.y, left: L, right: R, height: 290 + 180 * grow, borderRadius: 34, background: PANEL,
                    overflow: 'hidden',
                    border: `4px solid ${BLUE}`, boxShadow: '0 18px 50px rgba(0,0,0,0.5)',
                    transform: `scale(${0.92 + 0.08 * enter})`}}>
@@ -53,7 +54,7 @@ export const GoalMeter: React.FC<MeterProps> = (p) => {
         <div style={{position: 'absolute', left: 40, right: 40, top: 210, height: 26, borderRadius: 13,
                      background: 'rgba(255,255,255,0.14)'}} />
         <div style={{position: 'absolute', left: 40, top: 210, height: 26, borderRadius: 13, background: BLUE,
-                     width: Math.max(26, (960 - 80 - 80) * frac), boxShadow: `0 0 22px ${BLUE}`}} />
+                     width: Math.max(26, (panelW - 80) * frac), boxShadow: `0 0 22px ${BLUE}`}} />
         <div style={{position: 'absolute', right: 40, top: 244, fontFamily: 'MontXB', fontSize: 26, color: '#D8DCE2'}}>
           {Math.round(frac * 100)}% OF {money(p.goal)}
         </div>
