@@ -2,8 +2,9 @@ import React from 'react';
 import {AbsoluteFill, spring, useCurrentFrame, useVideoConfig} from 'remotion';
 import {BLUE, GREEN, GOLD, PANEL, fadeInOut, useFonts} from './theme';
 
-type Line = {text: string; color?: 'white' | 'blue' | 'green' | 'gold'; size?: number};
-export type CardProps = {dur: number; y: number; lines: Line[]; panel?: boolean; stagger?: number};
+type Line = {text: string; color?: 'white' | 'blue' | 'green' | 'gold'; size?: number; t?: number};  // t: seconds when this line pops in (default: staggered)
+export type CardProps = {dur: number; y: number; lines: Line[]; panel?: boolean; stagger?: number;
+  anchor?: 'center' | 'top'};  // top: y is the card's top edge and it grows downward (lines never jump up)
 
 export const cardDefaults: CardProps = {
   dur: 3, y: 330, panel: true, stagger: 0.18,
@@ -20,14 +21,15 @@ export const Card: React.FC<CardProps> = (p) => {
   const box = spring({frame, fps, config: {damping: 14, stiffness: 160}});
   return (
     <AbsoluteFill style={{opacity}}>
-      <div style={{position: 'absolute', left: 0, right: 0, top: p.y, transform: 'translateY(-50%)',
+      <div style={{position: 'absolute', left: 0, right: 0, top: p.y, transform: p.anchor === 'top' ? 'none' : 'translateY(-50%)',
                    display: 'flex', justifyContent: 'center'}}>
         <div style={{padding: p.panel ? '26px 44px' : 0, borderRadius: 30, maxWidth: 960,
                      background: p.panel ? PANEL : 'transparent', border: p.panel ? `5px solid ${BLUE}` : 'none',
                      boxShadow: p.panel ? '0 16px 44px rgba(0,0,0,0.55)' : 'none', textAlign: 'center',
-                     transform: `scale(${0.85 + 0.15 * box})`}}>
+                     transform: `scale(${0.85 + 0.15 * box})`, transformOrigin: p.anchor === 'top' ? 'top center' : 'center'}}>
           {p.lines.map((l, i) => {
-            const s = spring({frame: frame - Math.round(i * (p.stagger ?? 0.18) * fps), fps,
+            if (l.t !== undefined && frame < Math.round(l.t * fps)) return null;   // card grows line by line
+            const s = spring({frame: frame - Math.round((l.t ?? i * (p.stagger ?? 0.18)) * fps), fps,
                               config: {damping: 11, stiffness: 190}});
             return (
               <div key={i} style={{fontFamily: 'MontBlack', fontSize: l.size ?? 80, lineHeight: 1.12,

@@ -74,6 +74,7 @@ def run(reel, video=None):
     edit = json.load(open(os.path.join(reel, "edit.json"), encoding="utf-8"))
     P = edit.get("premium", {})
     pl = premium.plan(reel)
+    pl["mute"] = list(pl["mute"]) + [tuple(m) for m in edit.get("caption_mute", [])]   # classic reels mute captions by range
     cs = cuts(reel)
     issues = []
     def flag(t, kind, msg): issues.append((round(t, 2), kind, msg))

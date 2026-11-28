@@ -6,7 +6,7 @@ import {GOLD, fadeInOut, useFonts} from './theme';
 //   lead: [{text, t}]  small white words, each springs in at t (s)
 //   number: {from, to, t, prefix?, suffix?, label?}  counts from->to over 0.45 s starting at t, then holds with a pulse
 export type HookProps = {
-  dur: number; y: number; numSize?: number;
+  dur: number; y: number; numSize?: number; leadSize?: number;
   lead: {text: string; t: number}[];
   number: {to: number; t: number; from?: number; prefix?: string; suffix?: string; words?: string};
 };
@@ -34,7 +34,7 @@ export const HookTitle: React.FC<HookProps> = (p) => {
   return (
     <AbsoluteFill style={{opacity: out}}>
       <div style={{position: 'absolute', top: p.y, left: 0, right: 0, transform: 'translateY(-50%)', textAlign: 'center'}}>
-        <div style={{display: 'flex', justifyContent: 'center', gap: 22, fontFamily: 'MontBlack', fontSize: 70,
+        <div style={{display: 'flex', justifyContent: 'center', gap: 22, fontFamily: 'MontBlack', fontSize: p.leadSize ?? 70,
                      color: 'white', WebkitTextStroke: '4px black', paintOrder: 'stroke fill',
                      textShadow: '0 6px 0 #000'}}>
           {p.lead.map((w, i) => {

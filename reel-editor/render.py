@@ -242,7 +242,7 @@ def make_list_frames(ls, outdir):
     fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
     size = int(76 * row_h / 170)   # shrink until the longest row fits inside a 60px right margin
     while size > 30 and bs + 70 + ImageFont.truetype(fpath, size).getlength(
-            max((it["text"].upper() for it in items), key=len)) > W - x0 - 60:
+            max((it["text"].upper() for it in items), key=len)) > W - x0 - ls.get("right_margin", 60):   # TikTok cuts: ~220 clears its button rail
         size -= 2
     font = ImageFont.truetype(fpath, size)
     y0 = ls.get("y", 1150) - row_h * len(items) // 2   # chest height, face stays visible
@@ -291,9 +291,9 @@ def make_stat_frames(stt, outdir):
     fpath = os.path.join(HERE, "fonts", "Montserrat-Black.ttf")
 
     def fit(text, size, stroke):   # largest size <= requested that keeps text 60px inside each edge
-        while size > 40 and ImageFont.truetype(fpath, size).getlength(text) + 2 * stroke > W - 120:
+        while size > 40 and ImageFont.truetype(fpath, size).getlength(text) + 2 * stroke > stt.get("max_w", W - 120):
             size -= 4
-        return ImageFont.truetype(fpath, size)
+        return ImageFont.truetype(fpath, size)   # "max_w": ~780 on TikTok cuts keeps it off the button rail
     big = fit(f"{prefix}{val:,.0f}{suffix}", stt.get("size", 210), 10)
     small = fit(label, 84, 6)
     y = stt.get("y", 1220)
@@ -445,7 +445,7 @@ def build(reel, name, premium=False):
         box = make_icon_frames(ic["icon"], dur, d)
         inputs += ["-framerate", str(FPS), "-i", os.path.join(d, "f_%04d.png")]
         chains.append(f"[{n}:v]format=rgba,setpts=PTS-STARTPTS+{t}/TB[i{n}]")
-        chains.append(f"[{last}][i{n}]overlay=x={ICON_X - box // 2}:y={ICON_Y - box // 2}:eof_action=pass"
+        chains.append(f"[{last}][i{n}]overlay=x={edit.get("icon_x", ICON_X) - box // 2}:y={ICON_Y - box // 2}:eof_action=pass"
                       f":enable='between(t,{t},{t + dur})'[v{n}]")
         last = f"v{n}"
 
